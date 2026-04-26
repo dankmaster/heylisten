@@ -1,9 +1,9 @@
 {
-  "id": "CoopStatusBubbles",
+  "id": "CoopCallouts",
   "name": "Co-op Callouts",
   "author": "Codex",
   "description": "Shows clickable native game speech-bubble callouts over teammates in multiplayer combat when they currently hold helpful setup effects like Vulnerable, Strength, Vigor, or Weak. Includes ModConfig settings for playable-only filtering, support callouts, and the callout timer.",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "has_pck": false,
   "has_dll": true,
   "dependencies": [],

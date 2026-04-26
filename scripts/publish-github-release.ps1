@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\CoopStatusBubbles\CoopStatusBubbles.json"
+$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = $manifest.version

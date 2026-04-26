@@ -9,11 +9,11 @@ The mod shows the game's native speech bubble VFX when another player has useful
 Download the release zip and extract it into your Slay the Spire 2 install so the files look like this:
 
 ```text
-mods/CoopStatusBubbles/CoopStatusBubbles.dll
-mods/CoopStatusBubbles/CoopStatusBubbles.json
+mods/CoopCallouts/CoopCallouts.dll
+mods/CoopCallouts/CoopCallouts.json
 ```
 
-The internal folder and mod id are still `CoopStatusBubbles` for compatibility with existing config and installs. The visible mod name is `Co-op Callouts`.
+The internal folder, file names, and mod id are `CoopCallouts`. The mod migrates settings from the old `CoopStatusBubbles` config path on first launch.
 
 ## Settings
 
@@ -70,6 +70,6 @@ Suggested install text:
 
 ```text
 Extract the archive into your Slay the Spire 2 mods folder so it looks like:
-mods/CoopStatusBubbles/CoopStatusBubbles.dll
-mods/CoopStatusBubbles/CoopStatusBubbles.json
+mods/CoopCallouts/CoopCallouts.dll
+mods/CoopCallouts/CoopCallouts.json
 ```

@@ -23,7 +23,7 @@ using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace CoopStatusBubbles
+namespace CoopCallouts
 {
     internal enum StatusCallout
     {
@@ -53,20 +53,22 @@ namespace CoopStatusBubbles
         public CardPile Hand;
     }
 
-    internal sealed class CoopStatusBubblesConfig
+    internal sealed class CoopCalloutsConfig
     {
         public bool Enabled { get; set; } = true;
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
 
-        public static CoopStatusBubblesConfig Load()
+        public static CoopCalloutsConfig Load()
         {
-            var config = new CoopStatusBubblesConfig();
+            var config = new CoopCalloutsConfig();
             var path = GetConfigPath();
 
             try
             {
+                MigrateLegacyConfig(path);
+
                 if (!File.Exists(path))
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -82,7 +84,7 @@ namespace CoopStatusBubbles
             }
             catch (Exception ex)
             {
-                Log.Error($"[CoopStatusBubbles] Failed to load config: {ex.Message}");
+                Log.Error($"[CoopCallouts] Failed to load config: {ex.Message}");
             }
 
             return config;
@@ -98,7 +100,7 @@ namespace CoopStatusBubbles
             }
             catch (Exception ex)
             {
-                Log.Error($"[CoopStatusBubbles] Failed to save config: {ex.Message}");
+                Log.Error($"[CoopCallouts] Failed to save config: {ex.Message}");
             }
         }
 
@@ -145,14 +147,32 @@ namespace CoopStatusBubbles
         private static string GetConfigPath()
         {
             var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
-            return Path.Combine(appDataDir, "SlayTheSpire2", "CoopStatusBubbles", "config.json");
+            return Path.Combine(appDataDir, "SlayTheSpire2", "CoopCallouts", "config.json");
+        }
+
+        private static void MigrateLegacyConfig(string path)
+        {
+            if (File.Exists(path))
+            {
+                return;
+            }
+
+            var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+            var legacyPath = Path.Combine(appDataDir, "SlayTheSpire2", "CoopStatusBubbles", "config.json");
+            if (!File.Exists(legacyPath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.Copy(legacyPath, path, false);
         }
     }
 
     [ModInitializer("Initialize")]
     public static class ModEntry
     {
-        private const string ModId = "CoopStatusBubbles";
+        private const string ModId = "CoopCallouts";
         private const string ModDisplayName = "Co-op Callouts";
         private const string BubbleIntro = "Hey, listen!";
         private const string EnabledKey = "enabled";
@@ -165,7 +185,7 @@ namespace CoopStatusBubbles
         private const float MaxBubbleDisplaySeconds = 60f;
         private const double ManualBubbleLifetimeSeconds = 600d;
 
-        private static readonly Harmony Harmony = new Harmony("coopstatusbubbles.patch");
+        private static readonly Harmony Harmony = new Harmony("coopcallouts.patch");
         private static readonly Hashtable BubblesByNetId = new Hashtable();
         private static readonly Hashtable AcknowledgedMessagesByNetId = new Hashtable();
         private static readonly Hashtable LastMessagesByNetId = new Hashtable();
@@ -355,7 +375,7 @@ namespace CoopStatusBubbles
         private static long _lastRefreshAtUnixMs;
         private static RunManager _observedRunManager;
         private static CombatManager _observedCombatManager;
-        private static CoopStatusBubblesConfig Config = new CoopStatusBubblesConfig();
+        private static CoopCalloutsConfig Config = new CoopCalloutsConfig();
         private static bool _modConfigRegistered;
         private static bool _assemblyLoadHooked;
 
@@ -363,17 +383,17 @@ namespace CoopStatusBubbles
         {
             try
             {
-                Config = CoopStatusBubblesConfig.Load();
+                Config = CoopCalloutsConfig.Load();
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 HookAssemblyLoad();
                 Harmony.PatchAll(Assembly.GetExecutingAssembly());
                 TryWireManagerEvents();
                 TryRegisterModConfigUi();
-                Log.Info("[CoopStatusBubbles] Initialized.");
+                Log.Info("[CoopCallouts] Initialized.");
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopStatusBubbles] Failed to apply Harmony patches: " + ex);
+                Log.Error("[CoopCallouts] Failed to apply Harmony patches: " + ex);
             }
         }
 
@@ -628,7 +648,7 @@ namespace CoopStatusBubbles
                     null);
                 if (registerMethod == null)
                 {
-                    Log.Error("[CoopStatusBubbles] Could not find ModConfigApi.Register.");
+                    Log.Error("[CoopCallouts] Could not find ModConfigApi.Register.");
                     return;
                 }
 
@@ -647,11 +667,11 @@ namespace CoopStatusBubbles
                     false);
                 Config.Save();
 
-                Log.Info("[CoopStatusBubbles] Registered settings with ModConfig.");
+                Log.Info("[CoopCallouts] Registered settings with ModConfig.");
             }
             catch (Exception ex)
             {
-                Log.Error($"[CoopStatusBubbles] Failed to register ModConfig UI: {ex.Message}");
+                Log.Error($"[CoopCallouts] Failed to register ModConfig UI: {ex.Message}");
             }
         }
 
@@ -855,7 +875,7 @@ namespace CoopStatusBubbles
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopStatusBubbles] Failed to wire state listeners: " + ex.Message);
+                Log.Error("[CoopCallouts] Failed to wire state listeners: " + ex.Message);
             }
         }
 
@@ -1861,7 +1881,7 @@ namespace CoopStatusBubbles
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopStatusBubbles] Failed to attach game speech bubble: " + ex.Message);
+                Log.Error("[CoopCallouts] Failed to attach game speech bubble: " + ex.Message);
                 try
                 {
                     speechBubble.QueueFree();
@@ -1923,7 +1943,7 @@ namespace CoopStatusBubbles
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopStatusBubbles] Failed to create game speech bubble: " + ex.Message);
+                Log.Error("[CoopCallouts] Failed to create game speech bubble: " + ex.Message);
                 return null;
             }
         }

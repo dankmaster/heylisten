@@ -33,11 +33,12 @@ if ([string]::IsNullOrWhiteSpace($GameRoot)) {
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $dataDir = Join-Path $GameRoot "data_sts2_windows_x86_64"
-$sourcePath = Join-Path $repoRoot "src\CoopStatusBubbles.cs"
-$manifestPath = Join-Path $repoRoot "mod\CoopStatusBubbles\CoopStatusBubbles.json"
+$sourcePath = Join-Path $repoRoot "src\CoopCallouts.cs"
+$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
 $distRoot = Join-Path $repoRoot "dist"
-$distModDir = Join-Path $distRoot "CoopStatusBubbles"
-$outputPath = Join-Path $distModDir "CoopStatusBubbles.dll"
+$distModDir = Join-Path $distRoot "CoopCallouts"
+$legacyDistModDir = Join-Path $distRoot "CoopStatusBubbles"
+$outputPath = Join-Path $distModDir "CoopCallouts.dll"
 $runtimeDir = Split-Path -Parent ([System.Text.RegularExpressions.Regex].Assembly.Location)
 
 if (!(Test-Path -LiteralPath $GameRoot)) {
@@ -144,8 +145,12 @@ if (Test-Path -LiteralPath $distModDir) {
     Remove-Item -LiteralPath $distModDir -Recurse -Force
 }
 
+if (Test-Path -LiteralPath $legacyDistModDir) {
+    Remove-Item -LiteralPath $legacyDistModDir -Recurse -Force
+}
+
 New-Item -ItemType Directory -Force $distModDir | Out-Null
-Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "CoopStatusBubbles.json") -Force
+Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "CoopCallouts.json") -Force
 
 if (-not (Invoke-RoslynCompile -SourcePath $sourcePath -OutputAssemblyPath $outputPath -ReferencePaths $references)) {
     Add-Type `
@@ -159,9 +164,14 @@ if (-not (Invoke-RoslynCompile -SourcePath $sourcePath -OutputAssemblyPath $outp
 Write-Host "Built $outputPath"
 
 if ($Install) {
-    $targetModDir = Join-Path $GameRoot "mods\CoopStatusBubbles"
+    $targetModDir = Join-Path $GameRoot "mods\CoopCallouts"
+    $legacyTargetModDir = Join-Path $GameRoot "mods\CoopStatusBubbles"
     New-Item -ItemType Directory -Force $targetModDir | Out-Null
-    Copy-Item -LiteralPath (Join-Path $distModDir "CoopStatusBubbles.json") -Destination (Join-Path $targetModDir "CoopStatusBubbles.json") -Force
-    Copy-Item -LiteralPath (Join-Path $distModDir "CoopStatusBubbles.dll") -Destination (Join-Path $targetModDir "CoopStatusBubbles.dll") -Force
+    Copy-Item -LiteralPath (Join-Path $distModDir "CoopCallouts.json") -Destination (Join-Path $targetModDir "CoopCallouts.json") -Force
+    Copy-Item -LiteralPath (Join-Path $distModDir "CoopCallouts.dll") -Destination (Join-Path $targetModDir "CoopCallouts.dll") -Force
+    if (Test-Path -LiteralPath $legacyTargetModDir) {
+        Remove-Item -LiteralPath $legacyTargetModDir -Recurse -Force
+        Write-Host "Removed legacy install $legacyTargetModDir"
+    }
     Write-Host "Installed $targetModDir"
 }

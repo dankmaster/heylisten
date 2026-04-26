@@ -6,9 +6,9 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\CoopStatusBubbles\CoopStatusBubbles.json"
+$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
 $distRoot = Join-Path $repoRoot "dist"
-$distModDir = Join-Path $distRoot "CoopStatusBubbles"
+$distModDir = Join-Path $distRoot "CoopCallouts"
 
 & (Join-Path $PSScriptRoot "build.ps1") -GameRoot $GameRoot
 
