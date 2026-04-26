@@ -64,6 +64,8 @@ This does all of the following:
 
 By default this creates a public GitHub release. Add `-Draft` if you want the GitHub release to stay in draft mode.
 
+If you are intentionally refreshing an existing version tag, add `-MoveTag`.
+
 For first-time Nexus setup, either set:
 
 ```powershell

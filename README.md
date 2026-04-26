@@ -115,6 +115,8 @@ Use this from your own machine when you want to build against your local Slay th
 
 The script keeps game DLLs local. GitHub only receives the built release zip, and Nexus Mods receives that same zip.
 
+If you are intentionally refreshing an existing version tag, add `-MoveTag`.
+
 For the first Nexus upload from this machine, set your Nexus API key:
 
 ```powershell
