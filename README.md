@@ -1,38 +1,55 @@
 # Co-op Callouts
 
-Native speech-bubble callouts for Slay the Spire 2 co-op teammates.
+Native co-op speech-bubble callouts for Slay the Spire 2.
 
-The mod shows the game's native speech bubble VFX when another player has useful setup cards such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, or support cards. Bubbles can be clicked to acknowledge them, and ModConfig adds settings for playable-only filtering, support callouts, and the display timer.
+Co-op Callouts watches teammate hands during multiplayer combat and uses the game's own speech bubble VFX to point out useful setup cards. It keeps the UI lightweight: bubbles can be clicked away, can auto-hide on a timer, and disappear while the Timeline screen is open.
+
+## Features
+
+- Native game speech bubbles, attached through the normal combat VFX layer.
+- Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
+- Click any callout bubble to acknowledge it.
+- Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
+- Optional filtering to only show cards a teammate can currently afford and play.
+- Timeline-aware cleanup so callouts do not linger over Timeline UI.
 
 ## Install
 
-Download the release zip and extract it into your Slay the Spire 2 install so the files look like this:
+Download the release zip and extract it into your Slay the Spire 2 install folder.
+
+The final layout should be:
 
 ```text
 mods/CoopCallouts/CoopCallouts.dll
 mods/CoopCallouts/CoopCallouts.json
 ```
 
-The internal folder, file names, and mod id are `CoopCallouts`. The mod migrates settings from the old `CoopStatusBubbles` config path on first launch.
+Launch the game normally after installing.
 
 ## Settings
 
-If ModConfig is installed, this mod exposes:
+The mod works without extra configuration. If ModConfig is installed, it adds:
 
 - `Enable Bubbles`
 - `Playable Now Only`
 - `Include Support`
-- `Bubble Timer`, from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
+- `Bubble Timer`
 
-## Build Locally
+Settings are stored under:
 
-The build needs assemblies from a local Slay the Spire 2 install. Do not commit game binaries.
+```text
+%APPDATA%/SlayTheSpire2/CoopCallouts/config.json
+```
+
+## Build
+
+The build script uses assemblies from a local Slay the Spire 2 install. Do not commit or redistribute game binaries.
 
 ```powershell
 .\scripts\build.ps1 -GameRoot "<Slay the Spire 2 install folder>"
 ```
 
-To build and copy the mod into the local game install:
+To build and install into that local game folder:
 
 ```powershell
 .\scripts\build.ps1 -GameRoot "<Slay the Spire 2 install folder>" -Install
@@ -40,15 +57,19 @@ To build and copy the mod into the local game install:
 
 You can also set `STS2_GAME_ROOT` and omit `-GameRoot`.
 
-## Package For Nexus
+## Package
 
 ```powershell
 .\scripts\package.ps1 -GameRoot "<Slay the Spire 2 install folder>"
 ```
 
-The upload zip is written to `dist/Co-op-Callouts-<version>.zip`.
+The package is written to:
 
-## Publish A GitHub Draft Release
+```text
+dist/Co-op-Callouts-<version>.zip
+```
+
+## GitHub Release
 
 Make sure the working tree is clean, then run:
 
@@ -56,20 +77,4 @@ Make sure the working tree is clean, then run:
 .\scripts\publish-github-release.ps1 -GameRoot "<Slay the Spire 2 install folder>"
 ```
 
-This creates or reuses tag `v<version>`, pushes it, and creates a draft GitHub release with the packaged zip attached.
-
-## Nexus Upload Notes
-
-Use the zip from `dist/` as the main file. Suggested short description:
-
-```text
-Native speech-bubble callouts for co-op teammates when they have helpful setup cards, with click-to-acknowledge and a configurable timer.
-```
-
-Suggested install text:
-
-```text
-Extract the archive into your Slay the Spire 2 mods folder so it looks like:
-mods/CoopCallouts/CoopCallouts.dll
-mods/CoopCallouts/CoopCallouts.json
-```
+The script builds the package, creates or reuses tag `v<version>`, pushes the tag, and attaches the zip to a draft GitHub release.

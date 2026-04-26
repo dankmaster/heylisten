@@ -67,8 +67,6 @@ namespace CoopCallouts
 
             try
             {
-                MigrateLegacyConfig(path);
-
                 if (!File.Exists(path))
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -148,24 +146,6 @@ namespace CoopCallouts
         {
             var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
             return Path.Combine(appDataDir, "SlayTheSpire2", "CoopCallouts", "config.json");
-        }
-
-        private static void MigrateLegacyConfig(string path)
-        {
-            if (File.Exists(path))
-            {
-                return;
-            }
-
-            var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
-            var legacyPath = Path.Combine(appDataDir, "SlayTheSpire2", "CoopStatusBubbles", "config.json");
-            if (!File.Exists(legacyPath))
-            {
-                return;
-            }
-
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.Copy(legacyPath, path, false);
         }
     }
 
