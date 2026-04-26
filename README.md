@@ -15,16 +15,37 @@ Co-op Callouts watches teammate hands during multiplayer combat and uses the gam
 
 ## Install
 
-Download the release zip and extract it into your Slay the Spire 2 install folder.
+Download `Co-op-Callouts-<version>.zip` and extract it into your Slay the Spire 2 install folder.
 
-The final layout should be:
+The zip already includes the `mods` folder, so the final layout should be:
 
 ```text
-mods/CoopCallouts/CoopCallouts.dll
-mods/CoopCallouts/CoopCallouts.json
+Slay the Spire 2/
+  mods/
+    CoopCallouts/
+      CoopCallouts.dll
+      CoopCallouts.json
 ```
 
 Launch the game normally after installing.
+
+### Vortex / Nexus Mods
+
+Upload `Co-op-Callouts-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder.
+
+Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
+
+### Direct Mods Folder Install
+
+`Co-op-Callouts-<version>-mod-folder.zip` is a fallback package for users who want to drop the mod directly into the existing game `mods` folder.
+
+```text
+Slay the Spire 2/
+  mods/
+    CoopCallouts/
+      CoopCallouts.dll
+      CoopCallouts.json
+```
 
 ## Settings
 
@@ -67,7 +88,10 @@ The package is written to:
 
 ```text
 dist/Co-op-Callouts-<version>.zip
+dist/Co-op-Callouts-<version>-mod-folder.zip
 ```
+
+The main zip is the game-root and Vortex/Nexus package. The `-mod-folder` zip is only for users manually copying into `Slay the Spire 2/mods`.
 
 ## GitHub Release
 
@@ -78,3 +102,5 @@ Make sure the working tree is clean, then run:
 ```
 
 The script builds the package, creates or reuses tag `v<version>`, pushes the tag, and attaches the zip to a draft GitHub release.
+
+If you intentionally need to refresh an existing tag for the same version, pass `-MoveTag`.

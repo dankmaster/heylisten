@@ -8,3 +8,4 @@
 - Add a ModConfig bubble timer slider.
 - Add options for playable-only filtering and generic support callouts.
 - Hide callouts while the Timeline screen is active.
+- Package the main release zip for game-root extraction and Nexus/Vortex installs.
