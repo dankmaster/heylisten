@@ -3,7 +3,7 @@ param(
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$ReleaseAssetName,
     [string]$DisplayName = "Co-op Callouts",
-    [string]$Description = "Vortex-ready Co-op Callouts release.",
+    [string]$Description,
     [string]$FileCategory = "main",
     [switch]$ArchiveExistingFile,
     [switch]$ConfigureApiKey,
@@ -12,8 +12,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "common.ps1")
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
+$fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -28,9 +31,11 @@ if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
     $ReleaseAssetName = "Co-op-Callouts-$Version.zip"
 }
 
-if ([string]::IsNullOrWhiteSpace($FileGroupId)) {
-    throw "Nexus file group ID is required. Pass -FileGroupId or set NEXUSMODS_FILE_GROUP_ID."
-}
+$FileGroupId = Resolve-NexusFileGroupId $FileGroupId
+$Description = Resolve-TextFromFileOrDefault `
+    -Value $Description `
+    -Path $fileDescriptionPath `
+    -Default "Vortex-ready Co-op Callouts release."
 
 Push-Location $repoRoot
 try {

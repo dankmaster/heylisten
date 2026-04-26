@@ -3,7 +3,7 @@ param(
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$ZipPath,
     [string]$DisplayName = "Co-op Callouts",
-    [string]$Description = "Vortex-ready Co-op Callouts release.",
+    [string]$Description,
     [string]$FileCategory = "main",
     [string]$NexusApiKey = $env:NEXUSMODS_API_KEY,
     [string]$ActionDir,
@@ -15,8 +15,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "common.ps1")
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
+$fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -31,9 +34,11 @@ if ([string]::IsNullOrWhiteSpace($ZipPath)) {
     $ZipPath = Join-Path $repoRoot "dist\Co-op-Callouts-$Version.zip"
 }
 
-if ([string]::IsNullOrWhiteSpace($FileGroupId)) {
-    throw "Nexus file group ID is required. Pass -FileGroupId or set NEXUSMODS_FILE_GROUP_ID."
-}
+$FileGroupId = Resolve-NexusFileGroupId $FileGroupId
+$Description = Resolve-TextFromFileOrDefault `
+    -Value $Description `
+    -Path $fileDescriptionPath `
+    -Default "Vortex-ready Co-op Callouts release."
 
 if (!(Test-Path -LiteralPath $ZipPath)) {
     throw "Release zip was not found: $ZipPath"
@@ -111,6 +116,7 @@ if ($DryRun) {
     Write-Host "  Version: $Version"
     Write-Host "  File group: $FileGroupId"
     Write-Host "  Display name: $DisplayName"
+    Write-Host "  Description: $Description"
     Write-Host "  Category: $FileCategory"
     Write-Host "  Archive existing file: $archiveExisting"
     return

@@ -17,14 +17,14 @@ https://www.nexusmods.com/slaythespire2/mods/3
 To install the GitHub release used for local testing:
 
 ```powershell
-.\scripts\install-lan-multiplayer.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\install-lan-multiplayer.ps1
 ```
 
 For the current local STS2 build, the upstream LAN DLL can hit a `Label.font` compatibility error. Clone the LAN source next to this repo and rebuild the patched DLL:
 
 ```powershell
 gh repo clone kmyuhkyuk/SlayTheSpire2.LAN.Multiplayer ..\SlayTheSpire2.LAN.Multiplayer
-.\scripts\build-patched-lan-multiplayer.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\build-patched-lan-multiplayer.ps1
 ```
 
 The LAN mod adds LAN Host and Join Friends options. Host from client 1, then join from client 2 with:
@@ -38,7 +38,7 @@ The LAN mod adds LAN Host and Join Friends options. Host from client 1, then joi
 From the repo root:
 
 ```powershell
-.\scripts\launch-local-coop-test.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\launch-local-coop-test.ps1
 ```
 
 The script builds and installs Co-op Callouts, then launches two windowed clients side by side with reduced FPS and muted audio.

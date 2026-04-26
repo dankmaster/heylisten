@@ -5,6 +5,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "common.ps1")
+
 if ($PSVersionTable.PSEdition -ne "Core") {
     $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
     if ($pwsh) {
@@ -25,10 +27,7 @@ if ($PSVersionTable.PSEdition -ne "Core") {
     }
 }
 
-if ([string]::IsNullOrWhiteSpace($GameRoot)) {
-    $GameRoot = "<Slay the Spire 2 install folder>"
-}
-
+$GameRoot = Resolve-Sts2GameRoot $GameRoot
 $dataDir = Join-Path $GameRoot "data_sts2_windows_x86_64"
 $sourceDir = Join-Path $SourceRoot "SlayTheSpire2.LAN.Multiplayer"
 $targetDll = Join-Path $GameRoot "mods\SlayTheSpire2.LAN.Multiplayer\SlayTheSpire2.LAN.Multiplayer.dll"

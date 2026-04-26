@@ -17,6 +17,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "common.ps1")
+
 if ($PSVersionTable.PSEdition -ne "Core") {
     $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
     if ($pwsh) {
@@ -43,10 +45,7 @@ if ($PSVersionTable.PSEdition -ne "Core") {
     }
 }
 
-if ([string]::IsNullOrWhiteSpace($GameRoot)) {
-    $GameRoot = "<Slay the Spire 2 install folder>"
-}
-
+$GameRoot = Resolve-Sts2GameRoot $GameRoot
 if ($Clients -lt 1 -or $Clients -gt 4) {
     throw "Clients must be between 1 and 4."
 }

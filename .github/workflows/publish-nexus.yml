@@ -10,6 +10,7 @@ on:
       file_group_id:
         description: Nexus Mods file group ID from the mod page API Info menu
         required: true
+        default: "<nexus-file-group-id>"
       release_asset_name:
         description: GitHub release asset to publish
         required: true

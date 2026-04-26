@@ -67,21 +67,21 @@ Settings are stored under:
 The build script uses assemblies from a local Slay the Spire 2 install. Do not commit or redistribute game binaries.
 
 ```powershell
-.\scripts\build.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\build.ps1
 ```
 
 To build and install into that local game folder:
 
 ```powershell
-.\scripts\build.ps1 -GameRoot "<Slay the Spire 2 install folder>" -Install
+.\scripts\build.ps1 -Install
 ```
 
-You can also set `STS2_GAME_ROOT` and omit `-GameRoot`.
+The scripts auto-detect the game folder when this repo lives under the local game workspace. You can also set `STS2_GAME_ROOT` or pass `-GameRoot` explicitly.
 
 ## Package
 
 ```powershell
-.\scripts\package.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\package.ps1
 ```
 
 The package is written to:
@@ -98,7 +98,7 @@ The main zip is the game-root and Vortex/Nexus package. The `-mod-folder` zip is
 Make sure the working tree is clean, then run:
 
 ```powershell
-.\scripts\publish-github-release.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\publish-github-release.ps1
 ```
 
 The script builds the package, creates or reuses tag `v<version>`, pushes the tag, and attaches the zip to a draft GitHub release.
@@ -110,10 +110,12 @@ If you intentionally need to refresh an existing tag for the same version, pass 
 Use this from your own machine when you want to build against your local Slay the Spire 2 install, publish the GitHub release, and upload the same zip to Nexus Mods:
 
 ```powershell
-.\scripts\publish-local-release.ps1 -FileGroupId "<nexus-file-group-id>" -ArchiveExistingFile
+.\scripts\publish-local-release.ps1 -ArchiveExistingFile
 ```
 
 The script keeps game DLLs local. GitHub only receives the built release zip, and Nexus Mods receives that same zip.
+
+The Nexus file group defaults to `<nexus-file-group-id>`; override with `-FileGroupId` or `NEXUSMODS_FILE_GROUP_ID` only if the Nexus page changes.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
@@ -126,7 +128,7 @@ $env:NEXUSMODS_API_KEY = "<nexus-api-key>"
 or let the script prompt for it and save it to your Windows user environment:
 
 ```powershell
-.\scripts\publish-local-release.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureNexusApiKey -SaveNexusApiKey
+.\scripts\publish-local-release.ps1 -ConfigureNexusApiKey -SaveNexusApiKey
 ```
 
 ## Nexus Mods
@@ -134,16 +136,18 @@ or let the script prompt for it and save it to your Windows user environment:
 After the GitHub release is ready and the Nexus mod page has a file group, you can upload the local package directly:
 
 ```powershell
-.\scripts\publish-nexus-local.ps1 -FileGroupId "<nexus-file-group-id>"
+.\scripts\publish-nexus-local.ps1
 ```
 
 There is also a GitHub-hosted Nexus workflow available if you want GitHub to perform only the final Nexus upload:
 
 ```powershell
-.\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>"
+.\scripts\publish-nexus.ps1
 ```
 
 Both Nexus publish paths use the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
+
+Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). The local Nexus upload uses [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md) as the default file description.
 
 ## Local Co-op Testing
 

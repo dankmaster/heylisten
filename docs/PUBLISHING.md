@@ -5,8 +5,10 @@
 Run the package script from the repo root:
 
 ```powershell
-.\scripts\package.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\package.ps1
 ```
+
+Scripts auto-detect the game folder when this repo lives under the local game workspace. You can also set `STS2_GAME_ROOT` or pass `-GameRoot` explicitly.
 
 It creates and verifies two archives:
 
@@ -37,7 +39,7 @@ CoopCallouts/
 Commit the release changes first, then run:
 
 ```powershell
-.\scripts\publish-github-release.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+.\scripts\publish-github-release.ps1
 ```
 
 The script builds both archives, verifies their layouts, pushes `main`, creates or reuses `v<version>`, and uploads both zip files to a draft GitHub release.
@@ -45,7 +47,7 @@ The script builds both archives, verifies their layouts, pushes `main`, creates 
 If the same version tag already exists and you intentionally want to refresh it:
 
 ```powershell
-.\scripts\publish-github-release.ps1 -GameRoot "<Slay the Spire 2 install folder>" -MoveTag
+.\scripts\publish-github-release.ps1 -MoveTag
 ```
 
 ## Local Full Publish
@@ -53,7 +55,7 @@ If the same version tag already exists and you intentionally want to refresh it:
 The preferred release flow runs from your own machine so the build can reference your local Slay the Spire 2 install without uploading game DLLs anywhere.
 
 ```powershell
-.\scripts\publish-local-release.ps1 -FileGroupId "<nexus-file-group-id>" -ArchiveExistingFile
+.\scripts\publish-local-release.ps1 -ArchiveExistingFile
 ```
 
 This does all of the following:
@@ -75,7 +77,7 @@ $env:NEXUSMODS_API_KEY = "<nexus-api-key>"
 or let the script prompt and save it to your Windows user environment:
 
 ```powershell
-.\scripts\publish-local-release.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureNexusApiKey -SaveNexusApiKey
+.\scripts\publish-local-release.ps1 -ConfigureNexusApiKey -SaveNexusApiKey
 ```
 
 ## Nexus Mods / Vortex
@@ -90,32 +92,36 @@ https://www.nexusmods.com/site/mods/1727
 
 The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/CoopCallouts`.
 
+The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexus upload uses [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md) as the default file description.
+
 ## Nexus Upload Workflow
 
-Nexus Mods' upload API can update an existing mod file group. Create the Nexus mod page manually first and upload the first main file through the site. Then find the file group ID from the Files tab `API Info` menu or the Manage Files edit menu.
+Nexus Mods' upload API can update an existing mod file group. This repo defaults to file group `<nexus-file-group-id>`.
+
+The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so the page description in `NEXUS_PAGE.md` still needs to be pasted into the Nexus page editor.
 
 To upload directly from your local machine:
 
 ```powershell
-.\scripts\publish-nexus-local.ps1 -FileGroupId "<nexus-file-group-id>"
+.\scripts\publish-nexus-local.ps1
 ```
 
 To configure the local API key once:
 
 ```powershell
-.\scripts\publish-nexus-local.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureApiKey -SaveApiKey
+.\scripts\publish-nexus-local.ps1 -ConfigureApiKey -SaveApiKey
 ```
 
 The repo also keeps a GitHub-hosted Nexus workflow as an optional fallback. Configure the GitHub secret once:
 
 ```powershell
-.\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureApiKey
+.\scripts\publish-nexus.ps1 -ConfigureApiKey
 ```
 
 For later remote uploads:
 
 ```powershell
-.\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>" -Watch
+.\scripts\publish-nexus.ps1 -Watch
 ```
 
 You can also set the file group ID in the shell:

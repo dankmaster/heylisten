@@ -6,6 +6,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "common.ps1")
+
 if ($PSVersionTable.PSEdition -ne "Core") {
     $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
     if ($pwsh) {
@@ -30,10 +32,7 @@ if ($PSVersionTable.PSEdition -ne "Core") {
     }
 }
 
-if ([string]::IsNullOrWhiteSpace($GameRoot)) {
-    $GameRoot = "<Slay the Spire 2 install folder>"
-}
-
+$GameRoot = Resolve-Sts2GameRoot $GameRoot
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $downloadRoot = Join-Path $repoRoot "local-test-downloads"
 $archiveName = "SlayTheSpire2.LAN.Multiplayer.Release_$Version.7z"
