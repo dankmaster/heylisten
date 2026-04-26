@@ -24,7 +24,7 @@ using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace CoopCallouts
+namespace HeyListen
 {
     internal enum StatusCallout
     {
@@ -54,16 +54,16 @@ namespace CoopCallouts
         public CardPile Hand;
     }
 
-    internal sealed class CoopCalloutsConfig
+    internal sealed class HeyListenConfig
     {
         public bool Enabled { get; set; } = true;
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
 
-        public static CoopCalloutsConfig Load()
+        public static HeyListenConfig Load()
         {
-            var config = new CoopCalloutsConfig();
+            var config = new HeyListenConfig();
             var path = GetConfigPath();
 
             try
@@ -83,7 +83,7 @@ namespace CoopCallouts
             }
             catch (Exception ex)
             {
-                Log.Error($"[CoopCallouts] Failed to load config: {ex.Message}");
+                Log.Error($"[heylisten] Failed to load config: {ex.Message}");
             }
 
             return config;
@@ -99,7 +99,7 @@ namespace CoopCallouts
             }
             catch (Exception ex)
             {
-                Log.Error($"[CoopCallouts] Failed to save config: {ex.Message}");
+                Log.Error($"[heylisten] Failed to save config: {ex.Message}");
             }
         }
 
@@ -146,16 +146,17 @@ namespace CoopCallouts
         private static string GetConfigPath()
         {
             var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
-            return Path.Combine(appDataDir, "SlayTheSpire2", "CoopCallouts", "config.json");
+            return Path.Combine(appDataDir, "SlayTheSpire2", "heylisten", "config.json");
         }
     }
 
     [ModInitializer("Initialize")]
     public static class ModEntry
     {
-        private const string ModId = "CoopCallouts";
-        private const string ModDisplayName = "Co-op Callouts";
+        private const string ModId = "heylisten";
+        private const string ModDisplayName = "Hey, listen!";
         private const string BubbleIntro = "Hey, listen!";
+        private const string SelfSubject = "[color=#36d9ff][b]I[/b][/color]";
         private const string EnabledKey = "enabled";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
         private const string ShowGenericSupportKey = "show_generic_support";
@@ -166,7 +167,7 @@ namespace CoopCallouts
         private const float MaxBubbleDisplaySeconds = 60f;
         private const double ManualBubbleLifetimeSeconds = 600d;
 
-        private static readonly Harmony Harmony = new Harmony("coopcallouts.patch");
+        private static readonly Harmony Harmony = new Harmony("heylisten.patch");
         private static readonly Hashtable BubblesByPlayerKey = new Hashtable();
         private static readonly Hashtable AcknowledgedMessagesByPlayerKey = new Hashtable();
         private static readonly Hashtable LastMessagesByPlayerKey = new Hashtable();
@@ -356,7 +357,7 @@ namespace CoopCallouts
         private static long _lastRefreshAtUnixMs;
         private static RunManager _observedRunManager;
         private static CombatManager _observedCombatManager;
-        private static CoopCalloutsConfig Config = new CoopCalloutsConfig();
+        private static HeyListenConfig Config = new HeyListenConfig();
         private static bool _modConfigRegistered;
         private static bool _assemblyLoadHooked;
 
@@ -364,17 +365,17 @@ namespace CoopCallouts
         {
             try
             {
-                Config = CoopCalloutsConfig.Load();
+                Config = HeyListenConfig.Load();
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 HookAssemblyLoad();
                 Harmony.PatchAll(Assembly.GetExecutingAssembly());
                 TryWireManagerEvents();
                 TryRegisterModConfigUi();
-                Log.Info("[CoopCallouts] Initialized.");
+                Log.Info("[heylisten] Initialized.");
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopCallouts] Failed to apply Harmony patches: " + ex);
+                Log.Error("[heylisten] Failed to apply Harmony patches: " + ex);
             }
         }
 
@@ -495,6 +496,10 @@ namespace CoopCallouts
                 : null;
 
             var activePlayerKeys = new Hashtable();
+            var localNetIdIsUnique = IsNetIdUnique(runState, localNetId);
+            var localPlayer = localNetIdIsUnique
+                ? ResolveLocalPlayer(runState, combatState, localNetId)
+                : null;
             for (var i = 0; i < runState.Players.Count; i++)
             {
                 var player = runState.Players[i];
@@ -515,7 +520,8 @@ namespace CoopCallouts
                     continue;
                 }
 
-                var message = BuildBubbleMessage(callouts);
+                var isLocalPlayer = IsLocalPlayer(player, localPlayer, localNetId, localNetIdIsUnique);
+                var message = BuildBubbleMessage(callouts, isLocalPlayer);
                 UpdateLastMessage(playerKey, message);
                 if (AcknowledgeExpiredBubbleIfNeeded(playerKey, message) ||
                     IsAcknowledged(playerKey, message))
@@ -582,7 +588,7 @@ namespace CoopCallouts
                     configTypeEnum,
                     EnabledKey,
                     "Enable Bubbles",
-                    "Master toggle for teammate speech bubbles in co-op combat.",
+                    "Master toggle for self and teammate speech bubbles in co-op combat.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.Enabled,
                     new Action<object>(value => ApplyEnabledSetting(ConvertToBool(value, true), true))), 0);
@@ -591,7 +597,7 @@ namespace CoopCallouts
                     configTypeEnum,
                     OnlyShowPlayableNowKey,
                     "Playable Now Only",
-                    "Only show bubbles for teammate cards they can currently afford and play this turn.",
+                    "Only show bubbles for cards the holder can currently afford and play this turn.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.OnlyShowPlayableNow,
                     new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 1);
@@ -630,7 +636,7 @@ namespace CoopCallouts
                     null);
                 if (registerMethod == null)
                 {
-                    Log.Error("[CoopCallouts] Could not find ModConfigApi.Register.");
+                    Log.Error("[heylisten] Could not find ModConfigApi.Register.");
                     return;
                 }
 
@@ -649,11 +655,11 @@ namespace CoopCallouts
                     false);
                 Config.Save();
 
-                Log.Info("[CoopCallouts] Registered settings with ModConfig.");
+                Log.Info("[heylisten] Registered settings with ModConfig.");
             }
             catch (Exception ex)
             {
-                Log.Error($"[CoopCallouts] Failed to register ModConfig UI: {ex.Message}");
+                Log.Error($"[heylisten] Failed to register ModConfig UI: {ex.Message}");
             }
         }
 
@@ -857,7 +863,7 @@ namespace CoopCallouts
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopCallouts] Failed to wire state listeners: " + ex.Message);
+                Log.Error("[heylisten] Failed to wire state listeners: " + ex.Message);
             }
         }
 
@@ -1301,6 +1307,75 @@ namespace CoopCallouts
             return true;
         }
 
+        private static Player ResolveLocalPlayer(RunState runState, CombatState combatState, ulong localNetId)
+        {
+            if (localNetId == 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                var player = runState != null ? runState.GetPlayer(localNetId) : null;
+                if (player != null)
+                {
+                    return player;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var player = combatState != null ? combatState.GetPlayer(localNetId) : null;
+                if (player != null)
+                {
+                    return player;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
+        private static bool IsNetIdUnique(RunState runState, ulong netId)
+        {
+            if (runState == null || runState.Players == null)
+            {
+                return false;
+            }
+
+            var count = 0;
+            for (var i = 0; i < runState.Players.Count; i++)
+            {
+                var player = runState.Players[i];
+                if (player != null && player.NetId == netId)
+                {
+                    count++;
+                }
+            }
+
+            return count == 1;
+        }
+
+        private static bool IsLocalPlayer(Player player, Player localPlayer, ulong localNetId, bool localNetIdIsUnique)
+        {
+            if (player == null)
+            {
+                return false;
+            }
+
+            if (localPlayer != null)
+            {
+                return ReferenceEquals(player, localPlayer);
+            }
+
+            return localNetIdIsUnique && player.NetId == localNetId;
+        }
+
         private static RunState GetRunState(RunManager runManager)
         {
             if (runManager == null)
@@ -1616,29 +1691,32 @@ namespace CoopCallouts
             return false;
         }
 
-        private static string BuildBubbleMessage(StatusCallout[] callouts)
+        private static string BuildBubbleMessage(StatusCallout[] callouts, bool isLocalPlayer)
         {
             if (callouts.Length == 0)
             {
                 return string.Empty;
             }
 
+            var subject = isLocalPlayer ? SelfSubject : "I";
             if (callouts.Length == 1)
             {
                 if (callouts[0] == StatusCallout.Support)
                 {
-                    return BubbleIntro + "\nI got a " + GetDisplayName(callouts[0]);
+                    return isLocalPlayer
+                        ? BubbleIntro + "\n" + subject + " have a " + GetDisplayName(callouts[0])
+                        : BubbleIntro + "\nI got a " + GetDisplayName(callouts[0]);
                 }
 
-                return BubbleIntro + "\nI have " + GetDisplayName(callouts[0]);
+                return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]);
             }
 
             if (callouts.Length == 2)
             {
-                return BubbleIntro + "\nI have " + GetDisplayName(callouts[0]) + " + " + GetDisplayName(callouts[1]);
+                return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " + " + GetDisplayName(callouts[1]);
             }
 
-            return BubbleIntro + "\nI have " + GetDisplayName(callouts[0]) + " +" + (callouts.Length - 1);
+            return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " +" + (callouts.Length - 1);
         }
 
         private static string GetDisplayName(StatusCallout callout)
@@ -1660,7 +1738,7 @@ namespace CoopCallouts
                 case StatusCallout.Weak:
                     return "Weak";
                 default:
-                    return "support-card";
+                    return "support card";
             }
         }
 
@@ -1815,6 +1893,7 @@ namespace CoopCallouts
             var gameBubble = TryCreateGameSpeechBubble(message, player.Creature, primaryCallout);
             if (TryAttachGameSpeechBubble(gameBubble, fallbackRoot))
             {
+                EnableRichText(gameBubble);
                 var displaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 bubble = new BubbleUi();
                 bubble.Creature = player.Creature;
@@ -1881,7 +1960,7 @@ namespace CoopCallouts
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopCallouts] Failed to attach game speech bubble: " + ex.Message);
+                Log.Error("[heylisten] Failed to attach game speech bubble: " + ex.Message);
                 try
                 {
                     speechBubble.QueueFree();
@@ -1935,16 +2014,51 @@ namespace CoopCallouts
                 var lifetimeSeconds = displaySeconds <= 0f
                     ? ManualBubbleLifetimeSeconds
                     : displaySeconds;
-                return NSpeechBubbleVfx.Create(
+                var bubble = NSpeechBubbleVfx.Create(
                     message,
                     creature,
                     lifetimeSeconds,
                     GetVfxColor(primaryCallout));
+                EnableRichText(bubble);
+                return bubble;
             }
             catch (Exception ex)
             {
-                Log.Error("[CoopCallouts] Failed to create game speech bubble: " + ex.Message);
+                Log.Error("[heylisten] Failed to create game speech bubble: " + ex.Message);
                 return null;
+            }
+        }
+
+        private static void EnableRichText(Node node)
+        {
+            if (node == null || !GodotObject.IsInstanceValid(node))
+            {
+                return;
+            }
+
+            var type = node.GetType();
+            if (string.Equals(type.FullName, "MegaCrit.Sts2.addons.mega_text.MegaRichTextLabel", StringComparison.Ordinal))
+            {
+                try
+                {
+                    var textProperty = type.GetProperty("Text", BindingFlags.Public | BindingFlags.Instance);
+                    var bbcodeProperty = type.GetProperty("BbcodeEnabled", BindingFlags.Public | BindingFlags.Instance);
+                    var text = textProperty != null ? textProperty.GetValue(node) as string : null;
+                    bbcodeProperty?.SetValue(node, true);
+                    if (textProperty != null && text != null)
+                    {
+                        textProperty.SetValue(node, text);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            var children = node.GetChildren();
+            for (var i = 0; i < children.Count; i++)
+            {
+                EnableRichText(children[i] as Node);
             }
         }
 

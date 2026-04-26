@@ -1,6 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
-    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [string]$Version,
     [switch]$NoDraft,
     [switch]$MoveTag
@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
+$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = $manifest.version
@@ -28,7 +28,7 @@ try {
         throw "Working tree is dirty. Commit changes before publishing a release."
     }
 
-    $BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
+    $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
     $packageOutput = & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot -Version $Version
     $zipPaths = @($packageOutput |
         Where-Object { $_ -is [string] -and $_.Trim().EndsWith(".zip") } |
@@ -45,7 +45,7 @@ try {
     $existingTag = git tag --list $tag
     $headCommit = (git rev-parse HEAD).Trim()
     if (!$existingTag) {
-        git tag -a $tag -m "Co-op Callouts $Version"
+        git tag -a $tag -m "Hey, listen! $Version"
     }
     else {
         $tagCommit = (git rev-list -n 1 $tag).Trim()
@@ -54,7 +54,7 @@ try {
                 throw "Tag $tag already points at $tagCommit instead of HEAD $headCommit. Bump the version, or rerun with -MoveTag to repoint it."
             }
 
-            git tag -fa $tag -m "Co-op Callouts $Version"
+            git tag -fa $tag -m "Hey, listen! $Version"
         }
     }
 
@@ -89,8 +89,8 @@ try {
         $args = @(
             "release", "create", $tag
         ) + $zipPaths + @(
-            "--title", "Co-op Callouts $Version",
-            "--notes", "Release package for Co-op Callouts $Version."
+            "--title", "Hey, listen! $Version",
+            "--notes", "Release package for Hey, listen! $Version."
         )
 
         if (!$NoDraft) {

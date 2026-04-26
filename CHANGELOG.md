@@ -2,6 +2,11 @@
 
 ## 0.9
 
+- Rename the visible mod name to `Hey, listen!`.
+- Add self callouts with highlighted `I have ...` messaging for your own character.
+
+## 0.9
+
 - Polish release candidate for Nexus Mods.
 - Use native game speech bubbles as the only callout display.
 - Add click-to-acknowledge behavior and configurable bubble timers.
@@ -12,7 +17,7 @@
 
 ## 0.3.0
 
-- First packaged release as `CoopCallouts`.
+- First packaged release as `heylisten`.
 - Use native game speech bubbles for teammate setup-card callouts.
 - Add click-to-acknowledge behavior.
 - Add a ModConfig bubble timer slider.

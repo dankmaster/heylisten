@@ -14,15 +14,15 @@ on:
       release_asset_name:
         description: GitHub release asset to publish
         required: true
-        default: "Co-op-Callouts-0.9.zip"
+        default: "Hey-Listen-0.9.zip"
       display_name:
         description: Nexus file display name
         required: false
-        default: "Co-op Callouts"
+        default: "Hey, listen!"
       description:
         description: Nexus file description
         required: false
-        default: "Vortex-ready Co-op Callouts release."
+        default: "Vortex-ready Hey, listen! release."
       file_category:
         description: Nexus file category
         required: false

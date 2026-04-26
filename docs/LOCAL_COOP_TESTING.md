@@ -2,7 +2,7 @@
 
 You can run multiple Slay the Spire 2 clients on one PC for quick co-op mod testing.
 
-This is good for checking Co-op Callouts behavior such as teammate bubbles, click-to-acknowledge, timer cleanup, and Timeline cleanup. It is not full save/profile isolation: both clients use the same Windows user and the same SlayTheSpire2 AppData folder.
+This is good for checking Hey, listen! behavior such as self/teammate bubbles, click-to-acknowledge, timer cleanup, and Timeline cleanup. It is not full save/profile isolation: both clients use the same Windows user and the same SlayTheSpire2 AppData folder.
 
 ## LAN Mod
 
@@ -41,7 +41,7 @@ From the repo root:
 .\scripts\launch-local-coop-test.ps1
 ```
 
-The script builds and installs Co-op Callouts, then launches two windowed clients side by side with reduced FPS and muted audio.
+The script builds and installs Hey, listen!, then launches two windowed clients side by side with reduced FPS and muted audio.
 
 For direct executable launches, Steamworks expects `steam_appid.txt` in the game folder. The script creates it from `-SteamAppId`, `STS2_STEAM_APP_ID`, or ignored `local.settings.json` if it is missing.
 

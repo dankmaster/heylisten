@@ -1,50 +1,51 @@
-# Co-op Callouts
+# Hey, listen!
 
 Native co-op speech-bubble callouts for Slay the Spire 2.
 
-Co-op Callouts watches teammate hands during multiplayer combat and uses the game's own speech bubble VFX to point out useful setup cards. It keeps the UI lightweight: bubbles can be clicked away, can auto-hide on a timer, and disappear while the Timeline screen is open.
+Hey, listen! watches co-op combat hands and uses the game's own speech bubble VFX to point out useful setup cards for you and your teammates. It keeps the UI lightweight: bubbles can be clicked away, can auto-hide on a timer, and disappear while the Timeline screen is open.
 
 ## Features
 
 - Native game speech bubbles, attached through the normal combat VFX layer.
 - Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
+- Self callouts highlight the `I` in `I have ...` so your own character's bubble reads differently from teammate bubbles.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
-- Optional filtering to only show cards a teammate can currently afford and play.
+- Optional filtering to only show cards the holder can currently afford and play.
 - Timeline-aware cleanup so callouts do not linger over Timeline UI.
 
 ## Install
 
-Download `Co-op-Callouts-<version>.zip` and extract it into your Slay the Spire 2 install folder.
+Download `Hey-Listen-<version>.zip` and extract it into your Slay the Spire 2 install folder.
 
 The zip already includes the `mods` folder, so the final layout should be:
 
 ```text
 Slay the Spire 2/
   mods/
-    CoopCallouts/
-      CoopCallouts.dll
-      CoopCallouts.json
+    heylisten/
+      heylisten.dll
+      heylisten.json
 ```
 
 Launch the game normally after installing.
 
 ### Vortex / Nexus Mods
 
-Upload `Co-op-Callouts-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder.
+Upload `Hey-Listen-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder.
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
 ### Direct Mods Folder Install
 
-`Co-op-Callouts-<version>-mod-folder.zip` is a fallback package for users who want to drop the mod directly into the existing game `mods` folder.
+`Hey-Listen-<version>-mod-folder.zip` is a fallback package for users who want to drop the mod directly into the existing game `mods` folder.
 
 ```text
 Slay the Spire 2/
   mods/
-    CoopCallouts/
-      CoopCallouts.dll
-      CoopCallouts.json
+    heylisten/
+      heylisten.dll
+      heylisten.json
 ```
 
 ## Settings
@@ -59,7 +60,7 @@ The mod works without extra configuration. If ModConfig is installed, it adds:
 Settings are stored under:
 
 ```text
-%APPDATA%/SlayTheSpire2/CoopCallouts/config.json
+%APPDATA%/SlayTheSpire2/heylisten/config.json
 ```
 
 ## Build
@@ -78,7 +79,7 @@ To build and install into that local game folder:
 
 The scripts auto-detect the game folder when this repo lives under the local game workspace. You can also set `STS2_GAME_ROOT` or pass `-GameRoot` explicitly.
 
-Build outputs default to `dist/`. To use another local build folder, set `COOPCALLOUTS_BUILD_ROOT` or pass `-BuildRoot`.
+Build outputs default to `dist/`. To use another local build folder, set `HEYLISTEN_BUILD_ROOT` or pass `-BuildRoot`.
 
 Local machine values such as the Nexus file group ID and Steam app ID can live in ignored `local.settings.json`. Copy `local.settings.example.json` and fill it in for your machine.
 
@@ -91,8 +92,8 @@ Local machine values such as the Nexus file group ID and Steam app ID can live i
 By default, the package is written to:
 
 ```text
-dist/Co-op-Callouts-<version>.zip
-dist/Co-op-Callouts-<version>-mod-folder.zip
+dist/Hey-Listen-<version>.zip
+dist/Hey-Listen-<version>-mod-folder.zip
 ```
 
 The main zip is the game-root and Vortex/Nexus package. The `-mod-folder` zip is only for users manually copying into `Slay the Spire 2/mods`.

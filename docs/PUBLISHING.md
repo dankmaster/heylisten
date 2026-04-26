@@ -13,7 +13,7 @@ Scripts auto-detect the game folder when this repo lives under the local game wo
 Build outputs default to `dist/`, which is gitignored. To use another local build folder, set:
 
 ```powershell
-$env:COOPCALLOUTS_BUILD_ROOT = ".build"
+$env:HEYLISTEN_BUILD_ROOT = ".build"
 ```
 
 or pass `-BuildRoot` to the build, package, and publish scripts.
@@ -23,25 +23,25 @@ Local machine values can live in ignored `local.settings.json`. Copy `local.sett
 By default, it creates and verifies two archives:
 
 ```text
-dist/Co-op-Callouts-<version>.zip
-dist/Co-op-Callouts-<version>-mod-folder.zip
+dist/Hey-Listen-<version>.zip
+dist/Hey-Listen-<version>-mod-folder.zip
 ```
 
-Use `Co-op-Callouts-<version>.zip` as the main public file. It is packed relative to the game root:
+Use `Hey-Listen-<version>.zip` as the main public file. It is packed relative to the game root:
 
 ```text
 mods/
-  CoopCallouts/
-    CoopCallouts.dll
-    CoopCallouts.json
+  heylisten/
+    heylisten.dll
+    heylisten.json
 ```
 
-Use `Co-op-Callouts-<version>-mod-folder.zip` only as an optional fallback for users who manually copy a folder into `Slay the Spire 2/mods`:
+Use `Hey-Listen-<version>-mod-folder.zip` only as an optional fallback for users who manually copy a folder into `Slay the Spire 2/mods`:
 
 ```text
-CoopCallouts/
-  CoopCallouts.dll
-  CoopCallouts.json
+heylisten/
+  heylisten.dll
+  heylisten.json
 ```
 
 ## GitHub
@@ -72,7 +72,7 @@ This does all of the following:
 
 - Builds the mod against your local game files.
 - Creates or updates the GitHub release and uploads the release zips.
-- Uploads `Co-op-Callouts-<version>.zip` to Nexus Mods from your machine.
+- Uploads `Hey-Listen-<version>.zip` to Nexus Mods from your machine.
 
 By default this creates a public GitHub release. Add `-Draft` if you want the GitHub release to stay in draft mode.
 
@@ -92,7 +92,7 @@ or let the script prompt and save it to your Windows user environment:
 
 ## Nexus Mods / Vortex
 
-Upload the generated `Co-op-Callouts-<version>.zip` as the main file on the Slay The Spire II Nexus Mods page and keep `Mod Manager Download` enabled.
+Upload the generated `Hey-Listen-<version>.zip` as the main file on the Slay The Spire II Nexus Mods page and keep `Mod Manager Download` enabled.
 
 Vortex support depends on Vortex recognizing Slay the Spire 2. If the user's Vortex install does not recognize it yet, point them to the Slay the Spire 2 Vortex Extension:
 
@@ -100,7 +100,7 @@ Vortex support depends on Vortex recognizing Slay the Spire 2. If the user's Vor
 https://www.nexusmods.com/site/mods/1727
 ```
 
-The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/CoopCallouts`.
+The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/heylisten`.
 
 The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexus upload uses [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md) as the default file description.
 
@@ -142,4 +142,4 @@ $env:NEXUSMODS_FILE_GROUP_ID = "<nexus-file-group-id>"
 .\scripts\publish-nexus.ps1 -Watch
 ```
 
-The remote helper script triggers `.github/workflows/publish-nexus.yml`. That workflow downloads `Co-op-Callouts-<version>.zip` from the matching GitHub release and uploads it with the official `Nexus-Mods/upload-action`.
+The remote helper script triggers `.github/workflows/publish-nexus.yml`. That workflow downloads `Hey-Listen-<version>.zip` from the matching GitHub release and uploads it with the official `Nexus-Mods/upload-action`.

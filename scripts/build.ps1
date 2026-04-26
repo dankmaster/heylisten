@@ -1,6 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
-    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [switch]$Install
 )
 
@@ -34,12 +34,12 @@ if ($PSVersionTable.PSEdition -ne "Core") {
 
 $GameRoot = Resolve-Sts2GameRoot $GameRoot
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
+$BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 $dataDir = Join-Path $GameRoot "data_sts2_windows_x86_64"
-$sourcePath = Join-Path $repoRoot "src\CoopCallouts.cs"
-$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
-$distModDir = Join-Path $BuildRoot "CoopCallouts"
-$outputPath = Join-Path $distModDir "CoopCallouts.dll"
+$sourcePath = Join-Path $repoRoot "src\HeyListen.cs"
+$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$distModDir = Join-Path $BuildRoot "heylisten"
+$outputPath = Join-Path $distModDir "heylisten.dll"
 $runtimeDir = Split-Path -Parent ([System.Text.RegularExpressions.Regex].Assembly.Location)
 
 if (!(Test-Path -LiteralPath $GameRoot)) {
@@ -143,7 +143,7 @@ if (Test-Path -LiteralPath $distModDir) {
 }
 
 New-Item -ItemType Directory -Force $distModDir | Out-Null
-Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "CoopCallouts.json") -Force
+Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "heylisten.json") -Force
 
 if (-not (Invoke-RoslynCompile -SourcePath $sourcePath -OutputAssemblyPath $outputPath -ReferencePaths $references)) {
     Add-Type `
@@ -157,9 +157,15 @@ if (-not (Invoke-RoslynCompile -SourcePath $sourcePath -OutputAssemblyPath $outp
 Write-Host "Built $outputPath"
 
 if ($Install) {
-    $targetModDir = Join-Path $GameRoot "mods\CoopCallouts"
+    $targetModDir = Join-Path $GameRoot "mods\heylisten"
+    $legacyTargetModDir = Join-Path $GameRoot ("mods\" + "Coop" + "Callouts")
+    if (Test-Path -LiteralPath $legacyTargetModDir) {
+        Remove-Item -LiteralPath $legacyTargetModDir -Recurse -Force
+        Write-Host "Removed legacy install $legacyTargetModDir"
+    }
+
     New-Item -ItemType Directory -Force $targetModDir | Out-Null
-    Copy-Item -LiteralPath (Join-Path $distModDir "CoopCallouts.json") -Destination (Join-Path $targetModDir "CoopCallouts.json") -Force
-    Copy-Item -LiteralPath (Join-Path $distModDir "CoopCallouts.dll") -Destination (Join-Path $targetModDir "CoopCallouts.dll") -Force
+    Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.json") -Destination (Join-Path $targetModDir "heylisten.json") -Force
+    Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.dll") -Destination (Join-Path $targetModDir "heylisten.dll") -Force
     Write-Host "Installed $targetModDir"
 }

@@ -1,6 +1,6 @@
 param(
     [string]$Version,
-    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [switch]$ModFolderPackage
 )
 
@@ -9,8 +9,8 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
-$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
+$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -22,10 +22,10 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 }
 
 $packageName = if ($ModFolderPackage) {
-    "Co-op-Callouts-$Version-mod-folder.zip"
+    "Hey-Listen-$Version-mod-folder.zip"
 }
 else {
-    "Co-op-Callouts-$Version.zip"
+    "Hey-Listen-$Version.zip"
 }
 
 $zipPath = Join-Path $BuildRoot $packageName
@@ -35,14 +35,14 @@ if (!(Test-Path -LiteralPath $zipPath)) {
 
 $expectedEntries = if ($ModFolderPackage) {
     @(
-        "CoopCallouts/CoopCallouts.dll",
-        "CoopCallouts/CoopCallouts.json"
+        "heylisten/heylisten.dll",
+        "heylisten/heylisten.json"
     )
 }
 else {
     @(
-        "mods/CoopCallouts/CoopCallouts.dll",
-        "mods/CoopCallouts/CoopCallouts.json"
+        "mods/heylisten/heylisten.dll",
+        "mods/heylisten/heylisten.json"
     )
 }
 

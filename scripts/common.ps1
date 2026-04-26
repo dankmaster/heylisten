@@ -1,9 +1,9 @@
-function Get-CoopCalloutsRepoRoot {
+function Get-HeyListenRepoRoot {
     return Split-Path -Parent $PSScriptRoot
 }
 
-function Get-CoopCalloutsLocalSettings {
-    $localSettingsPath = Join-Path (Get-CoopCalloutsRepoRoot) "local.settings.json"
+function Get-HeyListenLocalSettings {
+    $localSettingsPath = Join-Path (Get-HeyListenRepoRoot) "local.settings.json"
     if (!(Test-Path -LiteralPath $localSettingsPath)) {
         return $null
     }
@@ -24,7 +24,7 @@ function Resolve-Sts2GameRoot {
         return [System.IO.Path]::GetFullPath($env:STS2_GAME_ROOT)
     }
 
-    $repoRoot = Get-CoopCalloutsRepoRoot
+    $repoRoot = Get-HeyListenRepoRoot
     $candidates = @(
         (Join-Path $repoRoot "..\..\.."),
         (Join-Path $repoRoot ".."),
@@ -57,7 +57,7 @@ function Resolve-NexusFileGroupId {
         return $env:NEXUSMODS_FILE_GROUP_ID
     }
 
-    $localSettings = Get-CoopCalloutsLocalSettings
+    $localSettings = Get-HeyListenLocalSettings
     if ($localSettings -and ![string]::IsNullOrWhiteSpace($localSettings.NexusFileGroupId)) {
         return $localSettings.NexusFileGroupId
     }
@@ -83,7 +83,7 @@ function Resolve-SteamAppId {
         return $env:STS2_STEAM_APP_ID
     }
 
-    $localSettings = Get-CoopCalloutsLocalSettings
+    $localSettings = Get-HeyListenLocalSettings
     if ($localSettings -and ![string]::IsNullOrWhiteSpace($localSettings.SteamAppId)) {
         return $localSettings.SteamAppId
     }
@@ -95,20 +95,20 @@ function Resolve-SteamAppId {
     throw "Steam app ID is required for direct executable launches. Set STS2_STEAM_APP_ID, add local.settings.json, pass -SteamAppId, or use -NoSteamAppIdFile."
 }
 
-function Resolve-CoopCalloutsBuildRoot {
+function Resolve-HeyListenBuildRoot {
     param(
         [string]$BuildRoot
     )
 
     if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
-        $BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT
+        $BuildRoot = $env:HEYLISTEN_BUILD_ROOT
     }
 
     if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
-        $BuildRoot = Join-Path (Get-CoopCalloutsRepoRoot) "dist"
+        $BuildRoot = Join-Path (Get-HeyListenRepoRoot) "dist"
     }
     elseif (![System.IO.Path]::IsPathRooted($BuildRoot)) {
-        $BuildRoot = Join-Path (Get-CoopCalloutsRepoRoot) $BuildRoot
+        $BuildRoot = Join-Path (Get-HeyListenRepoRoot) $BuildRoot
     }
 
     return [System.IO.Path]::GetFullPath($BuildRoot)

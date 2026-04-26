@@ -1,7 +1,7 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
     [string]$Version,
-    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,9 +9,9 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
-$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
-$distModDir = Join-Path $BuildRoot "CoopCallouts"
+$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
+$distModDir = Join-Path $BuildRoot "heylisten"
 $gameRootPackageRoot = Join-Path $BuildRoot "package-game-root"
 $gameRootPackageModsDir = Join-Path $gameRootPackageRoot "mods"
 $modFolderPackageRoot = Join-Path $BuildRoot "package-mod-folder"
@@ -27,8 +27,8 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine package version."
 }
 
-$gameRootZipPath = Join-Path $BuildRoot "Co-op-Callouts-$Version.zip"
-$modFolderZipPath = Join-Path $BuildRoot "Co-op-Callouts-$Version-mod-folder.zip"
+$gameRootZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+$modFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
 
 foreach ($path in @($gameRootPackageRoot, $modFolderPackageRoot, $gameRootZipPath, $modFolderZipPath)) {
     Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $path

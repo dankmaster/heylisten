@@ -1,9 +1,9 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
-    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [string]$Version,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
-    [string]$DisplayName = "Co-op Callouts",
+    [string]$DisplayName = "Hey, listen!",
     [string]$Description,
     [string]$FileCategory = "main",
     [string]$NexusApiKey = $env:NEXUSMODS_API_KEY,
@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
+$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
@@ -33,12 +33,12 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine release version."
 }
 
-$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
-$zipPath = Join-Path $BuildRoot "Co-op-Callouts-$Version.zip"
+$BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
+$zipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
 $Description = Resolve-TextFromFileOrDefault `
     -Value $Description `
     -Path $fileDescriptionPath `
-    -Default "Vortex-ready Co-op Callouts release."
+    -Default "Vortex-ready Hey, listen! release."
 
 Push-Location $repoRoot
 try {
