@@ -36,11 +36,12 @@ try {
     git push origin HEAD
     git push origin $tag
 
-    $releaseExists = $true
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     gh release view $tag *> $null
-    if ($LASTEXITCODE -ne 0) {
-        $releaseExists = $false
-    }
+    $releaseViewExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    $releaseExists = $releaseViewExitCode -eq 0
 
     if ($releaseExists) {
         gh release upload $tag $zipPath --clobber
