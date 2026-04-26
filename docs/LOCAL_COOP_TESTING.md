@@ -14,6 +14,12 @@ Known option:
 https://www.nexusmods.com/slaythespire2/mods/3
 ```
 
+To install the GitHub release used for local testing:
+
+```powershell
+.\scripts\install-lan-multiplayer.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+```
+
 The LAN mod adds LAN Host and Join Friends options. Host from client 1, then join from client 2 with:
 
 ```text
@@ -31,6 +37,8 @@ From the repo root:
 The script builds and installs Co-op Callouts, then launches two windowed clients side by side with reduced FPS and muted audio.
 
 For direct executable launches, Steamworks expects `steam_appid.txt` in the game folder. The script creates it with Slay the Spire 2's Steam app id, `<steam-app-id>`, if it is missing.
+
+Do not pass `-QuitAfter` when you want to actually play. That option is only for quick startup smoke tests.
 
 Useful options:
 

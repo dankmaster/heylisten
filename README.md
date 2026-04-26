@@ -107,4 +107,4 @@ If you intentionally need to refresh an existing tag for the same version, pass 
 
 ## Local Co-op Testing
 
-Use `scripts/launch-local-coop-test.ps1` to launch multiple local game clients for multiplayer UI testing. See [docs/LOCAL_COOP_TESTING.md](docs/LOCAL_COOP_TESTING.md).
+Use `scripts/install-lan-multiplayer.ps1` and `scripts/launch-local-coop-test.ps1` to launch multiple playable local game clients for multiplayer UI testing. See [docs/LOCAL_COOP_TESTING.md](docs/LOCAL_COOP_TESTING.md).
