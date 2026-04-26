@@ -54,9 +54,16 @@ namespace HeyListen
         public CardPile Hand;
     }
 
+    internal sealed class CalloutInfo
+    {
+        public StatusCallout Callout;
+        public int UpgradeLevel;
+    }
+
     internal sealed class HeyListenConfig
     {
         public bool Enabled { get; set; } = true;
+        public bool ShowSelfCallouts { get; set; } = true;
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
@@ -77,9 +84,14 @@ namespace HeyListen
 
                 var raw = File.ReadAllText(path);
                 config.Enabled = ReadBool(raw, "enabled", config.Enabled);
+                config.ShowSelfCallouts = ReadBool(raw, "show_self_callouts", config.ShowSelfCallouts);
                 config.OnlyShowPlayableNow = ReadBool(raw, "only_show_playable_now", config.OnlyShowPlayableNow);
                 config.ShowGenericSupport = ReadBool(raw, "show_generic_support", config.ShowGenericSupport);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
+                if (!HasKey(raw, "show_self_callouts"))
+                {
+                    config.Save();
+                }
             }
             catch (Exception ex)
             {
@@ -108,6 +120,7 @@ namespace HeyListen
             var sb = new StringBuilder();
             sb.AppendLine("{");
             sb.AppendLine($"  \"enabled\": {Enabled.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_self_callouts\": {ShowSelfCallouts.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"only_show_playable_now\": {OnlyShowPlayableNow.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_generic_support\": {ShowGenericSupport.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
@@ -127,6 +140,17 @@ namespace HeyListen
             return bool.TryParse(match.Groups[1].Value, out var value)
                 ? value
                 : fallback;
+        }
+
+        private static bool HasKey(string raw, string key)
+        {
+            if (string.IsNullOrEmpty(raw))
+            {
+                return false;
+            }
+
+            var pattern = "\"" + Regex.Escape(key) + "\"\\s*:";
+            return Regex.IsMatch(raw, pattern, RegexOptions.IgnoreCase);
         }
 
         private static float ReadFloat(string raw, string key, float fallback)
@@ -158,6 +182,7 @@ namespace HeyListen
         private const string BubbleIntro = "Hey, listen!";
         private const string SelfSubject = "[color=#36d9ff][b]I[/b][/color]";
         private const string EnabledKey = "enabled";
+        private const string ShowSelfCalloutsKey = "show_self_callouts";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
         private const string ShowGenericSupportKey = "show_generic_support";
         private const string DisplaySecondsKey = "display_seconds";
@@ -521,6 +546,11 @@ namespace HeyListen
                 }
 
                 var isLocalPlayer = IsLocalPlayer(player, localPlayer, localNetId, localNetIdIsUnique);
+                if (isLocalPlayer && !Config.ShowSelfCallouts)
+                {
+                    continue;
+                }
+
                 var message = BuildBubbleMessage(callouts, isLocalPlayer);
                 UpdateLastMessage(playerKey, message);
                 if (AcknowledgeExpiredBubbleIfNeeded(playerKey, message) ||
@@ -530,7 +560,7 @@ namespace HeyListen
                     continue;
                 }
 
-                UpsertBubble(player, playerKey, root, message, callouts[0]);
+                UpsertBubble(player, playerKey, root, message, callouts[0].Callout);
                 activePlayerKeys[playerKey] = true;
             }
 
@@ -582,7 +612,7 @@ namespace HeyListen
 
             try
             {
-                var entries = Array.CreateInstance(entryType, 4);
+                var entries = Array.CreateInstance(entryType, 5);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -595,12 +625,21 @@ namespace HeyListen
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
+                    ShowSelfCalloutsKey,
+                    "Show Self Callouts",
+                    "Show bubbles over your own character when you have useful setup cards.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowSelfCallouts,
+                    new Action<object>(value => ApplyShowSelfCalloutsSetting(ConvertToBool(value, true), true))), 1);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
                     OnlyShowPlayableNowKey,
                     "Playable Now Only",
                     "Only show bubbles for cards the holder can currently afford and play this turn.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.OnlyShowPlayableNow,
-                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 1);
+                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 2);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -609,7 +648,7 @@ namespace HeyListen
                     "Show a generic Support bubble for ally-helping cards even when no named status keyword was matched.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.ShowGenericSupport,
-                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 2);
+                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 3);
                 var displaySecondsEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -626,7 +665,7 @@ namespace HeyListen
                     MaxBubbleDisplaySeconds,
                     1f,
                     "{0}s");
-                entries.SetValue(displaySecondsEntry, 3);
+                entries.SetValue(displaySecondsEntry, 4);
 
                 var registerMethod = apiType.GetMethod(
                     "Register",
@@ -644,6 +683,9 @@ namespace HeyListen
                 _modConfigRegistered = true;
 
                 ApplyEnabledSetting(ReadModConfigBool(apiType, EnabledKey, Config.Enabled), false);
+                ApplyShowSelfCalloutsSetting(
+                    ReadModConfigBool(apiType, ShowSelfCalloutsKey, Config.ShowSelfCallouts),
+                    false);
                 ApplyOnlyShowPlayableNowSetting(
                     ReadModConfigBool(apiType, OnlyShowPlayableNowKey, Config.OnlyShowPlayableNow),
                     false);
@@ -817,6 +859,17 @@ namespace HeyListen
             }
 
             ClearAllBubbles();
+        }
+
+        private static void ApplyShowSelfCalloutsSetting(bool showSelfCallouts, bool save)
+        {
+            Config.ShowSelfCallouts = showSelfCallouts;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ForceRefresh();
         }
 
         private static void ApplyOnlyShowPlayableNowSetting(bool onlyShowPlayableNow, bool save)
@@ -1467,19 +1520,20 @@ namespace HeyListen
             return player.PlayerCombatState.HasEnoughResourcesFor(card, out reason);
         }
 
-        private static StatusCallout[] CollectCallouts(Player player)
+        private static CalloutInfo[] CollectCallouts(Player player)
         {
             if (!IsPlayerAbleToActNow(player))
             {
-                return new StatusCallout[0];
+                return new CalloutInfo[0];
             }
 
             var seen = new bool[CalloutPriority.Length];
+            var upgradeLevels = new int[CalloutPriority.Length];
             var hand = player.PlayerCombatState != null ? player.PlayerCombatState.Hand : null;
             var cards = hand != null ? hand.Cards : null;
             if (cards == null)
             {
-                return new StatusCallout[0];
+                return new CalloutInfo[0];
             }
 
             for (var i = 0; i < cards.Count; i++)
@@ -1498,7 +1552,13 @@ namespace HeyListen
                 var cardCallouts = ClassifyCard(card);
                 for (var j = 0; j < cardCallouts.Length; j++)
                 {
-                    seen[(int)cardCallouts[j]] = true;
+                    var callout = cardCallouts[j];
+                    var calloutIndex = (int)callout.Callout;
+                    seen[calloutIndex] = true;
+                    if (callout.UpgradeLevel > upgradeLevels[calloutIndex])
+                    {
+                        upgradeLevels[calloutIndex] = callout.UpgradeLevel;
+                    }
                 }
             }
 
@@ -1511,14 +1571,16 @@ namespace HeyListen
                 }
             }
 
-            var ordered = new StatusCallout[count];
+            var ordered = new CalloutInfo[count];
             var index = 0;
             for (var i = 0; i < CalloutPriority.Length; i++)
             {
                 var callout = CalloutPriority[i];
                 if (seen[(int)callout])
                 {
-                    ordered[index] = callout;
+                    ordered[index] = new CalloutInfo();
+                    ordered[index].Callout = callout;
+                    ordered[index].UpgradeLevel = upgradeLevels[(int)callout];
                     index++;
                 }
             }
@@ -1526,18 +1588,19 @@ namespace HeyListen
             return ordered;
         }
 
-        private static StatusCallout[] ClassifyCard(CardModel card)
+        private static CalloutInfo[] ClassifyCard(CardModel card)
         {
-            var results = new StatusCallout[8];
+            var results = new CalloutInfo[8];
             var resultCount = 0;
             var text = BuildCardSearchText(card);
             if (string.IsNullOrWhiteSpace(text))
             {
-                return new StatusCallout[0];
+                return new CalloutInfo[0];
             }
 
             var normalizedText = NormalizeForMatch(text);
-            var normalizedCardName = NormalizeForMatch(card.GetType().Name);
+            var normalizedCardNames = BuildNormalizedCardNames(card);
+            var upgradeLevel = GetCardUpgradeLevel(card);
             var targetType = card.TargetType;
             var targetsEnemy =
                 targetType == TargetType.AnyEnemy ||
@@ -1553,58 +1616,74 @@ namespace HeyListen
             var isSupportCard =
                 card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly ||
                 targetsAlly ||
-                MatchesExactNormalized(normalizedCardName, SupportCardNames) ||
+                MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames) ||
                 MatchesAnyNormalized(normalizedText, SupportTokens);
 
-            if (MatchesExactNormalized(normalizedCardName, VulnerableCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, VulnerableCardNames) ||
                 (targetsEnemy && MatchesAnyNormalized(normalizedText, VulnerableTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Vulnerable);
+                AddCallout(results, ref resultCount, StatusCallout.Vulnerable, upgradeLevel);
             }
 
-            if (MatchesExactNormalized(normalizedCardName, WeakCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, WeakCardNames) ||
                 (targetsEnemy && MatchesAnyNormalized(normalizedText, WeakTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Weak);
+                AddCallout(results, ref resultCount, StatusCallout.Weak, upgradeLevel);
             }
 
-            if (MatchesExactNormalized(normalizedCardName, StrengthCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, StrengthCardNames) ||
                 ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, StrengthTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Strength);
+                AddCallout(results, ref resultCount, StatusCallout.Strength, upgradeLevel);
             }
 
-            if (MatchesExactNormalized(normalizedCardName, VigorCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, VigorCardNames) ||
                 ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, VigorTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Vigor);
+                AddCallout(results, ref resultCount, StatusCallout.Vigor, upgradeLevel);
             }
 
-            if (MatchesExactNormalized(normalizedCardName, DoubleDamageCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, DoubleDamageCardNames) ||
                 ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, DoubleDamageTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.DoubleDamage);
+                AddCallout(results, ref resultCount, StatusCallout.DoubleDamage, upgradeLevel);
             }
 
-            if (MatchesExactNormalized(normalizedCardName, FocusCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, FocusCardNames) ||
                 ((targetsSelf || targetsAlly) && MatchesAnyNormalized(normalizedText, FocusTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Focus);
+                AddCallout(results, ref resultCount, StatusCallout.Focus, upgradeLevel);
             }
 
-            if (MatchesExactNormalized(normalizedCardName, PoisonCardNames) ||
+            if (MatchesAnyExactNormalized(normalizedCardNames, PoisonCardNames) ||
                 (targetsEnemy && MatchesAnyNormalized(normalizedText, PoisonTokens)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Poison);
+                AddCallout(results, ref resultCount, StatusCallout.Poison, upgradeLevel);
             }
 
             if (isSupportCard && Config.ShowGenericSupport)
             {
-                AddCallout(results, ref resultCount, StatusCallout.Support);
+                AddCallout(results, ref resultCount, StatusCallout.Support, upgradeLevel);
             }
 
-            var final = new StatusCallout[resultCount];
+            var final = new CalloutInfo[resultCount];
             Array.Copy(results, final, resultCount);
+            return final;
+        }
+
+        private static string[] BuildNormalizedCardNames(CardModel card)
+        {
+            var names = new string[3];
+            var count = 0;
+            AddNormalizedCardName(names, ref count, card.GetType().Name);
+            AddNormalizedCardName(names, ref count, card.Title);
+            AddNormalizedCardName(
+                names,
+                ref count,
+                card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty);
+
+            var final = new string[count];
+            Array.Copy(names, final, count);
             return final;
         }
 
@@ -1621,6 +1700,83 @@ namespace HeyListen
             return string.Join(" ", parts, 0, partCount).ToLowerInvariant();
         }
 
+        private static void AddNormalizedCardName(string[] names, ref int count, string text)
+        {
+            var normalized = NormalizeCardNameForMatch(text);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return;
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                if (names[i] == normalized)
+                {
+                    return;
+                }
+            }
+
+            names[count] = normalized;
+            count++;
+        }
+
+        private static int GetCardUpgradeLevel(CardModel card)
+        {
+            if (card == null)
+            {
+                return 0;
+            }
+
+            try
+            {
+                if (card.CurrentUpgradeLevel > 0)
+                {
+                    return card.CurrentUpgradeLevel;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                if (card.IsUpgraded)
+                {
+                    return 1;
+                }
+            }
+            catch
+            {
+            }
+
+            return Math.Max(
+                GetUpgradeLevelFromText(card.Title),
+                GetUpgradeLevelFromText(card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty));
+        }
+
+        private static int GetUpgradeLevelFromText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return 0;
+            }
+
+            var match = Regex.Match(text.Trim(), "\\+(\\d*)\\s*$");
+            if (!match.Success)
+            {
+                return 0;
+            }
+
+            if (match.Groups.Count > 1 &&
+                int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var level) &&
+                level > 0)
+            {
+                return level;
+            }
+
+            return 1;
+        }
+
         private static void AddText(string[] parts, ref int count, string text)
         {
             if (!string.IsNullOrWhiteSpace(text))
@@ -1630,17 +1786,24 @@ namespace HeyListen
             }
         }
 
-        private static void AddCallout(StatusCallout[] results, ref int count, StatusCallout callout)
+        private static void AddCallout(CalloutInfo[] results, ref int count, StatusCallout callout, int upgradeLevel)
         {
             for (var i = 0; i < count; i++)
             {
-                if (results[i] == callout)
+                if (results[i].Callout == callout)
                 {
+                    if (upgradeLevel > results[i].UpgradeLevel)
+                    {
+                        results[i].UpgradeLevel = upgradeLevel;
+                    }
+
                     return;
                 }
             }
 
-            results[count] = callout;
+            results[count] = new CalloutInfo();
+            results[count].Callout = callout;
+            results[count].UpgradeLevel = upgradeLevel;
             count++;
         }
 
@@ -1691,7 +1854,7 @@ namespace HeyListen
             return false;
         }
 
-        private static string BuildBubbleMessage(StatusCallout[] callouts, bool isLocalPlayer)
+        private static string BuildBubbleMessage(CalloutInfo[] callouts, bool isLocalPlayer)
         {
             if (callouts.Length == 0)
             {
@@ -1701,11 +1864,12 @@ namespace HeyListen
             var subject = isLocalPlayer ? SelfSubject : "I";
             if (callouts.Length == 1)
             {
-                if (callouts[0] == StatusCallout.Support)
+                if (callouts[0].Callout == StatusCallout.Support)
                 {
+                    var article = callouts[0].UpgradeLevel > 0 ? "an" : "a";
                     return isLocalPlayer
-                        ? BubbleIntro + "\n" + subject + " have a " + GetDisplayName(callouts[0])
-                        : BubbleIntro + "\nI got a " + GetDisplayName(callouts[0]);
+                        ? BubbleIntro + "\n" + subject + " have " + article + " " + GetDisplayName(callouts[0])
+                        : BubbleIntro + "\nI got " + article + " " + GetDisplayName(callouts[0]);
                 }
 
                 return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]);
@@ -1713,13 +1877,44 @@ namespace HeyListen
 
             if (callouts.Length == 2)
             {
-                return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " + " + GetDisplayName(callouts[1]);
+                return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " and " + GetDisplayName(callouts[1]);
             }
 
-            return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " +" + (callouts.Length - 1);
+            return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " +" + (callouts.Length - 1) + " more";
         }
 
-        private static string GetDisplayName(StatusCallout callout)
+        private static string GetDisplayName(CalloutInfo callout)
+        {
+            var displayName = GetPlainDisplayName(callout.Callout);
+            if (callout.UpgradeLevel > 0)
+            {
+                displayName = callout.Callout == StatusCallout.Support
+                    ? "upgraded " + displayName
+                    : displayName + GetUpgradeSuffix(callout.UpgradeLevel);
+            }
+
+            var color = GetTextColor(callout.Callout);
+            if (string.IsNullOrEmpty(color))
+            {
+                return displayName;
+            }
+
+            return "[color=" + color + "][b]" + displayName + "[/b][/color]";
+        }
+
+        private static string GetUpgradeSuffix(int upgradeLevel)
+        {
+            if (upgradeLevel <= 0)
+            {
+                return string.Empty;
+            }
+
+            return upgradeLevel == 1
+                ? "+"
+                : "+" + upgradeLevel.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string GetPlainDisplayName(StatusCallout callout)
         {
             switch (callout)
             {
@@ -1739,6 +1934,29 @@ namespace HeyListen
                     return "Weak";
                 default:
                     return "support card";
+            }
+        }
+
+        private static string GetTextColor(StatusCallout callout)
+        {
+            switch (callout)
+            {
+                case StatusCallout.Vulnerable:
+                    return "#d85a2a";
+                case StatusCallout.DoubleDamage:
+                    return "#d63232";
+                case StatusCallout.Strength:
+                    return "#b87500";
+                case StatusCallout.Vigor:
+                    return "#238f3b";
+                case StatusCallout.Focus:
+                    return "#2378d9";
+                case StatusCallout.Poison:
+                    return "#2a9d5b";
+                case StatusCallout.Weak:
+                    return "#5a74d6";
+                default:
+                    return string.Empty;
             }
         }
 
@@ -1789,6 +2007,24 @@ namespace HeyListen
             return new string(buffer, 0, count);
         }
 
+        private static string NormalizeCardNameForMatch(string text)
+        {
+            return NormalizeForMatch(StripCardUpgradeMarker(text));
+        }
+
+        private static string StripCardUpgradeMarker(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var stripped = Regex.Replace(text.Trim(), "\\s*\\++\\s*\\d*\\s*$", string.Empty);
+            return string.IsNullOrWhiteSpace(stripped)
+                ? text
+                : stripped;
+        }
+
         private static bool MatchesAnyNormalized(string normalizedText, params string[] normalizedTokens)
         {
             if (string.IsNullOrEmpty(normalizedText))
@@ -1799,6 +2035,24 @@ namespace HeyListen
             for (var i = 0; i < normalizedTokens.Length; i++)
             {
                 if (normalizedText.IndexOf(normalizedTokens[i], StringComparison.Ordinal) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MatchesAnyExactNormalized(string[] normalizedTexts, params string[] normalizedTokens)
+        {
+            if (normalizedTexts == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < normalizedTexts.Length; i++)
+            {
+                if (MatchesExactNormalized(normalizedTexts[i], normalizedTokens))
                 {
                     return true;
                 }

@@ -6,11 +6,10 @@ param(
     [string]$DisplayName = "Hey, listen!",
     [string]$Description,
     [string]$FileCategory = "main",
-    [string]$NexusApiKey = $env:NEXUSMODS_API_KEY,
+    [string]$NexusApiKey,
     [string]$ActionDir,
     [switch]$ArchiveExistingFile,
     [switch]$ConfigureApiKey,
-    [switch]$SaveApiKey,
     [switch]$DryRun
 )
 
@@ -63,8 +62,12 @@ if ($DryRun) {
 }
 
 if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
+    $NexusApiKey = Resolve-NexusApiKey -Optional
+}
+
+if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
     if (!$ConfigureApiKey) {
-        throw "Nexus Mods API key is required. Set NEXUSMODS_API_KEY, pass -NexusApiKey, or rerun with -ConfigureApiKey."
+        throw "Nexus Mods API key is required. Add NEXUSMODS_API_KEY to .env, pass -NexusApiKey, or rerun with -ConfigureApiKey."
     }
 
     $secureApiKey = Read-Host "Nexus Mods API key" -AsSecureString
@@ -82,10 +85,6 @@ if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
         throw "API key was empty."
     }
 
-    if ($SaveApiKey) {
-        [Environment]::SetEnvironmentVariable("NEXUSMODS_API_KEY", $NexusApiKey, "User")
-        Write-Host "Saved NEXUSMODS_API_KEY to the current Windows user environment."
-    }
 }
 
 if ([string]::IsNullOrWhiteSpace($ActionDir)) {

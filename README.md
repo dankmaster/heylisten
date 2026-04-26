@@ -9,6 +9,7 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Native game speech bubbles, attached through the normal combat VFX layer.
 - Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
 - Self callouts highlight the `I` in `I have ...` so your own character's bubble reads differently from teammate bubbles.
+- Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
@@ -40,6 +41,7 @@ Users can install it with Nexus Mods' `Mod Manager Download` button when they ha
 The mod works without extra configuration. If ModConfig is installed, it adds:
 
 - `Enable Bubbles`
+- `Show Self Callouts`
 - `Playable Now Only`
 - `Include Support`
 - `Bubble Timer`
@@ -68,7 +70,7 @@ The scripts auto-detect the game folder when this repo lives under the local gam
 
 Build outputs default to `dist/`. To use another local build folder, set `HEYLISTEN_BUILD_ROOT` or pass `-BuildRoot`.
 
-Local machine values such as the Nexus file group ID and Steam app ID can live in ignored `local.settings.json`. Copy `local.settings.example.json` and fill it in for your machine.
+Local machine values such as the Nexus file group ID and Steam app ID can live in ignored `local.settings.json`. Local secrets such as the Nexus API key can live in ignored `.env`.
 
 ## Package
 
@@ -106,20 +108,20 @@ Use this from your own machine when you want to build against your local Slay th
 
 The script keeps game DLLs local. GitHub only receives the built release zip, and Nexus Mods receives that same zip.
 
-The Nexus file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, or ignored `local.settings.json`.
+The Nexus file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
-For the first Nexus upload from this machine, set your Nexus API key:
+For local Nexus uploads, put your Nexus API key in ignored `.env`:
 
-```powershell
-$env:NEXUSMODS_API_KEY = "<nexus-api-key>"
+```text
+NEXUSMODS_API_KEY=your-api-key
 ```
 
-or let the script prompt for it and save it to your Windows user environment:
+You can also let the script prompt for the key for the current publish run:
 
 ```powershell
-.\scripts\publish-local-release.ps1 -ConfigureNexusApiKey -SaveNexusApiKey
+.\scripts\publish-local-release.ps1 -ConfigureNexusApiKey
 ```
 
 ## Nexus Mods

@@ -18,7 +18,7 @@ $env:HEYLISTEN_BUILD_ROOT = ".build"
 
 or pass `-BuildRoot` to the build, package, and publish scripts.
 
-Local machine values can live in ignored `local.settings.json`. Copy `local.settings.example.json` and fill in the Nexus file group ID and Steam app ID for your machine.
+Local machine values can live in ignored `local.settings.json`. Local secrets such as the Nexus API key can live in ignored `.env`.
 
 By default, it creates and verifies one public archive:
 
@@ -71,16 +71,16 @@ By default this creates a public GitHub release. Add `-Draft` if you want the Gi
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
-For first-time Nexus setup, either set:
+For first-time Nexus setup, put the API key in ignored `.env`:
 
-```powershell
-$env:NEXUSMODS_API_KEY = "<nexus-api-key>"
+```text
+NEXUSMODS_API_KEY=your-api-key
 ```
 
-or let the script prompt and save it to your Windows user environment:
+or let the script prompt for it for the current publish run:
 
 ```powershell
-.\scripts\publish-local-release.ps1 -ConfigureNexusApiKey -SaveNexusApiKey
+.\scripts\publish-local-release.ps1 -ConfigureNexusApiKey
 ```
 
 ## Nexus Mods / Vortex
@@ -99,7 +99,7 @@ The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexu
 
 ## Nexus Upload Workflow
 
-Nexus Mods' upload API can update an existing mod file group. The file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `local.settings.json`, or the GitHub `NEXUSMODS_FILE_GROUP_ID` secret.
+Nexus Mods' upload API can update an existing mod file group. The file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, ignored `local.settings.json`, or the GitHub `NEXUSMODS_FILE_GROUP_ID` secret.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so the page description in `NEXUS_PAGE.md` still needs to be pasted into the Nexus page editor.
 
@@ -111,8 +111,8 @@ To upload directly from your local machine:
 
 To configure the local API key once:
 
-```powershell
-.\scripts\publish-nexus-local.ps1 -ConfigureApiKey -SaveApiKey
+```text
+NEXUSMODS_API_KEY=your-api-key
 ```
 
 The repo also keeps a GitHub-hosted Nexus workflow as an optional fallback. Configure the GitHub secrets once:

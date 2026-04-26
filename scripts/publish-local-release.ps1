@@ -6,10 +6,9 @@ param(
     [string]$DisplayName = "Hey, listen!",
     [string]$Description,
     [string]$FileCategory = "main",
-    [string]$NexusApiKey = $env:NEXUSMODS_API_KEY,
+    [string]$NexusApiKey,
     [switch]$ArchiveExistingFile,
     [switch]$ConfigureNexusApiKey,
-    [switch]$SaveNexusApiKey,
     [switch]$Draft,
     [switch]$MoveTag,
     [switch]$SkipGitHub,
@@ -43,52 +42,59 @@ $Description = Resolve-TextFromFileOrDefault `
 Push-Location $repoRoot
 try {
     if (!$SkipGitHub) {
-        $githubArgs = @(
-            "-GameRoot", $GameRoot,
-            "-BuildRoot", $BuildRoot,
-            "-Version", $Version
-        )
+        $githubArgs = @{
+            BuildRoot = $BuildRoot
+            Version = $Version
+        }
+
+        if (![string]::IsNullOrWhiteSpace($GameRoot)) {
+            $githubArgs.GameRoot = $GameRoot
+        }
 
         if (!$Draft) {
-            $githubArgs += "-NoDraft"
+            $githubArgs.NoDraft = $true
         }
 
         if ($MoveTag) {
-            $githubArgs += "-MoveTag"
+            $githubArgs.MoveTag = $true
         }
 
         & (Join-Path $PSScriptRoot "publish-github-release.ps1") @githubArgs
     }
     elseif (!(Test-Path -LiteralPath $zipPath)) {
-        & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot -Version $Version | Out-Host
+        $packageArgs = @{
+            BuildRoot = $BuildRoot
+            Version = $Version
+        }
+        if (![string]::IsNullOrWhiteSpace($GameRoot)) {
+            $packageArgs.GameRoot = $GameRoot
+        }
+
+        & (Join-Path $PSScriptRoot "package.ps1") @packageArgs | Out-Host
     }
 
     if (!$SkipNexus) {
         $FileGroupId = Resolve-NexusFileGroupId $FileGroupId
-        $nexusArgs = @(
-            "-Version", $Version,
-            "-BuildRoot", $BuildRoot,
-            "-FileGroupId", $FileGroupId,
-            "-ZipPath", $zipPath,
-            "-DisplayName", $DisplayName,
-            "-Description", $Description,
-            "-FileCategory", $FileCategory
-        )
+        $nexusArgs = @{
+            Version = $Version
+            BuildRoot = $BuildRoot
+            FileGroupId = $FileGroupId
+            ZipPath = $zipPath
+            DisplayName = $DisplayName
+            Description = $Description
+            FileCategory = $FileCategory
+        }
 
         if (![string]::IsNullOrWhiteSpace($NexusApiKey)) {
-            $nexusArgs += @("-NexusApiKey", $NexusApiKey)
+            $nexusArgs.NexusApiKey = $NexusApiKey
         }
 
         if ($ArchiveExistingFile) {
-            $nexusArgs += "-ArchiveExistingFile"
+            $nexusArgs.ArchiveExistingFile = $true
         }
 
         if ($ConfigureNexusApiKey) {
-            $nexusArgs += "-ConfigureApiKey"
-        }
-
-        if ($SaveNexusApiKey) {
-            $nexusArgs += "-SaveApiKey"
+            $nexusArgs.ConfigureApiKey = $true
         }
 
         & (Join-Path $PSScriptRoot "publish-nexus-local.ps1") @nexusArgs

@@ -29,7 +29,15 @@ try {
     }
 
     $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
-    $packageOutput = & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot -Version $Version
+    $packageArgs = @{
+        BuildRoot = $BuildRoot
+        Version = $Version
+    }
+    if (![string]::IsNullOrWhiteSpace($GameRoot)) {
+        $packageArgs.GameRoot = $GameRoot
+    }
+
+    $packageOutput = & (Join-Path $PSScriptRoot "package.ps1") @packageArgs
     $zipPaths = @($packageOutput |
         Where-Object { $_ -is [string] -and $_.Trim().EndsWith(".zip") } |
         ForEach-Object { $_.Trim() } |

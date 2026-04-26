@@ -2,6 +2,8 @@ dist/
 .build/
 build/
 local.settings.json
+.env
+.env.local
 local-test-logs/
 local-test-downloads/
 *.test.dll

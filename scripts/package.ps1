@@ -15,7 +15,14 @@ $distModDir = Join-Path $BuildRoot "heylisten"
 $gameRootPackageRoot = Join-Path $BuildRoot "package-game-root"
 $gameRootPackageModsDir = Join-Path $gameRootPackageRoot "mods"
 
-& (Join-Path $PSScriptRoot "build.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot
+$buildArgs = @{
+    BuildRoot = $BuildRoot
+}
+if (![string]::IsNullOrWhiteSpace($GameRoot)) {
+    $buildArgs.GameRoot = $GameRoot
+}
+
+& (Join-Path $PSScriptRoot "build.ps1") @buildArgs
 
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace($Version)) {
