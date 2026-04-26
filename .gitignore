@@ -1,4 +1,5 @@
 dist/
+local-test-logs/
 *.test.dll
 *.status.txt
 *.user

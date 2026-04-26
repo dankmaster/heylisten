@@ -104,3 +104,7 @@ Make sure the working tree is clean, then run:
 The script builds the package, creates or reuses tag `v<version>`, pushes the tag, and attaches the zip to a draft GitHub release.
 
 If you intentionally need to refresh an existing tag for the same version, pass `-MoveTag`.
+
+## Local Co-op Testing
+
+Use `scripts/launch-local-coop-test.ps1` to launch multiple local game clients for multiplayer UI testing. See [docs/LOCAL_COOP_TESTING.md](docs/LOCAL_COOP_TESTING.md).
