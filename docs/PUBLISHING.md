@@ -18,6 +18,8 @@ $env:COOPCALLOUTS_BUILD_ROOT = ".build"
 
 or pass `-BuildRoot` to the build, package, and publish scripts.
 
+Local machine values can live in ignored `local.settings.json`. Copy `local.settings.example.json` and fill in the Nexus file group ID and Steam app ID for your machine.
+
 By default, it creates and verifies two archives:
 
 ```text
@@ -104,7 +106,7 @@ The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexu
 
 ## Nexus Upload Workflow
 
-Nexus Mods' upload API can update an existing mod file group. This repo defaults to file group `<nexus-file-group-id>`.
+Nexus Mods' upload API can update an existing mod file group. The file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `local.settings.json`, or the GitHub `NEXUSMODS_FILE_GROUP_ID` secret.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so the page description in `NEXUS_PAGE.md` still needs to be pasted into the Nexus page editor.
 
@@ -120,10 +122,11 @@ To configure the local API key once:
 .\scripts\publish-nexus-local.ps1 -ConfigureApiKey -SaveApiKey
 ```
 
-The repo also keeps a GitHub-hosted Nexus workflow as an optional fallback. Configure the GitHub secret once:
+The repo also keeps a GitHub-hosted Nexus workflow as an optional fallback. Configure the GitHub secrets once:
 
 ```powershell
 .\scripts\publish-nexus.ps1 -ConfigureApiKey
+.\scripts\publish-nexus.ps1 -ConfigureFileGroupId
 ```
 
 For later remote uploads:

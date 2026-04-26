@@ -1,5 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
+    [string]$SteamAppId = $env:STS2_STEAM_APP_ID,
     [int]$Clients = 2,
     [int]$Width = 960,
     [int]$Height = 540,
@@ -28,7 +29,7 @@ if ($PSVersionTable.PSEdition -ne "Core") {
             "-File", $PSCommandPath
         )
 
-        foreach ($parameter in @("GameRoot", "Clients", "Width", "Height", "StartX", "StartY", "Gap", "MaxFps", "QuitAfter")) {
+        foreach ($parameter in @("GameRoot", "SteamAppId", "Clients", "Width", "Height", "StartX", "StartY", "Gap", "MaxFps", "QuitAfter")) {
             if ($PSBoundParameters.ContainsKey($parameter)) {
                 $args += @("-$parameter", $PSBoundParameters[$parameter])
             }
@@ -55,7 +56,6 @@ $gameExe = Join-Path $GameRoot "SlayTheSpire2.exe"
 $modsDir = Join-Path $GameRoot "mods"
 $logDir = Join-Path $repoRoot "local-test-logs"
 $steamAppIdPath = Join-Path $GameRoot "steam_appid.txt"
-$steamAppId = "<steam-app-id>"
 
 if (!(Test-Path -LiteralPath $gameExe)) {
     throw "Could not find SlayTheSpire2.exe under: $GameRoot"
@@ -66,14 +66,16 @@ if (!$SkipBuild) {
 }
 
 if (!$NoSteamAppIdFile) {
+    $SteamAppId = Resolve-SteamAppId $SteamAppId
+
     if (Test-Path -LiteralPath $steamAppIdPath) {
         $existingSteamAppId = (Get-Content -LiteralPath $steamAppIdPath -Raw).Trim()
-        if ($existingSteamAppId -ne $steamAppId) {
-            throw "Existing steam_appid.txt contains '$existingSteamAppId', expected '$steamAppId'. Refusing to overwrite it."
+        if ($existingSteamAppId -ne $SteamAppId) {
+            throw "Existing steam_appid.txt contains '$existingSteamAppId', expected '$SteamAppId'. Refusing to overwrite it."
         }
     }
     elseif (!$DryRun) {
-        Set-Content -LiteralPath $steamAppIdPath -Value $steamAppId -NoNewline
+        Set-Content -LiteralPath $steamAppIdPath -Value $SteamAppId -NoNewline
         Write-Host "Created $steamAppIdPath for direct local launches."
     }
 }

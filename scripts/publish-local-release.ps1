@@ -35,7 +35,6 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 
 $BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
 $zipPath = Join-Path $BuildRoot "Co-op-Callouts-$Version.zip"
-$FileGroupId = Resolve-NexusFileGroupId $FileGroupId
 $Description = Resolve-TextFromFileOrDefault `
     -Value $Description `
     -Path $fileDescriptionPath `
@@ -65,6 +64,7 @@ try {
     }
 
     if (!$SkipNexus) {
+        $FileGroupId = Resolve-NexusFileGroupId $FileGroupId
         $nexusArgs = @(
             "-Version", $Version,
             "-BuildRoot", $BuildRoot,

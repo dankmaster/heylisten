@@ -1,7 +1,14 @@
-$DefaultNexusFileGroupId = "<nexus-file-group-id>"
-
 function Get-CoopCalloutsRepoRoot {
     return Split-Path -Parent $PSScriptRoot
+}
+
+function Get-CoopCalloutsLocalSettings {
+    $localSettingsPath = Join-Path (Get-CoopCalloutsRepoRoot) "local.settings.json"
+    if (!(Test-Path -LiteralPath $localSettingsPath)) {
+        return $null
+    }
+
+    return Get-Content -LiteralPath $localSettingsPath -Raw | ConvertFrom-Json
 }
 
 function Resolve-Sts2GameRoot {
@@ -38,7 +45,8 @@ function Resolve-Sts2GameRoot {
 
 function Resolve-NexusFileGroupId {
     param(
-        [string]$FileGroupId
+        [string]$FileGroupId,
+        [switch]$Optional
     )
 
     if (![string]::IsNullOrWhiteSpace($FileGroupId)) {
@@ -49,7 +57,42 @@ function Resolve-NexusFileGroupId {
         return $env:NEXUSMODS_FILE_GROUP_ID
     }
 
-    return $DefaultNexusFileGroupId
+    $localSettings = Get-CoopCalloutsLocalSettings
+    if ($localSettings -and ![string]::IsNullOrWhiteSpace($localSettings.NexusFileGroupId)) {
+        return $localSettings.NexusFileGroupId
+    }
+
+    if ($Optional) {
+        return $null
+    }
+
+    throw "Nexus file group ID is required. Set NEXUSMODS_FILE_GROUP_ID, add local.settings.json, or pass -FileGroupId."
+}
+
+function Resolve-SteamAppId {
+    param(
+        [string]$SteamAppId,
+        [switch]$Optional
+    )
+
+    if (![string]::IsNullOrWhiteSpace($SteamAppId)) {
+        return $SteamAppId
+    }
+
+    if (![string]::IsNullOrWhiteSpace($env:STS2_STEAM_APP_ID)) {
+        return $env:STS2_STEAM_APP_ID
+    }
+
+    $localSettings = Get-CoopCalloutsLocalSettings
+    if ($localSettings -and ![string]::IsNullOrWhiteSpace($localSettings.SteamAppId)) {
+        return $localSettings.SteamAppId
+    }
+
+    if ($Optional) {
+        return $null
+    }
+
+    throw "Steam app ID is required for direct executable launches. Set STS2_STEAM_APP_ID, add local.settings.json, pass -SteamAppId, or use -NoSteamAppIdFile."
 }
 
 function Resolve-CoopCalloutsBuildRoot {

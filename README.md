@@ -80,6 +80,8 @@ The scripts auto-detect the game folder when this repo lives under the local gam
 
 Build outputs default to `dist/`. To use another local build folder, set `COOPCALLOUTS_BUILD_ROOT` or pass `-BuildRoot`.
 
+Local machine values such as the Nexus file group ID and Steam app ID can live in ignored `local.settings.json`. Copy `local.settings.example.json` and fill it in for your machine.
+
 ## Package
 
 ```powershell
@@ -117,7 +119,7 @@ Use this from your own machine when you want to build against your local Slay th
 
 The script keeps game DLLs local. GitHub only receives the built release zip, and Nexus Mods receives that same zip.
 
-The Nexus file group defaults to `<nexus-file-group-id>`; override with `-FileGroupId` or `NEXUSMODS_FILE_GROUP_ID` only if the Nexus page changes.
+The Nexus file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, or ignored `local.settings.json`.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 

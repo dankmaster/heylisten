@@ -43,7 +43,7 @@ From the repo root:
 
 The script builds and installs Co-op Callouts, then launches two windowed clients side by side with reduced FPS and muted audio.
 
-For direct executable launches, Steamworks expects `steam_appid.txt` in the game folder. The script creates it with Slay the Spire 2's Steam app id, `<steam-app-id>`, if it is missing.
+For direct executable launches, Steamworks expects `steam_appid.txt` in the game folder. The script creates it from `-SteamAppId`, `STS2_STEAM_APP_ID`, or ignored `local.settings.json` if it is missing.
 
 Do not pass `-QuitAfter` when you want to actually play. That option is only for quick startup smoke tests.
 

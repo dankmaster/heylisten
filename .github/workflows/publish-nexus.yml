@@ -8,9 +8,9 @@ on:
         required: true
         default: "0.9"
       file_group_id:
-        description: Nexus Mods file group ID from the mod page API Info menu
-        required: true
-        default: "<nexus-file-group-id>"
+        description: Optional Nexus Mods file group ID. If blank, the NEXUSMODS_FILE_GROUP_ID secret is used.
+        required: false
+        default: ""
       release_asset_name:
         description: GitHub release asset to publish
         required: true
@@ -39,8 +39,13 @@ jobs:
   publish:
     name: Upload GitHub release asset to Nexus Mods
     runs-on: ubuntu-latest
+    env:
+      NEXUS_FILE_GROUP_ID: ${{ inputs.file_group_id || secrets.NEXUSMODS_FILE_GROUP_ID }}
 
     steps:
+      - name: Validate Nexus file group
+        run: test -n "$NEXUS_FILE_GROUP_ID"
+
       - name: Download GitHub release asset
         env:
           GH_TOKEN: ${{ github.token }}
@@ -57,7 +62,7 @@ jobs:
           INPUT_ARCHIVE_EXISTING_FILE: ${{ inputs.archive_existing_file }}
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
-          file_group_id: ${{ inputs.file_group_id }}
+          file_group_id: ${{ env.NEXUS_FILE_GROUP_ID }}
           filename: "dist/${{ inputs.release_asset_name }}"
           version: "${{ inputs.version }}"
           display_name: "${{ inputs.display_name }} ${{ inputs.version }}"

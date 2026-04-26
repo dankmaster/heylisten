@@ -7,6 +7,7 @@ param(
     [string]$FileCategory = "main",
     [switch]$ArchiveExistingFile,
     [switch]$ConfigureApiKey,
+    [switch]$ConfigureFileGroupId,
     [switch]$Watch
 )
 
@@ -31,7 +32,7 @@ if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
     $ReleaseAssetName = "Co-op-Callouts-$Version.zip"
 }
 
-$FileGroupId = Resolve-NexusFileGroupId $FileGroupId
+$FileGroupId = Resolve-NexusFileGroupId -FileGroupId $FileGroupId -Optional
 $Description = Resolve-TextFromFileOrDefault `
     -Value $Description `
     -Path $fileDescriptionPath `
@@ -62,6 +63,15 @@ try {
         }
     }
 
+    if ($ConfigureFileGroupId) {
+        $fileGroupIdSecret = Read-Host "Nexus Mods file group ID"
+        if ([string]::IsNullOrWhiteSpace($fileGroupIdSecret)) {
+            throw "File group ID was empty."
+        }
+
+        $fileGroupIdSecret | gh secret set NEXUSMODS_FILE_GROUP_ID
+    }
+
     $tag = "v$Version"
     gh release view $tag *> $null
     if ($LASTEXITCODE -ne 0) {
@@ -76,14 +86,20 @@ try {
     }
 
     $archiveExisting = if ($ArchiveExistingFile) { "true" } else { "false" }
-    gh workflow run publish-nexus.yml `
-        -f "version=$Version" `
-        -f "file_group_id=$FileGroupId" `
-        -f "release_asset_name=$ReleaseAssetName" `
-        -f "display_name=$DisplayName" `
-        -f "description=$Description" `
-        -f "file_category=$FileCategory" `
-        -f "archive_existing_file=$archiveExisting"
+    $workflowArgs = @(
+        "workflow", "run", "publish-nexus.yml",
+        "-f", "version=$Version",
+        "-f", "release_asset_name=$ReleaseAssetName",
+        "-f", "display_name=$DisplayName",
+        "-f", "description=$Description",
+        "-f", "file_category=$FileCategory",
+        "-f", "archive_existing_file=$archiveExisting"
+    )
+    if (![string]::IsNullOrWhiteSpace($FileGroupId)) {
+        $workflowArgs += @("-f", "file_group_id=$FileGroupId")
+    }
+
+    gh @workflowArgs
 
     Write-Host "Triggered Nexus publish workflow for $ReleaseAssetName."
 
