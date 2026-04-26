@@ -1,0 +1,2000 @@
+using System;
+using System.Collections;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Godot;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
+using MegaCrit.Sts2.Core.Nodes.Screens.Timeline;
+using MegaCrit.Sts2.Core.Nodes.Vfx;
+using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Runs;
+
+namespace CoopStatusBubbles
+{
+    internal enum StatusCallout
+    {
+        Vulnerable,
+        Strength,
+        Vigor,
+        DoubleDamage,
+        Focus,
+        Poison,
+        Weak,
+        Support,
+    }
+
+    internal sealed class BubbleUi
+    {
+        public Creature Creature;
+        public string Message;
+        public NSpeechBubbleVfx SpeechBubble;
+        public long CreatedAtUnixMs;
+        public float DisplaySeconds;
+    }
+
+    internal sealed class ObservedPlayerState
+    {
+        public ulong NetId;
+        public PlayerCombatState CombatState;
+        public CardPile Hand;
+    }
+
+    internal sealed class CoopStatusBubblesConfig
+    {
+        public bool Enabled { get; set; } = true;
+        public bool OnlyShowPlayableNow { get; set; } = true;
+        public bool ShowGenericSupport { get; set; } = true;
+        public float DisplaySeconds { get; set; } = 12f;
+
+        public static CoopStatusBubblesConfig Load()
+        {
+            var config = new CoopStatusBubblesConfig();
+            var path = GetConfigPath();
+
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                    File.WriteAllText(path, config.ToJson());
+                    return config;
+                }
+
+                var raw = File.ReadAllText(path);
+                config.Enabled = ReadBool(raw, "enabled", config.Enabled);
+                config.OnlyShowPlayableNow = ReadBool(raw, "only_show_playable_now", config.OnlyShowPlayableNow);
+                config.ShowGenericSupport = ReadBool(raw, "show_generic_support", config.ShowGenericSupport);
+                config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CoopStatusBubbles] Failed to load config: {ex.Message}");
+            }
+
+            return config;
+        }
+
+        public void Save()
+        {
+            var path = GetConfigPath();
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, ToJson());
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CoopStatusBubbles] Failed to save config: {ex.Message}");
+            }
+        }
+
+        private string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("{");
+            sb.AppendLine($"  \"enabled\": {Enabled.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"only_show_playable_now\": {OnlyShowPlayableNow.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_generic_support\": {ShowGenericSupport.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+
+        private static bool ReadBool(string raw, string key, bool fallback)
+        {
+            var pattern = "\"" + Regex.Escape(key) + "\"\\s*:\\s*(true|false)";
+            var match = Regex.Match(raw, pattern, RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                return fallback;
+            }
+
+            return bool.TryParse(match.Groups[1].Value, out var value)
+                ? value
+                : fallback;
+        }
+
+        private static float ReadFloat(string raw, string key, float fallback)
+        {
+            var pattern = "\"" + Regex.Escape(key) + "\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)";
+            var match = Regex.Match(raw, pattern, RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                return fallback;
+            }
+
+            return float.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+                ? value
+                : fallback;
+        }
+
+        private static string GetConfigPath()
+        {
+            var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+            return Path.Combine(appDataDir, "SlayTheSpire2", "CoopStatusBubbles", "config.json");
+        }
+    }
+
+    [ModInitializer("Initialize")]
+    public static class ModEntry
+    {
+        private const string ModId = "CoopStatusBubbles";
+        private const string ModDisplayName = "Co-op Callouts";
+        private const string BubbleIntro = "Hey, listen!";
+        private const string EnabledKey = "enabled";
+        private const string OnlyShowPlayableNowKey = "only_show_playable_now";
+        private const string ShowGenericSupportKey = "show_generic_support";
+        private const string DisplaySecondsKey = "display_seconds";
+        private const long DebouncedRefreshWindowMs = 45L;
+        private const float DefaultBubbleDisplaySeconds = 12f;
+        private const float MinBubbleDisplaySeconds = 0f;
+        private const float MaxBubbleDisplaySeconds = 60f;
+        private const double ManualBubbleLifetimeSeconds = 600d;
+
+        private static readonly Harmony Harmony = new Harmony("coopstatusbubbles.patch");
+        private static readonly Hashtable BubblesByNetId = new Hashtable();
+        private static readonly Hashtable AcknowledgedMessagesByNetId = new Hashtable();
+        private static readonly Hashtable LastMessagesByNetId = new Hashtable();
+        private static readonly Hashtable ObservedPlayersByNetId = new Hashtable();
+        private static readonly Hashtable EndedTurnPlayersByNetId = new Hashtable();
+        private static readonly StatusCallout[] CalloutPriority =
+        {
+            StatusCallout.Vulnerable,
+            StatusCallout.DoubleDamage,
+            StatusCallout.Strength,
+            StatusCallout.Vigor,
+            StatusCallout.Focus,
+            StatusCallout.Poison,
+            StatusCallout.Weak,
+            StatusCallout.Support,
+        };
+        private static readonly string[] VulnerableTokens =
+        {
+            "vulnerable",
+            "expose",
+            "fear",
+        };
+        private static readonly string[] WeakTokens =
+        {
+            "weak",
+            "neutralize",
+            "suckerpunch",
+            "darkshackles",
+        };
+        private static readonly string[] StrengthTokens =
+        {
+            "gainstrength",
+            "strengthnextturn",
+            "temporarystrength",
+            "drumofbattle",
+            "howlfrombeyond",
+            "rally",
+            "signalboost",
+            "believeinyou",
+            "tagteam",
+            "uproar",
+            "bulkup",
+            "inflame",
+            "demonform",
+        };
+        private static readonly string[] VigorTokens =
+        {
+            "vigor",
+            "vigorous",
+            "vitalspark",
+            "charge",
+            "refineblade",
+        };
+        private static readonly string[] DoubleDamageTokens =
+        {
+            "doubledamage",
+            "doubleyourdamage",
+            "doubleitsdamage",
+            "celestialmight",
+        };
+        private static readonly string[] FocusTokens =
+        {
+            "focus",
+            "temporaryfocus",
+            "biasedcognition",
+            "defragment",
+        };
+        private static readonly string[] PoisonTokens =
+        {
+            "poison",
+            "poisoned",
+            "deadlypoison",
+            "poisonedstab",
+            "bouncingflask",
+            "envenom",
+            "noxiousfumes",
+            "outbreak",
+            "putrefy",
+            "snakebite",
+            "toxic",
+        };
+        private static readonly string[] SupportTokens =
+        {
+            "support",
+            "teammate",
+            "ally",
+            "multiplayer",
+            "coordinate",
+            "bodyguard",
+            "boostaway",
+            "pullaggro",
+            "spoilsofbattle",
+            "whistle",
+            "tagteam",
+            "signalboost",
+            "sicem",
+            "drumofbattle",
+            "howlfrombeyond",
+            "rally",
+            "believeinyou",
+            "taunt",
+            "guard",
+        };
+        private static readonly string[] SupportCardNames =
+        {
+            "believeinyou",
+            "bodyguard",
+            "boostaway",
+            "celestialmight",
+            "charge",
+            "coordinate",
+            "drumofbattle",
+            "howlfrombeyond",
+            "pullaggro",
+            "rally",
+            "refineblade",
+            "sicem",
+            "signalboost",
+            "spoilsofbattle",
+            "tagteam",
+            "taunt",
+            "uproar",
+            "whistle",
+        };
+        private static readonly string[] VulnerableCardNames =
+        {
+            "bash",
+            "beamcell",
+            "crushunder",
+            "expose",
+            "fear",
+            "shockwave",
+            "thunderclap",
+            "uppercut",
+        };
+        private static readonly string[] WeakCardNames =
+        {
+            "bolas",
+            "crushunder",
+            "darkshackles",
+            "neutralize",
+            "shockwave",
+            "suckerpunch",
+            "uppercut",
+        };
+        private static readonly string[] StrengthCardNames =
+        {
+            "believeinyou",
+            "bulkup",
+            "demonform",
+            "drumofbattle",
+            "howlfrombeyond",
+            "inflame",
+            "rally",
+            "signalboost",
+            "tagteam",
+            "uproar",
+        };
+        private static readonly string[] VigorCardNames =
+        {
+            "celestialmight",
+            "charge",
+            "refineblade",
+        };
+        private static readonly string[] DoubleDamageCardNames =
+        {
+            "celestialmight",
+        };
+        private static readonly string[] FocusCardNames =
+        {
+            "biasedcognition",
+            "defragment",
+        };
+        private static readonly string[] PoisonCardNames =
+        {
+            "bouncingflask",
+            "deadlypoison",
+            "envenom",
+            "noxiousfumes",
+            "outbreak",
+            "poisonedstab",
+            "putrefy",
+            "snakebite",
+            "toxic",
+        };
+
+        private static long _lastRefreshAtUnixMs;
+        private static RunManager _observedRunManager;
+        private static CombatManager _observedCombatManager;
+        private static CoopStatusBubblesConfig Config = new CoopStatusBubblesConfig();
+        private static bool _modConfigRegistered;
+        private static bool _assemblyLoadHooked;
+
+        public static void Initialize()
+        {
+            try
+            {
+                Config = CoopStatusBubblesConfig.Load();
+                Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
+                HookAssemblyLoad();
+                Harmony.PatchAll(Assembly.GetExecutingAssembly());
+                TryWireManagerEvents();
+                TryRegisterModConfigUi();
+                Log.Info("[CoopStatusBubbles] Initialized.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[CoopStatusBubbles] Failed to apply Harmony patches: " + ex);
+            }
+        }
+
+        [HarmonyPatch(typeof(RunManager), "InitializeNewRun")]
+        private static class RunManagerInitializeNewRunPatch
+        {
+            private static void Postfix()
+            {
+                TryWireManagerEvents();
+                ForceRefresh();
+            }
+        }
+
+        [HarmonyPatch(typeof(RunManager), "InitializeRunLobby")]
+        private static class RunManagerInitializeRunLobbyPatch
+        {
+            private static void Postfix()
+            {
+                TryWireManagerEvents();
+                ForceRefresh();
+            }
+        }
+
+        [HarmonyPatch(typeof(RunManager), "InitializeSavedRun")]
+        private static class RunManagerInitializeSavedRunPatch
+        {
+            private static void Postfix()
+            {
+                TryWireManagerEvents();
+                ForceRefresh();
+            }
+        }
+
+        [HarmonyPatch(typeof(RunManager), "set_State")]
+        private static class RunManagerSetStatePatch
+        {
+            private static void Postfix()
+            {
+                TryWireManagerEvents();
+                ForceRefresh();
+            }
+        }
+
+        [HarmonyPatch(typeof(CombatManager), "SetUpCombat")]
+        private static class CombatManagerSetUpCombatPatch
+        {
+            private static void Postfix()
+            {
+                TryWireManagerEvents();
+                ForceRefresh();
+            }
+        }
+
+        [HarmonyPatch(typeof(CombatManager), "set_IsInProgress")]
+        private static class CombatManagerSetIsInProgressPatch
+        {
+            private static void Postfix(bool value)
+            {
+                if (!value)
+                {
+                    ClearObservedPlayers();
+                    ClearAllBubbles();
+                    return;
+                }
+
+                TryWireManagerEvents();
+                ForceRefresh();
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerCombatState), "RecalculateCardValues")]
+        private static class PlayerCombatStateRecalculateCardValuesPatch
+        {
+            private static void Postfix(PlayerCombatState __instance)
+            {
+                if (IsObservedCombatState(__instance))
+                {
+                    RequestRefresh();
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(NTimelineScreen), "_Ready")]
+        private static class TimelineScreenReadyPatch
+        {
+            private static void Postfix()
+            {
+                ClearAllBubbles();
+            }
+        }
+
+        private static void RefreshBubbles()
+        {
+            if (!Config.Enabled)
+            {
+                ClearAllBubbles();
+                return;
+            }
+
+            if (IsTimelineScreenActive())
+            {
+                ClearAllBubbles();
+                return;
+            }
+
+            RunManager runManager;
+            RunState runState;
+            CombatState combatState;
+            ulong localNetId;
+            if (!TryGetCombatContext(out runManager, out runState, out combatState, out localNetId))
+            {
+                ClearAllBubbles();
+                return;
+            }
+
+            var root = NGame.Instance != null && NGame.Instance.GetTree() != null
+                ? NGame.Instance.GetTree().Root
+                : null;
+
+            var activeNetIds = new Hashtable();
+            for (var i = 0; i < runState.Players.Count; i++)
+            {
+                var player = runState.Players[i];
+                if (player == null || player.NetId == localNetId)
+                {
+                    continue;
+                }
+
+                var callouts = CollectCallouts(player);
+                if (callouts.Length == 0)
+                {
+                    continue;
+                }
+
+                if (player.Creature == null)
+                {
+                    continue;
+                }
+
+                var message = BuildBubbleMessage(callouts);
+                UpdateLastMessage(player.NetId, message);
+                if (AcknowledgeExpiredBubbleIfNeeded(player.NetId, message) ||
+                    IsAcknowledged(player.NetId, message))
+                {
+                    activeNetIds[player.NetId] = true;
+                    continue;
+                }
+
+                UpsertBubble(player, root, message, callouts[0]);
+                activeNetIds[player.NetId] = true;
+            }
+
+            RemoveInactiveBubbles(activeNetIds);
+        }
+
+        private static void HookAssemblyLoad()
+        {
+            if (_assemblyLoadHooked)
+            {
+                return;
+            }
+
+            AppDomain.CurrentDomain.AssemblyLoad += OnAssemblyLoad;
+            _assemblyLoadHooked = true;
+        }
+
+        private static void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
+        {
+            try
+            {
+                var assemblyName = args.LoadedAssembly != null
+                    ? args.LoadedAssembly.GetName().Name
+                    : string.Empty;
+                if (string.Equals(assemblyName, "ModConfig", StringComparison.OrdinalIgnoreCase))
+                {
+                    TryRegisterModConfigUi();
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static void TryRegisterModConfigUi()
+        {
+            if (_modConfigRegistered)
+            {
+                return;
+            }
+
+            var apiType = AccessTools.TypeByName("ModConfig.ModConfigApi");
+            var entryType = AccessTools.TypeByName("ModConfig.ConfigEntry");
+            var configTypeEnum = AccessTools.TypeByName("ModConfig.ConfigType");
+            if (apiType == null || entryType == null || configTypeEnum == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var entries = Array.CreateInstance(entryType, 4);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    EnabledKey,
+                    "Enable Bubbles",
+                    "Master toggle for teammate speech bubbles in co-op combat.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.Enabled,
+                    new Action<object>(value => ApplyEnabledSetting(ConvertToBool(value, true), true))), 0);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    OnlyShowPlayableNowKey,
+                    "Playable Now Only",
+                    "Only show bubbles for teammate cards they can currently afford and play this turn.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.OnlyShowPlayableNow,
+                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 1);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowGenericSupportKey,
+                    "Include Support",
+                    "Show a generic Support bubble for ally-helping cards even when no named status keyword was matched.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowGenericSupport,
+                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 2);
+                var displaySecondsEntry = CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    DisplaySecondsKey,
+                    "Bubble Timer",
+                    "Seconds before a callout auto-hides. Set to 0 to keep bubbles up until clicked.",
+                    Enum.Parse(configTypeEnum, "Slider"),
+                    Config.DisplaySeconds,
+                    new Action<object>(value => ApplyDisplaySecondsSetting(ConvertToFloat(value, DefaultBubbleDisplaySeconds), true)));
+                ConfigureSliderEntry(
+                    entryType,
+                    displaySecondsEntry,
+                    MinBubbleDisplaySeconds,
+                    MaxBubbleDisplaySeconds,
+                    1f,
+                    "{0}s");
+                entries.SetValue(displaySecondsEntry, 3);
+
+                var registerMethod = apiType.GetMethod(
+                    "Register",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(string), typeof(string), entries.GetType() },
+                    null);
+                if (registerMethod == null)
+                {
+                    Log.Error("[CoopStatusBubbles] Could not find ModConfigApi.Register.");
+                    return;
+                }
+
+                registerMethod.Invoke(null, new object[] { ModId, ModDisplayName, entries });
+                _modConfigRegistered = true;
+
+                ApplyEnabledSetting(ReadModConfigBool(apiType, EnabledKey, Config.Enabled), false);
+                ApplyOnlyShowPlayableNowSetting(
+                    ReadModConfigBool(apiType, OnlyShowPlayableNowKey, Config.OnlyShowPlayableNow),
+                    false);
+                ApplyShowGenericSupportSetting(
+                    ReadModConfigBool(apiType, ShowGenericSupportKey, Config.ShowGenericSupport),
+                    false);
+                ApplyDisplaySecondsSetting(
+                    ReadModConfigFloat(apiType, DisplaySecondsKey, Config.DisplaySeconds),
+                    false);
+                Config.Save();
+
+                Log.Info("[CoopStatusBubbles] Registered settings with ModConfig.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CoopStatusBubbles] Failed to register ModConfig UI: {ex.Message}");
+            }
+        }
+
+        private static object CreateModConfigEntry(
+            Type entryType,
+            Type configTypeEnum,
+            string key,
+            string label,
+            string description,
+            object configType,
+            object defaultValue,
+            Action<object> onChanged)
+        {
+            var entry = Activator.CreateInstance(entryType);
+            entryType.GetProperty("Key")?.SetValue(entry, key);
+            entryType.GetProperty("Label")?.SetValue(entry, label);
+            entryType.GetProperty("Description")?.SetValue(entry, description);
+            entryType.GetProperty("Type")?.SetValue(entry, configType);
+            entryType.GetProperty("DefaultValue")?.SetValue(entry, defaultValue);
+            entryType.GetProperty("OnChanged")?.SetValue(entry, onChanged);
+            return entry;
+        }
+
+        private static void ConfigureSliderEntry(
+            Type entryType,
+            object entry,
+            float min,
+            float max,
+            float step,
+            string format)
+        {
+            entryType.GetProperty("Min")?.SetValue(entry, min);
+            entryType.GetProperty("Max")?.SetValue(entry, max);
+            entryType.GetProperty("Step")?.SetValue(entry, step);
+            entryType.GetProperty("Format")?.SetValue(entry, format);
+        }
+
+        private static bool ReadModConfigBool(Type apiType, string key, bool fallback)
+        {
+            try
+            {
+                var getValueMethod = apiType.GetMethod("GetValue", BindingFlags.Public | BindingFlags.Static);
+                if (getValueMethod == null)
+                {
+                    return fallback;
+                }
+
+                var genericMethod = getValueMethod.MakeGenericMethod(typeof(bool));
+                var value = genericMethod.Invoke(null, new object[] { ModId, key });
+                return ConvertToBool(value, fallback);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static float ReadModConfigFloat(Type apiType, string key, float fallback)
+        {
+            try
+            {
+                var getValueMethod = apiType.GetMethod("GetValue", BindingFlags.Public | BindingFlags.Static);
+                if (getValueMethod == null)
+                {
+                    return fallback;
+                }
+
+                var genericMethod = getValueMethod.MakeGenericMethod(typeof(float));
+                var value = genericMethod.Invoke(null, new object[] { ModId, key });
+                return ConvertToFloat(value, fallback);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static bool ConvertToBool(object value, bool fallback)
+        {
+            if (value == null)
+            {
+                return fallback;
+            }
+
+            if (value is bool boolValue)
+            {
+                return boolValue;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue != 0;
+            }
+
+            if (value is long longValue)
+            {
+                return longValue != 0L;
+            }
+
+            return bool.TryParse(value.ToString(), out var parsed)
+                ? parsed
+                : fallback;
+        }
+
+        private static float ConvertToFloat(object value, float fallback)
+        {
+            if (value == null)
+            {
+                return fallback;
+            }
+
+            if (value is float floatValue)
+            {
+                return floatValue;
+            }
+
+            if (value is double doubleValue)
+            {
+                return (float)doubleValue;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue;
+            }
+
+            if (value is long longValue)
+            {
+                return longValue;
+            }
+
+            var raw = value.ToString();
+            if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var invariantValue))
+            {
+                return invariantValue;
+            }
+
+            return float.TryParse(raw, out var parsed)
+                ? parsed
+                : fallback;
+        }
+
+        private static void ApplyEnabledSetting(bool enabled, bool save)
+        {
+            Config.Enabled = enabled;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            if (enabled)
+            {
+                ForceRefresh();
+                return;
+            }
+
+            ClearAllBubbles();
+        }
+
+        private static void ApplyOnlyShowPlayableNowSetting(bool onlyShowPlayableNow, bool save)
+        {
+            Config.OnlyShowPlayableNow = onlyShowPlayableNow;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ForceRefresh();
+        }
+
+        private static void ApplyShowGenericSupportSetting(bool showGenericSupport, bool save)
+        {
+            Config.ShowGenericSupport = showGenericSupport;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ForceRefresh();
+        }
+
+        private static void ApplyDisplaySecondsSetting(float displaySeconds, bool save)
+        {
+            Config.DisplaySeconds = ClampDisplaySeconds(displaySeconds);
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ClearAllBubbles();
+            ForceRefresh();
+        }
+
+        private static void TryWireManagerEvents()
+        {
+            try
+            {
+                WireRunManagerEvents();
+                WireCombatManagerEvents();
+                SyncObservedPlayers();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[CoopStatusBubbles] Failed to wire state listeners: " + ex.Message);
+            }
+        }
+
+        private static void WireRunManagerEvents()
+        {
+            var runManager = RunManager.Instance;
+            if (ReferenceEquals(_observedRunManager, runManager))
+            {
+                return;
+            }
+
+            if (_observedRunManager != null)
+            {
+                _observedRunManager.RunStarted -= OnRunStarted;
+            }
+
+            _observedRunManager = runManager;
+            if (_observedRunManager != null)
+            {
+                _observedRunManager.RunStarted += OnRunStarted;
+            }
+        }
+
+        private static void WireCombatManagerEvents()
+        {
+            var combatManager = CombatManager.Instance;
+            if (ReferenceEquals(_observedCombatManager, combatManager))
+            {
+                return;
+            }
+
+            if (_observedCombatManager != null)
+            {
+                _observedCombatManager.CombatSetUp -= OnCombatSetUp;
+                _observedCombatManager.CombatEnded -= OnCombatEnded;
+                _observedCombatManager.CombatWon -= OnCombatWon;
+                _observedCombatManager.TurnStarted -= OnTurnStarted;
+                _observedCombatManager.TurnEnded -= OnTurnEnded;
+                _observedCombatManager.PlayerEndedTurn -= OnPlayerEndedTurn;
+                _observedCombatManager.PlayerUnendedTurn -= OnPlayerUnendedTurn;
+                _observedCombatManager.AboutToSwitchToEnemyTurn -= OnAboutToSwitchToEnemyTurn;
+                _observedCombatManager.PlayerActionsDisabledChanged -= OnPlayerActionsDisabledChanged;
+            }
+
+            _observedCombatManager = combatManager;
+            if (_observedCombatManager != null)
+            {
+                _observedCombatManager.CombatSetUp += OnCombatSetUp;
+                _observedCombatManager.CombatEnded += OnCombatEnded;
+                _observedCombatManager.CombatWon += OnCombatWon;
+                _observedCombatManager.TurnStarted += OnTurnStarted;
+                _observedCombatManager.TurnEnded += OnTurnEnded;
+                _observedCombatManager.PlayerEndedTurn += OnPlayerEndedTurn;
+                _observedCombatManager.PlayerUnendedTurn += OnPlayerUnendedTurn;
+                _observedCombatManager.AboutToSwitchToEnemyTurn += OnAboutToSwitchToEnemyTurn;
+                _observedCombatManager.PlayerActionsDisabledChanged += OnPlayerActionsDisabledChanged;
+            }
+        }
+
+        private static void OnRunStarted(RunState state)
+        {
+            ClearEndedTurnPlayers();
+            ClearAcknowledgements();
+            SyncObservedPlayers();
+            ForceRefresh();
+        }
+
+        private static void OnCombatSetUp(CombatState state)
+        {
+            ClearEndedTurnPlayers();
+            ClearAcknowledgements();
+            SyncObservedPlayers();
+            ForceRefresh();
+        }
+
+        private static void OnCombatEnded(CombatRoom room)
+        {
+            ClearEndedTurnPlayers();
+            ClearAcknowledgements();
+            ClearObservedPlayers();
+            ClearAllBubbles();
+        }
+
+        private static void OnCombatWon(CombatRoom room)
+        {
+            ClearEndedTurnPlayers();
+            ClearAcknowledgements();
+            ClearObservedPlayers();
+            ClearAllBubbles();
+        }
+
+        private static void OnTurnStarted(CombatState state)
+        {
+            ClearEndedTurnPlayers();
+            ClearAcknowledgements();
+            SyncObservedPlayers();
+            ForceRefresh();
+        }
+
+        private static void OnTurnEnded(CombatState state)
+        {
+            RequestRefresh();
+        }
+
+        private static void OnPlayerEndedTurn(Player player, bool forced)
+        {
+            SetPlayerEndedTurn(player, true);
+            RequestRefresh();
+        }
+
+        private static void OnPlayerUnendedTurn(Player player)
+        {
+            SetPlayerEndedTurn(player, false);
+            RequestRefresh();
+        }
+
+        private static void OnAboutToSwitchToEnemyTurn(CombatState state)
+        {
+            RequestRefresh();
+        }
+
+        private static void OnPlayerActionsDisabledChanged(CombatState state)
+        {
+            RequestRefresh();
+        }
+
+        private static void OnObservedHandContentsChanged()
+        {
+            RequestRefresh();
+        }
+
+        private static void OnObservedEnergyChanged(int oldValue, int newValue)
+        {
+            if (oldValue != newValue)
+            {
+                RequestRefresh();
+            }
+        }
+
+        private static void OnObservedStarsChanged(int oldValue, int newValue)
+        {
+            if (oldValue != newValue)
+            {
+                RequestRefresh();
+            }
+        }
+
+        private static void SyncObservedPlayers()
+        {
+            RunManager runManager;
+            RunState runState;
+            CombatState combatState;
+            ulong localNetId;
+            if (!TryGetCombatContext(out runManager, out runState, out combatState, out localNetId))
+            {
+                ClearObservedPlayers();
+                return;
+            }
+
+            var activeNetIds = new Hashtable();
+            for (var i = 0; i < runState.Players.Count; i++)
+            {
+                var player = runState.Players[i];
+                if (player == null || player.NetId == localNetId || player.PlayerCombatState == null)
+                {
+                    continue;
+                }
+
+                var hand = player.PlayerCombatState.Hand;
+                if (hand == null)
+                {
+                    continue;
+                }
+
+                activeNetIds[player.NetId] = true;
+                var observed = ObservedPlayersByNetId[player.NetId] as ObservedPlayerState;
+                if (observed != null && observed.Hand == hand && observed.CombatState == player.PlayerCombatState)
+                {
+                    continue;
+                }
+
+                RemoveObservedPlayer(player.NetId);
+                AddObservedPlayer(player);
+            }
+
+            var staleNetIds = new ArrayList();
+            foreach (var key in ObservedPlayersByNetId.Keys)
+            {
+                if (!activeNetIds.ContainsKey(key))
+                {
+                    staleNetIds.Add(key);
+                }
+            }
+
+            for (var i = 0; i < staleNetIds.Count; i++)
+            {
+                RemoveObservedPlayer((ulong)staleNetIds[i]);
+            }
+        }
+
+        private static void AddObservedPlayer(Player player)
+        {
+            if (player == null || player.PlayerCombatState == null || player.PlayerCombatState.Hand == null)
+            {
+                return;
+            }
+
+            player.PlayerCombatState.Hand.ContentsChanged += OnObservedHandContentsChanged;
+            player.PlayerCombatState.EnergyChanged += OnObservedEnergyChanged;
+            player.PlayerCombatState.StarsChanged += OnObservedStarsChanged;
+
+            var observed = new ObservedPlayerState();
+            observed.NetId = player.NetId;
+            observed.Hand = player.PlayerCombatState.Hand;
+            observed.CombatState = player.PlayerCombatState;
+            ObservedPlayersByNetId[player.NetId] = observed;
+        }
+
+        private static void RemoveObservedPlayer(ulong netId)
+        {
+            var observed = ObservedPlayersByNetId[netId] as ObservedPlayerState;
+            if (observed == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (observed.Hand != null)
+                {
+                    observed.Hand.ContentsChanged -= OnObservedHandContentsChanged;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                if (observed.CombatState != null)
+                {
+                    observed.CombatState.EnergyChanged -= OnObservedEnergyChanged;
+                    observed.CombatState.StarsChanged -= OnObservedStarsChanged;
+                }
+            }
+            catch
+            {
+            }
+
+            ObservedPlayersByNetId.Remove(netId);
+        }
+
+        private static void ClearObservedPlayers()
+        {
+            var allNetIds = new ArrayList();
+            foreach (var key in ObservedPlayersByNetId.Keys)
+            {
+                allNetIds.Add(key);
+            }
+
+            for (var i = 0; i < allNetIds.Count; i++)
+            {
+                RemoveObservedPlayer((ulong)allNetIds[i]);
+            }
+        }
+
+        private static void SetPlayerEndedTurn(Player player, bool endedTurn)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            if (endedTurn)
+            {
+                EndedTurnPlayersByNetId[player.NetId] = true;
+                return;
+            }
+
+            EndedTurnPlayersByNetId.Remove(player.NetId);
+        }
+
+        private static void ClearEndedTurnPlayers()
+        {
+            EndedTurnPlayersByNetId.Clear();
+        }
+
+        private static void ClearAcknowledgements()
+        {
+            AcknowledgedMessagesByNetId.Clear();
+            LastMessagesByNetId.Clear();
+        }
+
+        private static float ClampDisplaySeconds(float displaySeconds)
+        {
+            if (float.IsNaN(displaySeconds) || float.IsInfinity(displaySeconds))
+            {
+                return DefaultBubbleDisplaySeconds;
+            }
+
+            if (displaySeconds < MinBubbleDisplaySeconds)
+            {
+                return MinBubbleDisplaySeconds;
+            }
+
+            if (displaySeconds > MaxBubbleDisplaySeconds)
+            {
+                return MaxBubbleDisplaySeconds;
+            }
+
+            return displaySeconds;
+        }
+
+        private static void ForceRefresh()
+        {
+            _lastRefreshAtUnixMs = 0;
+            RefreshBubbles();
+        }
+
+        private static void RequestRefresh()
+        {
+            var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (_lastRefreshAtUnixMs != 0 && nowUnixMs - _lastRefreshAtUnixMs < DebouncedRefreshWindowMs)
+            {
+                return;
+            }
+
+            _lastRefreshAtUnixMs = nowUnixMs;
+            RefreshBubbles();
+        }
+
+        private static bool IsTimelineScreenActive()
+        {
+            try
+            {
+                var timeline = NTimelineScreen.Instance;
+                return timeline != null &&
+                    GodotObject.IsInstanceValid(timeline) &&
+                    timeline.IsInsideTree() &&
+                    timeline.Visible;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryGetCombatContext(
+            out RunManager runManager,
+            out RunState runState,
+            out CombatState combatState,
+            out ulong localNetId)
+        {
+            runManager = RunManager.Instance;
+            runState = null;
+            combatState = null;
+            localNetId = 0;
+
+            if (runManager == null)
+            {
+                return false;
+            }
+
+            bool isRunInProgress;
+            try
+            {
+                isRunInProgress = runManager.IsInProgress;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!isRunInProgress)
+            {
+                return false;
+            }
+
+            var state = GetRunState(runManager);
+            if (state == null || state.Players == null || state.Players.Count <= 1)
+            {
+                return false;
+            }
+
+            bool netServiceIsConnected;
+            ulong resolvedLocalNetId;
+            try
+            {
+                var resolvedNetService = runManager.NetService;
+                if (resolvedNetService == null)
+                {
+                    return false;
+                }
+
+                netServiceIsConnected = resolvedNetService.IsConnected;
+                resolvedLocalNetId = resolvedNetService.NetId;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!netServiceIsConnected)
+            {
+                return false;
+            }
+
+            var combatManager = CombatManager.Instance;
+            if (combatManager == null || !combatManager.IsInProgress || !combatManager.IsPlayPhase)
+            {
+                return false;
+            }
+
+            var stateFromCombat = combatManager.DebugOnlyGetState();
+            if (stateFromCombat == null)
+            {
+                return false;
+            }
+
+            runState = state;
+            combatState = stateFromCombat;
+            localNetId = resolvedLocalNetId;
+
+            return true;
+        }
+
+        private static RunState GetRunState(RunManager runManager)
+        {
+            if (runManager == null)
+            {
+                return null;
+            }
+
+            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            try
+            {
+                var property = typeof(RunManager).GetProperty("State", flags);
+                if (property != null)
+                {
+                    return property.GetValue(runManager) as RunState;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var field = typeof(RunManager).GetField("State", flags);
+                if (field != null)
+                {
+                    return field.GetValue(runManager) as RunState;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
+        private static bool IsObservedCombatState(PlayerCombatState combatState)
+        {
+            if (combatState == null)
+            {
+                return false;
+            }
+
+            foreach (ObservedPlayerState observed in ObservedPlayersByNetId.Values)
+            {
+                if (observed != null && observed.CombatState == combatState)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsPlayerAbleToActNow(Player player)
+        {
+            if (player == null || player.PlayerCombatState == null)
+            {
+                return false;
+            }
+
+            var combatManager = CombatManager.Instance;
+            if (combatManager == null || !combatManager.IsInProgress || !combatManager.IsPlayPhase)
+            {
+                return false;
+            }
+
+            if (EndedTurnPlayersByNetId.ContainsKey(player.NetId))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsCardPlayableNow(Player player, CardModel card)
+        {
+            if (player == null || player.PlayerCombatState == null || card == null)
+            {
+                return false;
+            }
+
+            if (!Config.OnlyShowPlayableNow)
+            {
+                return true;
+            }
+
+            UnplayableReason reason;
+            return player.PlayerCombatState.HasEnoughResourcesFor(card, out reason);
+        }
+
+        private static StatusCallout[] CollectCallouts(Player player)
+        {
+            if (!IsPlayerAbleToActNow(player))
+            {
+                return new StatusCallout[0];
+            }
+
+            var seen = new bool[CalloutPriority.Length];
+            var hand = player.PlayerCombatState != null ? player.PlayerCombatState.Hand : null;
+            var cards = hand != null ? hand.Cards : null;
+            if (cards == null)
+            {
+                return new StatusCallout[0];
+            }
+
+            for (var i = 0; i < cards.Count; i++)
+            {
+                var card = cards[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                if (!IsCardPlayableNow(player, card))
+                {
+                    continue;
+                }
+
+                var cardCallouts = ClassifyCard(card);
+                for (var j = 0; j < cardCallouts.Length; j++)
+                {
+                    seen[(int)cardCallouts[j]] = true;
+                }
+            }
+
+            var count = 0;
+            for (var i = 0; i < CalloutPriority.Length; i++)
+            {
+                if (seen[(int)CalloutPriority[i]])
+                {
+                    count++;
+                }
+            }
+
+            var ordered = new StatusCallout[count];
+            var index = 0;
+            for (var i = 0; i < CalloutPriority.Length; i++)
+            {
+                var callout = CalloutPriority[i];
+                if (seen[(int)callout])
+                {
+                    ordered[index] = callout;
+                    index++;
+                }
+            }
+
+            return ordered;
+        }
+
+        private static StatusCallout[] ClassifyCard(CardModel card)
+        {
+            var results = new StatusCallout[8];
+            var resultCount = 0;
+            var text = BuildCardSearchText(card);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return new StatusCallout[0];
+            }
+
+            var normalizedText = NormalizeForMatch(text);
+            var normalizedCardName = NormalizeForMatch(card.GetType().Name);
+            var targetType = card.TargetType;
+            var targetsEnemy =
+                targetType == TargetType.AnyEnemy ||
+                targetType == TargetType.AllEnemies ||
+                targetType == TargetType.RandomEnemy;
+            var targetsAlly =
+                targetType == TargetType.AnyPlayer ||
+                targetType == TargetType.AnyAlly ||
+                targetType == TargetType.AllAllies;
+            var targetsSelf =
+                targetType == TargetType.Self ||
+                targetType == TargetType.None;
+            var isSupportCard =
+                card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly ||
+                targetsAlly ||
+                MatchesExactNormalized(normalizedCardName, SupportCardNames) ||
+                MatchesAnyNormalized(normalizedText, SupportTokens);
+
+            if (MatchesExactNormalized(normalizedCardName, VulnerableCardNames) ||
+                (targetsEnemy && MatchesAnyNormalized(normalizedText, VulnerableTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Vulnerable);
+            }
+
+            if (MatchesExactNormalized(normalizedCardName, WeakCardNames) ||
+                (targetsEnemy && MatchesAnyNormalized(normalizedText, WeakTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Weak);
+            }
+
+            if (MatchesExactNormalized(normalizedCardName, StrengthCardNames) ||
+                ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, StrengthTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Strength);
+            }
+
+            if (MatchesExactNormalized(normalizedCardName, VigorCardNames) ||
+                ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, VigorTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Vigor);
+            }
+
+            if (MatchesExactNormalized(normalizedCardName, DoubleDamageCardNames) ||
+                ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, DoubleDamageTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.DoubleDamage);
+            }
+
+            if (MatchesExactNormalized(normalizedCardName, FocusCardNames) ||
+                ((targetsSelf || targetsAlly) && MatchesAnyNormalized(normalizedText, FocusTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Focus);
+            }
+
+            if (MatchesExactNormalized(normalizedCardName, PoisonCardNames) ||
+                (targetsEnemy && MatchesAnyNormalized(normalizedText, PoisonTokens)))
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Poison);
+            }
+
+            if (isSupportCard && Config.ShowGenericSupport)
+            {
+                AddCallout(results, ref resultCount, StatusCallout.Support);
+            }
+
+            var final = new StatusCallout[resultCount];
+            Array.Copy(results, final, resultCount);
+            return final;
+        }
+
+        private static string BuildCardSearchText(CardModel card)
+        {
+            var parts = new string[5];
+            var partCount = 0;
+            AddText(parts, ref partCount, card.GetType().Name);
+            AddText(parts, ref partCount, card.Title);
+            AddText(parts, ref partCount, card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty);
+            AddText(parts, ref partCount, card.Description != null ? card.Description.LocEntryKey : string.Empty);
+            AddText(parts, ref partCount, SafeFormatLocString(card.Description));
+
+            return string.Join(" ", parts, 0, partCount).ToLowerInvariant();
+        }
+
+        private static void AddText(string[] parts, ref int count, string text)
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                parts[count] = text;
+                count++;
+            }
+        }
+
+        private static void AddCallout(StatusCallout[] results, ref int count, StatusCallout callout)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                if (results[i] == callout)
+                {
+                    return;
+                }
+            }
+
+            results[count] = callout;
+            count++;
+        }
+
+        private static string SafeFormatLocString(LocString locString)
+        {
+            if (locString == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var raw = locString.GetRawText();
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    return raw;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var formatted = locString.GetFormattedText();
+                if (!string.IsNullOrWhiteSpace(formatted))
+                {
+                    return formatted;
+                }
+            }
+            catch
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static bool ContainsAny(string text, params string[] needles)
+        {
+            for (var i = 0; i < needles.Length; i++)
+            {
+                if (text.IndexOf(needles[i], StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string BuildBubbleMessage(StatusCallout[] callouts)
+        {
+            if (callouts.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            if (callouts.Length == 1)
+            {
+                if (callouts[0] == StatusCallout.Support)
+                {
+                    return BubbleIntro + "\nI got a " + GetDisplayName(callouts[0]);
+                }
+
+                return BubbleIntro + "\nI have " + GetDisplayName(callouts[0]);
+            }
+
+            if (callouts.Length == 2)
+            {
+                return BubbleIntro + "\nI have " + GetDisplayName(callouts[0]) + " + " + GetDisplayName(callouts[1]);
+            }
+
+            return BubbleIntro + "\nI have " + GetDisplayName(callouts[0]) + " +" + (callouts.Length - 1);
+        }
+
+        private static string GetDisplayName(StatusCallout callout)
+        {
+            switch (callout)
+            {
+                case StatusCallout.Vulnerable:
+                    return "Vulnerable";
+                case StatusCallout.DoubleDamage:
+                    return "Double Damage";
+                case StatusCallout.Strength:
+                    return "Strength";
+                case StatusCallout.Vigor:
+                    return "Vigor";
+                case StatusCallout.Focus:
+                    return "Focus";
+                case StatusCallout.Poison:
+                    return "Poison";
+                case StatusCallout.Weak:
+                    return "Weak";
+                default:
+                    return "support-card";
+            }
+        }
+
+        private static VfxColor GetVfxColor(StatusCallout callout)
+        {
+            switch (callout)
+            {
+                case StatusCallout.Vulnerable:
+                    return VfxColor.Orange;
+                case StatusCallout.DoubleDamage:
+                    return VfxColor.Red;
+                case StatusCallout.Strength:
+                    return VfxColor.Gold;
+                case StatusCallout.Vigor:
+                    return VfxColor.Green;
+                case StatusCallout.Focus:
+                    return VfxColor.Blue;
+                case StatusCallout.Poison:
+                    return VfxColor.Swamp;
+                case StatusCallout.Weak:
+                    return VfxColor.Blue;
+                default:
+                    return VfxColor.Cyan;
+            }
+        }
+
+        private static string NormalizeForMatch(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var buffer = new char[text.Length];
+            var count = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                var ch = text[i];
+                if (!char.IsLetterOrDigit(ch))
+                {
+                    continue;
+                }
+
+                buffer[count] = char.ToLowerInvariant(ch);
+                count++;
+            }
+
+            return new string(buffer, 0, count);
+        }
+
+        private static bool MatchesAnyNormalized(string normalizedText, params string[] normalizedTokens)
+        {
+            if (string.IsNullOrEmpty(normalizedText))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < normalizedTokens.Length; i++)
+            {
+                if (normalizedText.IndexOf(normalizedTokens[i], StringComparison.Ordinal) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MatchesExactNormalized(string normalizedText, params string[] normalizedTokens)
+        {
+            if (string.IsNullOrEmpty(normalizedText))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < normalizedTokens.Length; i++)
+            {
+                if (normalizedText == normalizedTokens[i])
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void UpdateLastMessage(ulong netId, string message)
+        {
+            var lastMessage = LastMessagesByNetId[netId] as string;
+            if (!string.Equals(lastMessage, message, StringComparison.Ordinal))
+            {
+                AcknowledgedMessagesByNetId.Remove(netId);
+                LastMessagesByNetId[netId] = message;
+            }
+        }
+
+        private static bool IsAcknowledged(ulong netId, string message)
+        {
+            var acknowledgedMessage = AcknowledgedMessagesByNetId[netId] as string;
+            return string.Equals(acknowledgedMessage, message, StringComparison.Ordinal);
+        }
+
+        private static bool AcknowledgeExpiredBubbleIfNeeded(ulong netId, string message)
+        {
+            var bubble = BubblesByNetId[netId] as BubbleUi;
+            if (bubble == null ||
+                bubble.DisplaySeconds <= 0f ||
+                !string.Equals(bubble.Message, message, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var elapsedMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - bubble.CreatedAtUnixMs;
+            if (elapsedMs < bubble.DisplaySeconds * 1000f)
+            {
+                return false;
+            }
+
+            AcknowledgeBubble(netId, message);
+            return true;
+        }
+
+        private static void AcknowledgeBubble(ulong netId, string message)
+        {
+            AcknowledgedMessagesByNetId[netId] = message;
+            RemoveBubble(netId);
+        }
+
+        private static void UpsertBubble(
+            Player player,
+            Node fallbackRoot,
+            string message,
+            StatusCallout primaryCallout)
+        {
+            if (player == null || player.Creature == null)
+            {
+                return;
+            }
+
+            var bubble = BubblesByNetId[player.NetId] as BubbleUi;
+            if (bubble != null &&
+                bubble.SpeechBubble != null &&
+                GodotObject.IsInstanceValid(bubble.SpeechBubble) &&
+                bubble.Creature == player.Creature &&
+                string.Equals(bubble.Message, message, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            RemoveBubble(player.NetId);
+            var gameBubble = TryCreateGameSpeechBubble(message, player.Creature, primaryCallout);
+            if (TryAttachGameSpeechBubble(gameBubble, fallbackRoot))
+            {
+                var displaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
+                bubble = new BubbleUi();
+                bubble.Creature = player.Creature;
+                bubble.Message = message;
+                bubble.SpeechBubble = gameBubble;
+                bubble.CreatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                bubble.DisplaySeconds = displaySeconds;
+                WireBubbleAcknowledgeInput(gameBubble, player.NetId, message);
+                BubblesByNetId[player.NetId] = bubble;
+            }
+        }
+
+        private static void WireBubbleAcknowledgeInput(Node node, ulong netId, string message)
+        {
+            if (node == null || !GodotObject.IsInstanceValid(node))
+            {
+                return;
+            }
+
+            var control = node as Control;
+            if (control != null)
+            {
+                control.MouseFilter = Control.MouseFilterEnum.Stop;
+                control.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+                control.GuiInput += inputEvent => OnBubbleGuiInput(netId, message, inputEvent);
+            }
+
+            var children = node.GetChildren();
+            for (var i = 0; i < children.Count; i++)
+            {
+                WireBubbleAcknowledgeInput(children[i] as Node, netId, message);
+            }
+        }
+
+        private static void OnBubbleGuiInput(ulong netId, string message, InputEvent inputEvent)
+        {
+            var mouseButton = inputEvent as InputEventMouseButton;
+            if (mouseButton == null || !mouseButton.Pressed || mouseButton.ButtonIndex != MouseButton.Left)
+            {
+                return;
+            }
+
+            AcknowledgeBubble(netId, message);
+        }
+
+        private static bool TryAttachGameSpeechBubble(NSpeechBubbleVfx speechBubble, Node fallbackRoot)
+        {
+            if (speechBubble == null || !GodotObject.IsInstanceValid(speechBubble))
+            {
+                return false;
+            }
+
+            var host = ResolveSpeechBubbleHost(fallbackRoot);
+
+            if (host == null || !GodotObject.IsInstanceValid(host))
+            {
+                return false;
+            }
+
+            try
+            {
+                host.AddChildSafely(speechBubble);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[CoopStatusBubbles] Failed to attach game speech bubble: " + ex.Message);
+                try
+                {
+                    speechBubble.QueueFree();
+                }
+                catch
+                {
+                }
+
+                return false;
+            }
+        }
+
+        private static Node ResolveSpeechBubbleHost(Node fallbackRoot)
+        {
+            try
+            {
+                var combatRoom = NCombatRoom.Instance;
+                if (combatRoom != null && GodotObject.IsInstanceValid(combatRoom))
+                {
+                    var combatVfxContainer = combatRoom.CombatVfxContainer;
+                    if (combatVfxContainer != null && GodotObject.IsInstanceValid(combatVfxContainer))
+                    {
+                        return combatVfxContainer;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            if (fallbackRoot != null && GodotObject.IsInstanceValid(fallbackRoot))
+            {
+                return fallbackRoot;
+            }
+
+            return NGame.Instance != null && NGame.Instance.GetTree() != null
+                ? NGame.Instance.GetTree().Root
+                : null;
+        }
+
+        private static NSpeechBubbleVfx TryCreateGameSpeechBubble(string message, Creature creature, StatusCallout primaryCallout)
+        {
+            if (creature == null || string.IsNullOrWhiteSpace(message))
+            {
+                return null;
+            }
+
+            try
+            {
+                var displaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
+                var lifetimeSeconds = displaySeconds <= 0f
+                    ? ManualBubbleLifetimeSeconds
+                    : displaySeconds;
+                return NSpeechBubbleVfx.Create(
+                    message,
+                    creature,
+                    lifetimeSeconds,
+                    GetVfxColor(primaryCallout));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[CoopStatusBubbles] Failed to create game speech bubble: " + ex.Message);
+                return null;
+            }
+        }
+
+        private static void RemoveInactiveBubbles(Hashtable activeNetIds)
+        {
+            var staleNetIds = new ArrayList();
+            foreach (var key in BubblesByNetId.Keys)
+            {
+                if (!activeNetIds.ContainsKey(key))
+                {
+                    staleNetIds.Add(key);
+                }
+            }
+
+            for (var i = 0; i < staleNetIds.Count; i++)
+            {
+                RemoveBubble((ulong)staleNetIds[i]);
+            }
+
+            var staleMessageNetIds = new ArrayList();
+            foreach (var key in LastMessagesByNetId.Keys)
+            {
+                if (!activeNetIds.ContainsKey(key))
+                {
+                    staleMessageNetIds.Add(key);
+                }
+            }
+
+            for (var i = 0; i < staleMessageNetIds.Count; i++)
+            {
+                LastMessagesByNetId.Remove(staleMessageNetIds[i]);
+                AcknowledgedMessagesByNetId.Remove(staleMessageNetIds[i]);
+            }
+        }
+
+        private static void RemoveBubble(ulong netId)
+        {
+            var bubble = BubblesByNetId[netId] as BubbleUi;
+            if (bubble == null)
+            {
+                return;
+            }
+
+            if (bubble.SpeechBubble != null && GodotObject.IsInstanceValid(bubble.SpeechBubble))
+            {
+                try
+                {
+                    _ = bubble.SpeechBubble.AnimOut();
+                }
+                catch
+                {
+                    bubble.SpeechBubble.QueueFree();
+                }
+            }
+
+            BubblesByNetId.Remove(netId);
+        }
+
+        private static void ClearAllBubbles()
+        {
+            var allNetIds = new ArrayList();
+            foreach (var key in BubblesByNetId.Keys)
+            {
+                allNetIds.Add(key);
+            }
+
+            for (var i = 0; i < allNetIds.Count; i++)
+            {
+                RemoveBubble((ulong)allNetIds[i]);
+            }
+        }
+    }
+}

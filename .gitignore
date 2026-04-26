@@ -1,0 +1,5 @@
+dist/
+*.test.dll
+*.status.txt
+*.user
+*.log
