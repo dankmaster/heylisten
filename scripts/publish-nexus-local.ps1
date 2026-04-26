@@ -1,5 +1,6 @@
 param(
     [string]$Version,
+    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$ZipPath,
     [string]$DisplayName = "Co-op Callouts",
@@ -30,8 +31,10 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine Nexus publish version."
 }
 
+$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
+
 if ([string]::IsNullOrWhiteSpace($ZipPath)) {
-    $ZipPath = Join-Path $repoRoot "dist\Co-op-Callouts-$Version.zip"
+    $ZipPath = Join-Path $BuildRoot "Co-op-Callouts-$Version.zip"
 }
 
 $FileGroupId = Resolve-NexusFileGroupId $FileGroupId
@@ -45,6 +48,19 @@ if (!(Test-Path -LiteralPath $ZipPath)) {
 }
 
 $ZipPath = (Resolve-Path -LiteralPath $ZipPath).Path
+$archiveExisting = if ($ArchiveExistingFile) { "true" } else { "false" }
+
+if ($DryRun) {
+    Write-Host "Would upload to Nexus Mods:"
+    Write-Host "  Zip: $ZipPath"
+    Write-Host "  Version: $Version"
+    Write-Host "  File group: $FileGroupId"
+    Write-Host "  Display name: $DisplayName"
+    Write-Host "  Description: $Description"
+    Write-Host "  Category: $FileCategory"
+    Write-Host "  Archive existing file: $archiveExisting"
+    return
+}
 
 if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
     if (!$ConfigureApiKey) {
@@ -73,7 +89,7 @@ if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($ActionDir)) {
-    $ActionDir = Join-Path $repoRoot "local-test-downloads\nexus-upload-action"
+    $ActionDir = Join-Path $BuildRoot "nexus-upload-action"
 }
 
 $actionRepo = "https://github.com/Nexus-Mods/upload-action.git"
@@ -106,20 +122,6 @@ if (!(Test-Path -LiteralPath $actionIndex)) {
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (!$node) {
     throw "Node.js 20 or newer is required to run the Nexus Mods upload action locally."
-}
-
-$archiveExisting = if ($ArchiveExistingFile) { "true" } else { "false" }
-
-if ($DryRun) {
-    Write-Host "Would upload to Nexus Mods:"
-    Write-Host "  Zip: $ZipPath"
-    Write-Host "  Version: $Version"
-    Write-Host "  File group: $FileGroupId"
-    Write-Host "  Display name: $DisplayName"
-    Write-Host "  Description: $Description"
-    Write-Host "  Category: $FileCategory"
-    Write-Host "  Archive existing file: $archiveExisting"
-    return
 }
 
 $envNames = @(

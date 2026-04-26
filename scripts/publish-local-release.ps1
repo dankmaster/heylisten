@@ -1,5 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
+    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
     [string]$Version,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$DisplayName = "Co-op Callouts",
@@ -32,7 +33,8 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine release version."
 }
 
-$zipPath = Join-Path $repoRoot "dist\Co-op-Callouts-$Version.zip"
+$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
+$zipPath = Join-Path $BuildRoot "Co-op-Callouts-$Version.zip"
 $FileGroupId = Resolve-NexusFileGroupId $FileGroupId
 $Description = Resolve-TextFromFileOrDefault `
     -Value $Description `
@@ -44,6 +46,7 @@ try {
     if (!$SkipGitHub) {
         $githubArgs = @(
             "-GameRoot", $GameRoot,
+            "-BuildRoot", $BuildRoot,
             "-Version", $Version
         )
 
@@ -58,12 +61,13 @@ try {
         & (Join-Path $PSScriptRoot "publish-github-release.ps1") @githubArgs
     }
     elseif (!(Test-Path -LiteralPath $zipPath)) {
-        & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -Version $Version | Out-Host
+        & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot -Version $Version | Out-Host
     }
 
     if (!$SkipNexus) {
         $nexusArgs = @(
             "-Version", $Version,
+            "-BuildRoot", $BuildRoot,
             "-FileGroupId", $FileGroupId,
             "-ZipPath", $zipPath,
             "-DisplayName", $DisplayName,

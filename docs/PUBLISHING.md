@@ -10,7 +10,15 @@ Run the package script from the repo root:
 
 Scripts auto-detect the game folder when this repo lives under the local game workspace. You can also set `STS2_GAME_ROOT` or pass `-GameRoot` explicitly.
 
-It creates and verifies two archives:
+Build outputs default to `dist/`, which is gitignored. To use another local build folder, set:
+
+```powershell
+$env:COOPCALLOUTS_BUILD_ROOT = ".build"
+```
+
+or pass `-BuildRoot` to the build, package, and publish scripts.
+
+By default, it creates and verifies two archives:
 
 ```text
 dist/Co-op-Callouts-<version>.zip
@@ -82,7 +90,7 @@ or let the script prompt and save it to your Windows user environment:
 
 ## Nexus Mods / Vortex
 
-Upload `dist/Co-op-Callouts-<version>.zip` as the main file on the Slay The Spire II Nexus Mods page and keep `Mod Manager Download` enabled.
+Upload the generated `Co-op-Callouts-<version>.zip` as the main file on the Slay The Spire II Nexus Mods page and keep `Mod Manager Download` enabled.
 
 Vortex support depends on Vortex recognizing Slay the Spire 2. If the user's Vortex install does not recognize it yet, point them to the Slay the Spire 2 Vortex Extension:
 

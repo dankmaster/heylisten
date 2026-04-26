@@ -1,4 +1,6 @@
 dist/
+.build/
+build/
 local-test-logs/
 local-test-downloads/
 *.test.dll

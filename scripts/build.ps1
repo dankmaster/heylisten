@@ -1,5 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
+    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
     [switch]$Install
 )
 
@@ -16,8 +17,10 @@ if ($PSVersionTable.PSEdition -ne "Core") {
             "-File", $PSCommandPath
         )
 
-        if ($PSBoundParameters.ContainsKey("GameRoot")) {
-            $args += @("-GameRoot", $GameRoot)
+        foreach ($parameter in @("GameRoot", "BuildRoot")) {
+            if ($PSBoundParameters.ContainsKey($parameter)) {
+                $args += @("-$parameter", $PSBoundParameters[$parameter])
+            }
         }
 
         if ($Install) {
@@ -31,11 +34,11 @@ if ($PSVersionTable.PSEdition -ne "Core") {
 
 $GameRoot = Resolve-Sts2GameRoot $GameRoot
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
 $dataDir = Join-Path $GameRoot "data_sts2_windows_x86_64"
 $sourcePath = Join-Path $repoRoot "src\CoopCallouts.cs"
 $manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
-$distRoot = Join-Path $repoRoot "dist"
-$distModDir = Join-Path $distRoot "CoopCallouts"
+$distModDir = Join-Path $BuildRoot "CoopCallouts"
 $outputPath = Join-Path $distModDir "CoopCallouts.dll"
 $runtimeDir = Split-Path -Parent ([System.Text.RegularExpressions.Regex].Assembly.Location)
 
@@ -133,12 +136,8 @@ function Invoke-RoslynCompile {
     return $true
 }
 
-$resolvedDistRoot = [System.IO.Path]::GetFullPath($distRoot)
-$resolvedRepoRoot = [System.IO.Path]::GetFullPath($repoRoot)
-if (!$resolvedDistRoot.StartsWith($resolvedRepoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "Refusing to clean a dist path outside the repository."
-}
-
+New-Item -ItemType Directory -Force -Path $BuildRoot | Out-Null
+Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $distModDir
 if (Test-Path -LiteralPath $distModDir) {
     Remove-Item -LiteralPath $distModDir -Recurse -Force
 }

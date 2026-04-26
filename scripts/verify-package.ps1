@@ -1,13 +1,16 @@
 param(
     [string]$Version,
+    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
     [switch]$ModFolderPackage
 )
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "common.ps1")
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
-$distRoot = Join-Path $repoRoot "dist"
+$BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -25,7 +28,7 @@ else {
     "Co-op-Callouts-$Version.zip"
 }
 
-$zipPath = Join-Path $distRoot $packageName
+$zipPath = Join-Path $BuildRoot $packageName
 if (!(Test-Path -LiteralPath $zipPath)) {
     throw "Package not found: $zipPath"
 }

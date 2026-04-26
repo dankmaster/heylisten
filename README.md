@@ -78,13 +78,15 @@ To build and install into that local game folder:
 
 The scripts auto-detect the game folder when this repo lives under the local game workspace. You can also set `STS2_GAME_ROOT` or pass `-GameRoot` explicitly.
 
+Build outputs default to `dist/`. To use another local build folder, set `COOPCALLOUTS_BUILD_ROOT` or pass `-BuildRoot`.
+
 ## Package
 
 ```powershell
 .\scripts\package.ps1
 ```
 
-The package is written to:
+By default, the package is written to:
 
 ```text
 dist/Co-op-Callouts-<version>.zip

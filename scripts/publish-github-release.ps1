@@ -1,11 +1,14 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
+    [string]$BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT,
     [string]$Version,
     [switch]$NoDraft,
     [switch]$MoveTag
 )
 
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\CoopCallouts\CoopCallouts.json"
@@ -25,7 +28,8 @@ try {
         throw "Working tree is dirty. Commit changes before publishing a release."
     }
 
-    $packageOutput = & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -Version $Version
+    $BuildRoot = Resolve-CoopCalloutsBuildRoot $BuildRoot
+    $packageOutput = & (Join-Path $PSScriptRoot "package.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot -Version $Version
     $zipPaths = @($packageOutput |
         Where-Object { $_ -is [string] -and $_.Trim().EndsWith(".zip") } |
         ForEach-Object { $_.Trim() } |

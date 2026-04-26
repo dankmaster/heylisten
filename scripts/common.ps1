@@ -52,6 +52,39 @@ function Resolve-NexusFileGroupId {
     return $DefaultNexusFileGroupId
 }
 
+function Resolve-CoopCalloutsBuildRoot {
+    param(
+        [string]$BuildRoot
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
+        $BuildRoot = $env:COOPCALLOUTS_BUILD_ROOT
+    }
+
+    if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
+        $BuildRoot = Join-Path (Get-CoopCalloutsRepoRoot) "dist"
+    }
+    elseif (![System.IO.Path]::IsPathRooted($BuildRoot)) {
+        $BuildRoot = Join-Path (Get-CoopCalloutsRepoRoot) $BuildRoot
+    }
+
+    return [System.IO.Path]::GetFullPath($BuildRoot)
+}
+
+function Assert-SafeBuildRootPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$BuildRoot,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $resolvedBuildRoot = [System.IO.Path]::GetFullPath($BuildRoot)
+    $resolvedPath = [System.IO.Path]::GetFullPath($Path)
+    $relativePath = [System.IO.Path]::GetRelativePath($resolvedBuildRoot, $resolvedPath)
+    if ($relativePath -eq ".." -or $relativePath.StartsWith("..$([System.IO.Path]::DirectorySeparatorChar)") -or [System.IO.Path]::IsPathRooted($relativePath)) {
+        throw "Refusing to clean a path outside the build root: $Path"
+    }
+}
+
 function Resolve-TextFromFileOrDefault {
     param(
         [string]$Value,
