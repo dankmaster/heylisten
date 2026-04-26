@@ -1893,7 +1893,10 @@ namespace HeyListen
                     : displayName + GetUpgradeSuffix(callout.UpgradeLevel);
             }
 
-            return displayName;
+            var color = GetTextColor(callout.Callout);
+            return string.IsNullOrEmpty(color)
+                ? displayName
+                : "[color=" + color + "]" + displayName + "[/color]";
         }
 
         private static string GetUpgradeSuffix(int upgradeLevel)
@@ -1928,6 +1931,29 @@ namespace HeyListen
                     return "Weak";
                 default:
                     return "support card";
+            }
+        }
+
+        private static string GetTextColor(StatusCallout callout)
+        {
+            switch (callout)
+            {
+                case StatusCallout.Vulnerable:
+                    return "#ff8a3d";
+                case StatusCallout.DoubleDamage:
+                    return "#ff4a4a";
+                case StatusCallout.Strength:
+                    return "#ffd24a";
+                case StatusCallout.Vigor:
+                    return "#6ee06f";
+                case StatusCallout.Focus:
+                    return "#58b7ff";
+                case StatusCallout.Poison:
+                    return "#64d86b";
+                case StatusCallout.Weak:
+                    return "#8ba1ff";
+                default:
+                    return string.Empty;
             }
         }
 

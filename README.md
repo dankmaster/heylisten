@@ -9,7 +9,7 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Native game speech bubbles, attached through the normal combat VFX layer.
 - Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
 - Self callouts use `I have ...` wording so your own character's bubble reads differently from teammate bubbles.
-- Status names show upgrade markers when the useful card is upgraded.
+- Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
