@@ -1,0 +1,64 @@
+name: Publish to Nexus Mods
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the leading v
+        required: true
+        default: "0.9"
+      file_group_id:
+        description: Nexus Mods file group ID from the mod page API Info menu
+        required: true
+      release_asset_name:
+        description: GitHub release asset to publish
+        required: true
+        default: "Co-op-Callouts-0.9.zip"
+      display_name:
+        description: Nexus file display name
+        required: false
+        default: "Co-op Callouts"
+      description:
+        description: Nexus file description
+        required: false
+        default: "Vortex-ready Co-op Callouts release."
+      file_category:
+        description: Nexus file category
+        required: false
+        default: "main"
+      archive_existing_file:
+        description: Archive the existing file in this group
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Upload GitHub release asset to Nexus Mods
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download GitHub release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          RELEASE_ASSET_NAME: ${{ inputs.release_asset_name }}
+        run: |
+          mkdir -p dist
+          gh release download "v${VERSION}" --pattern "${RELEASE_ASSET_NAME}" --dir dist --repo "${GITHUB_REPOSITORY}"
+          test -f "dist/${RELEASE_ASSET_NAME}"
+
+      - name: Upload to Nexus Mods
+        uses: Nexus-Mods/upload-action@main
+        env:
+          INPUT_ARCHIVE_EXISTING_FILE: ${{ inputs.archive_existing_file }}
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_group_id: ${{ inputs.file_group_id }}
+          filename: "dist/${{ inputs.release_asset_name }}"
+          version: "${{ inputs.version }}"
+          display_name: "${{ inputs.display_name }} ${{ inputs.version }}"
+          description: "${{ inputs.description }}"
+          file_category: "${{ inputs.file_category }}"

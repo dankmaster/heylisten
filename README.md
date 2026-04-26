@@ -105,6 +105,16 @@ The script builds the package, creates or reuses tag `v<version>`, pushes the ta
 
 If you intentionally need to refresh an existing tag for the same version, pass `-MoveTag`.
 
+## Nexus Mods
+
+After the GitHub release is ready and the Nexus mod page has a file group, run:
+
+```powershell
+.\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>"
+```
+
+The script triggers the GitHub `Publish to Nexus Mods` workflow, which downloads the release zip and uploads it with the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
+
 ## Local Co-op Testing
 
 Use `scripts/install-lan-multiplayer.ps1` and `scripts/launch-local-coop-test.ps1` to launch multiple playable local game clients for multiplayer UI testing. See [docs/LOCAL_COOP_TESTING.md](docs/LOCAL_COOP_TESTING.md).

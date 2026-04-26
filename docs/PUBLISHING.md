@@ -59,3 +59,28 @@ https://www.nexusmods.com/site/mods/1727
 ```
 
 The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/CoopCallouts`.
+
+## Nexus Upload Workflow
+
+Nexus Mods' upload API can update an existing mod file group. Create the Nexus mod page manually first and upload the first main file through the site. Then find the file group ID from the Files tab `API Info` menu or the Manage Files edit menu.
+
+Set the API key once:
+
+```powershell
+.\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureApiKey
+```
+
+For later releases:
+
+```powershell
+.\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>" -Watch
+```
+
+You can also set the file group ID in the shell:
+
+```powershell
+$env:NEXUSMODS_FILE_GROUP_ID = "<nexus-file-group-id>"
+.\scripts\publish-nexus.ps1 -Watch
+```
+
+The local script triggers `.github/workflows/publish-nexus.yml`. That workflow downloads `Co-op-Callouts-<version>.zip` from the matching GitHub release and uploads it with the official `Nexus-Mods/upload-action`.
