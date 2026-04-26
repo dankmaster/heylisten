@@ -20,14 +20,13 @@ or pass `-BuildRoot` to the build, package, and publish scripts.
 
 Local machine values can live in ignored `local.settings.json`. Copy `local.settings.example.json` and fill in the Nexus file group ID and Steam app ID for your machine.
 
-By default, it creates and verifies two archives:
+By default, it creates and verifies one public archive:
 
 ```text
 dist/Hey-Listen-<version>.zip
-dist/Hey-Listen-<version>-mod-folder.zip
 ```
 
-Use `Hey-Listen-<version>.zip` as the main public file. It is packed relative to the game root:
+Use `Hey-Listen-<version>.zip` as the public file. It is packed relative to the game root:
 
 ```text
 mods/
@@ -36,13 +35,7 @@ mods/
     heylisten.json
 ```
 
-Use `Hey-Listen-<version>-mod-folder.zip` only as an optional fallback for users who manually copy a folder into `Slay the Spire 2/mods`:
-
-```text
-heylisten/
-  heylisten.dll
-  heylisten.json
-```
+Users can extract or drag this archive into the Slay the Spire 2 folder, or install the same file with Vortex.
 
 ## GitHub
 
@@ -52,7 +45,7 @@ Commit the release changes first, then run:
 .\scripts\publish-github-release.ps1
 ```
 
-The script builds both archives, verifies their layouts, pushes `main`, creates or reuses `v<version>`, and uploads both zip files to a draft GitHub release.
+The script builds the archive, verifies its layout, pushes `main`, creates or reuses `v<version>`, and uploads the zip file to a draft GitHub release.
 
 If the same version tag already exists and you intentionally want to refresh it:
 

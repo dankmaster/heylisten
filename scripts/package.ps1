@@ -14,7 +14,6 @@ $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 $distModDir = Join-Path $BuildRoot "heylisten"
 $gameRootPackageRoot = Join-Path $BuildRoot "package-game-root"
 $gameRootPackageModsDir = Join-Path $gameRootPackageRoot "mods"
-$modFolderPackageRoot = Join-Path $BuildRoot "package-mod-folder"
 
 & (Join-Path $PSScriptRoot "build.ps1") -GameRoot $GameRoot -BuildRoot $BuildRoot
 
@@ -28,9 +27,10 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 }
 
 $gameRootZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
-$modFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
+$legacyModFolderPackageRoot = Join-Path $BuildRoot "package-mod-folder"
+$legacyModFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
 
-foreach ($path in @($gameRootPackageRoot, $modFolderPackageRoot, $gameRootZipPath, $modFolderZipPath)) {
+foreach ($path in @($gameRootPackageRoot, $legacyModFolderPackageRoot, $gameRootZipPath, $legacyModFolderZipPath)) {
     Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $path
 
     if (Test-Path -LiteralPath $path) {
@@ -41,16 +41,9 @@ foreach ($path in @($gameRootPackageRoot, $modFolderPackageRoot, $gameRootZipPat
 New-Item -ItemType Directory -Force $gameRootPackageModsDir | Out-Null
 Copy-Item -LiteralPath $distModDir -Destination $gameRootPackageModsDir -Recurse -Force
 
-New-Item -ItemType Directory -Force $modFolderPackageRoot | Out-Null
-Copy-Item -LiteralPath $distModDir -Destination $modFolderPackageRoot -Recurse -Force
-
 Compress-Archive -Path (Join-Path $gameRootPackageRoot "*") -DestinationPath $gameRootZipPath -Force
-Compress-Archive -Path (Join-Path $modFolderPackageRoot "*") -DestinationPath $modFolderZipPath -Force
 
 & (Join-Path $PSScriptRoot "verify-package.ps1") -Version $Version -BuildRoot $BuildRoot
-& (Join-Path $PSScriptRoot "verify-package.ps1") -Version $Version -BuildRoot $BuildRoot -ModFolderPackage
 
 Write-Host "Packaged game-root/Vortex zip: $gameRootZipPath"
-Write-Host "Packaged direct mods-folder zip: $modFolderZipPath"
 Write-Output $gameRootZipPath
-Write-Output $modFolderZipPath

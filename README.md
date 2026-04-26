@@ -2,7 +2,7 @@
 
 Native co-op speech-bubble callouts for Slay the Spire 2.
 
-Hey, listen! watches co-op combat hands and uses the game's own speech bubble VFX to point out useful setup cards for you and your teammates. It keeps the UI lightweight: bubbles can be clicked away, can auto-hide on a timer, and disappear while the Timeline screen is open.
+Hey, listen! watches co-op combat hands and uses the game's own speech bubble VFX to point out useful setup cards for you and your teammates. It keeps the UI lightweight: bubbles can be clicked away and can auto-hide on a timer.
 
 ## Features
 
@@ -12,7 +12,6 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
-- Timeline-aware cleanup so callouts do not linger over Timeline UI.
 
 ## Install
 
@@ -35,18 +34,6 @@ Launch the game normally after installing.
 Upload `Hey-Listen-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder.
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
-
-### Direct Mods Folder Install
-
-`Hey-Listen-<version>-mod-folder.zip` is a fallback package for users who want to drop the mod directly into the existing game `mods` folder.
-
-```text
-Slay the Spire 2/
-  mods/
-    heylisten/
-      heylisten.dll
-      heylisten.json
-```
 
 ## Settings
 
@@ -93,10 +80,9 @@ By default, the package is written to:
 
 ```text
 dist/Hey-Listen-<version>.zip
-dist/Hey-Listen-<version>-mod-folder.zip
 ```
 
-The main zip is the game-root and Vortex/Nexus package. The `-mod-folder` zip is only for users manually copying into `Slay the Spire 2/mods`.
+The zip is packed relative to the game root and includes `mods/heylisten`, so it works for Vortex/Nexus and manual drag-and-drop into the Slay the Spire 2 folder.
 
 ## GitHub Release
 

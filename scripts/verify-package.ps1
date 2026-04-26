@@ -1,7 +1,6 @@
 param(
     [string]$Version,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
-    [switch]$ModFolderPackage
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,30 +20,16 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine package version."
 }
 
-$packageName = if ($ModFolderPackage) {
-    "Hey-Listen-$Version-mod-folder.zip"
-}
-else {
-    "Hey-Listen-$Version.zip"
-}
-
+$packageName = "Hey-Listen-$Version.zip"
 $zipPath = Join-Path $BuildRoot $packageName
 if (!(Test-Path -LiteralPath $zipPath)) {
     throw "Package not found: $zipPath"
 }
 
-$expectedEntries = if ($ModFolderPackage) {
-    @(
-        "heylisten/heylisten.dll",
-        "heylisten/heylisten.json"
-    )
-}
-else {
-    @(
-        "mods/heylisten/heylisten.dll",
-        "mods/heylisten/heylisten.json"
-    )
-}
+$expectedEntries = @(
+    "mods/heylisten/heylisten.dll",
+    "mods/heylisten/heylisten.json"
+)
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)

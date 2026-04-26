@@ -40,6 +40,8 @@ try {
     }
 
     $tag = "v$Version"
+    $releaseTitle = "Hey, listen! $Version"
+    $releaseNotes = "Ready-to-install package for Hey, listen! $Version. Extract the zip into your Slay the Spire 2 folder or install it with Vortex."
 
     git fetch --tags | Out-Null
     $existingTag = git tag --list $tag
@@ -78,19 +80,28 @@ try {
             gh release upload $tag $zipPath --clobber
         }
 
+        $expectedAssetNames = @($zipPaths | ForEach-Object { Split-Path -Leaf $_ })
+        $release = gh release view $tag --json assets | ConvertFrom-Json
+        foreach ($asset in $release.assets) {
+            if ($asset.name.EndsWith(".zip") -and $asset.name -notin $expectedAssetNames) {
+                gh release delete-asset $tag $asset.name -y
+            }
+        }
+
         if (!$NoDraft) {
             Write-Host "Release $tag remains a draft."
+            gh release edit $tag --title $releaseTitle --notes $releaseNotes
         }
         else {
-            gh release edit $tag --draft=false
+            gh release edit $tag --title $releaseTitle --notes $releaseNotes --draft=false
         }
     }
     else {
         $args = @(
             "release", "create", $tag
         ) + $zipPaths + @(
-            "--title", "Hey, listen! $Version",
-            "--notes", "Release package for Hey, listen! $Version."
+            "--title", $releaseTitle,
+            "--notes", $releaseNotes
         )
 
         if (!$NoDraft) {
