@@ -3,7 +3,7 @@ param(
     [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [string]$Version,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
-    [string]$DisplayName = "Hey, listen!",
+    [string]$DisplayName = "Hey Listen",
     [string]$Description,
     [string]$FileCategory = "main",
     [string]$NexusApiKey,

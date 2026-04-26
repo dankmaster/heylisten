@@ -65,7 +65,7 @@ This does all of the following:
 
 - Builds the mod against your local game files.
 - Creates or updates the GitHub release and uploads the release zips.
-- Uploads `Hey-Listen-<version>.zip` to Nexus Mods from your machine.
+- Uploads `Hey-Listen-<version>.zip` to Nexus Mods from your machine. The Nexus file display name defaults to `Hey Listen` because the Nexus upload API does not allow punctuation such as commas or exclamation marks in file names.
 
 By default this creates a public GitHub release. Add `-Draft` if you want the GitHub release to stay in draft mode.
 

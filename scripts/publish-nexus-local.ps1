@@ -3,7 +3,7 @@ param(
     [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$ZipPath,
-    [string]$DisplayName = "Hey, listen!",
+    [string]$DisplayName = "Hey Listen",
     [string]$Description,
     [string]$FileCategory = "main",
     [string]$NexusApiKey,
@@ -149,8 +149,20 @@ try {
     $env:INPUT_FILE_CATEGORY = $FileCategory
     $env:INPUT_ARCHIVE_EXISTING_FILE = $archiveExisting
 
-    & $node.Source $actionIndex
-    if ($LASTEXITCODE -ne 0) {
+    $actionOutput = & $node.Source $actionIndex 2>&1
+    $actionExitCode = $LASTEXITCODE
+    foreach ($entry in $actionOutput) {
+        $line = $entry.ToString()
+        if ($line.StartsWith("::debug::")) {
+            continue
+        }
+
+        $line = $line.Replace($NexusApiKey, "***")
+        $line = [Regex]::Replace($line, '"apikey"\s*:\s*"[^"]+"', '"apikey": "***"')
+        Write-Host $line
+    }
+
+    if ($actionExitCode -ne 0) {
         throw "Nexus Mods upload failed."
     }
 }
