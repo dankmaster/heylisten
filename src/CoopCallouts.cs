@@ -3,6 +3,7 @@ using System.Collections;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Godot;
@@ -48,7 +49,7 @@ namespace CoopCallouts
 
     internal sealed class ObservedPlayerState
     {
-        public ulong NetId;
+        public string PlayerKey;
         public PlayerCombatState CombatState;
         public CardPile Hand;
     }
@@ -166,11 +167,11 @@ namespace CoopCallouts
         private const double ManualBubbleLifetimeSeconds = 600d;
 
         private static readonly Harmony Harmony = new Harmony("coopcallouts.patch");
-        private static readonly Hashtable BubblesByNetId = new Hashtable();
-        private static readonly Hashtable AcknowledgedMessagesByNetId = new Hashtable();
-        private static readonly Hashtable LastMessagesByNetId = new Hashtable();
-        private static readonly Hashtable ObservedPlayersByNetId = new Hashtable();
-        private static readonly Hashtable EndedTurnPlayersByNetId = new Hashtable();
+        private static readonly Hashtable BubblesByPlayerKey = new Hashtable();
+        private static readonly Hashtable AcknowledgedMessagesByPlayerKey = new Hashtable();
+        private static readonly Hashtable LastMessagesByPlayerKey = new Hashtable();
+        private static readonly Hashtable ObservedPlayersByPlayerKey = new Hashtable();
+        private static readonly Hashtable EndedTurnPlayersByPlayerKey = new Hashtable();
         private static readonly StatusCallout[] CalloutPriority =
         {
             StatusCallout.Vulnerable,
@@ -493,15 +494,16 @@ namespace CoopCallouts
                 ? NGame.Instance.GetTree().Root
                 : null;
 
-            var activeNetIds = new Hashtable();
+            var activePlayerKeys = new Hashtable();
             for (var i = 0; i < runState.Players.Count; i++)
             {
                 var player = runState.Players[i];
-                if (player == null || player.NetId == localNetId)
+                if (player == null)
                 {
                     continue;
                 }
 
+                var playerKey = GetPlayerKey(player);
                 var callouts = CollectCallouts(player);
                 if (callouts.Length == 0)
                 {
@@ -514,19 +516,19 @@ namespace CoopCallouts
                 }
 
                 var message = BuildBubbleMessage(callouts);
-                UpdateLastMessage(player.NetId, message);
-                if (AcknowledgeExpiredBubbleIfNeeded(player.NetId, message) ||
-                    IsAcknowledged(player.NetId, message))
+                UpdateLastMessage(playerKey, message);
+                if (AcknowledgeExpiredBubbleIfNeeded(playerKey, message) ||
+                    IsAcknowledged(playerKey, message))
                 {
-                    activeNetIds[player.NetId] = true;
+                    activePlayerKeys[playerKey] = true;
                     continue;
                 }
 
-                UpsertBubble(player, root, message, callouts[0]);
-                activeNetIds[player.NetId] = true;
+                UpsertBubble(player, playerKey, root, message, callouts[0]);
+                activePlayerKeys[playerKey] = true;
             }
 
-            RemoveInactiveBubbles(activeNetIds);
+            RemoveInactiveBubbles(activePlayerKeys);
         }
 
         private static void HookAssemblyLoad()
@@ -1015,50 +1017,54 @@ namespace CoopCallouts
                 return;
             }
 
-            var activeNetIds = new Hashtable();
+            var activePlayerKeys = new Hashtable();
             for (var i = 0; i < runState.Players.Count; i++)
             {
                 var player = runState.Players[i];
-                if (player == null || player.NetId == localNetId || player.PlayerCombatState == null)
+                if (player == null || player.PlayerCombatState == null)
                 {
                     continue;
                 }
 
+                var playerKey = GetPlayerKey(player);
                 var hand = player.PlayerCombatState.Hand;
                 if (hand == null)
                 {
                     continue;
                 }
 
-                activeNetIds[player.NetId] = true;
-                var observed = ObservedPlayersByNetId[player.NetId] as ObservedPlayerState;
+                activePlayerKeys[playerKey] = true;
+                var observed = ObservedPlayersByPlayerKey[playerKey] as ObservedPlayerState;
                 if (observed != null && observed.Hand == hand && observed.CombatState == player.PlayerCombatState)
                 {
                     continue;
                 }
 
-                RemoveObservedPlayer(player.NetId);
-                AddObservedPlayer(player);
+                RemoveObservedPlayer(playerKey);
+                AddObservedPlayer(player, playerKey);
             }
 
-            var staleNetIds = new ArrayList();
-            foreach (var key in ObservedPlayersByNetId.Keys)
+            var stalePlayerKeys = new ArrayList();
+            foreach (var key in ObservedPlayersByPlayerKey.Keys)
             {
-                if (!activeNetIds.ContainsKey(key))
+                if (!activePlayerKeys.ContainsKey(key))
                 {
-                    staleNetIds.Add(key);
+                    stalePlayerKeys.Add(key);
                 }
             }
 
-            for (var i = 0; i < staleNetIds.Count; i++)
+            for (var i = 0; i < stalePlayerKeys.Count; i++)
             {
-                RemoveObservedPlayer((ulong)staleNetIds[i]);
+                RemoveObservedPlayer((string)stalePlayerKeys[i]);
             }
         }
 
-        private static void AddObservedPlayer(Player player)
+        private static void AddObservedPlayer(Player player, string playerKey)
         {
-            if (player == null || player.PlayerCombatState == null || player.PlayerCombatState.Hand == null)
+            if (player == null ||
+                string.IsNullOrWhiteSpace(playerKey) ||
+                player.PlayerCombatState == null ||
+                player.PlayerCombatState.Hand == null)
             {
                 return;
             }
@@ -1068,15 +1074,15 @@ namespace CoopCallouts
             player.PlayerCombatState.StarsChanged += OnObservedStarsChanged;
 
             var observed = new ObservedPlayerState();
-            observed.NetId = player.NetId;
+            observed.PlayerKey = playerKey;
             observed.Hand = player.PlayerCombatState.Hand;
             observed.CombatState = player.PlayerCombatState;
-            ObservedPlayersByNetId[player.NetId] = observed;
+            ObservedPlayersByPlayerKey[playerKey] = observed;
         }
 
-        private static void RemoveObservedPlayer(ulong netId)
+        private static void RemoveObservedPlayer(string playerKey)
         {
-            var observed = ObservedPlayersByNetId[netId] as ObservedPlayerState;
+            var observed = ObservedPlayersByPlayerKey[playerKey] as ObservedPlayerState;
             if (observed == null)
             {
                 return;
@@ -1105,20 +1111,20 @@ namespace CoopCallouts
             {
             }
 
-            ObservedPlayersByNetId.Remove(netId);
+            ObservedPlayersByPlayerKey.Remove(playerKey);
         }
 
         private static void ClearObservedPlayers()
         {
-            var allNetIds = new ArrayList();
-            foreach (var key in ObservedPlayersByNetId.Keys)
+            var allPlayerKeys = new ArrayList();
+            foreach (var key in ObservedPlayersByPlayerKey.Keys)
             {
-                allNetIds.Add(key);
+                allPlayerKeys.Add(key);
             }
 
-            for (var i = 0; i < allNetIds.Count; i++)
+            for (var i = 0; i < allPlayerKeys.Count; i++)
             {
-                RemoveObservedPlayer((ulong)allNetIds[i]);
+                RemoveObservedPlayer((string)allPlayerKeys[i]);
             }
         }
 
@@ -1129,24 +1135,37 @@ namespace CoopCallouts
                 return;
             }
 
+            var playerKey = GetPlayerKey(player);
             if (endedTurn)
             {
-                EndedTurnPlayersByNetId[player.NetId] = true;
+                EndedTurnPlayersByPlayerKey[playerKey] = true;
                 return;
             }
 
-            EndedTurnPlayersByNetId.Remove(player.NetId);
+            EndedTurnPlayersByPlayerKey.Remove(playerKey);
         }
 
         private static void ClearEndedTurnPlayers()
         {
-            EndedTurnPlayersByNetId.Clear();
+            EndedTurnPlayersByPlayerKey.Clear();
         }
 
         private static void ClearAcknowledgements()
         {
-            AcknowledgedMessagesByNetId.Clear();
-            LastMessagesByNetId.Clear();
+            AcknowledgedMessagesByPlayerKey.Clear();
+            LastMessagesByPlayerKey.Clear();
+        }
+
+        private static string GetPlayerKey(Player player)
+        {
+            if (player == null)
+            {
+                return "null";
+            }
+
+            return player.NetId.ToString(CultureInfo.InvariantCulture) +
+                   ":" +
+                   RuntimeHelpers.GetHashCode(player).ToString(CultureInfo.InvariantCulture);
         }
 
         private static float ClampDisplaySeconds(float displaySeconds)
@@ -1325,7 +1344,7 @@ namespace CoopCallouts
                 return false;
             }
 
-            foreach (ObservedPlayerState observed in ObservedPlayersByNetId.Values)
+            foreach (ObservedPlayerState observed in ObservedPlayersByPlayerKey.Values)
             {
                 if (observed != null && observed.CombatState == combatState)
                 {
@@ -1349,7 +1368,7 @@ namespace CoopCallouts
                 return false;
             }
 
-            if (EndedTurnPlayersByNetId.ContainsKey(player.NetId))
+            if (EndedTurnPlayersByPlayerKey.ContainsKey(GetPlayerKey(player)))
             {
                 return false;
             }
@@ -1728,25 +1747,25 @@ namespace CoopCallouts
             return false;
         }
 
-        private static void UpdateLastMessage(ulong netId, string message)
+        private static void UpdateLastMessage(string playerKey, string message)
         {
-            var lastMessage = LastMessagesByNetId[netId] as string;
+            var lastMessage = LastMessagesByPlayerKey[playerKey] as string;
             if (!string.Equals(lastMessage, message, StringComparison.Ordinal))
             {
-                AcknowledgedMessagesByNetId.Remove(netId);
-                LastMessagesByNetId[netId] = message;
+                AcknowledgedMessagesByPlayerKey.Remove(playerKey);
+                LastMessagesByPlayerKey[playerKey] = message;
             }
         }
 
-        private static bool IsAcknowledged(ulong netId, string message)
+        private static bool IsAcknowledged(string playerKey, string message)
         {
-            var acknowledgedMessage = AcknowledgedMessagesByNetId[netId] as string;
+            var acknowledgedMessage = AcknowledgedMessagesByPlayerKey[playerKey] as string;
             return string.Equals(acknowledgedMessage, message, StringComparison.Ordinal);
         }
 
-        private static bool AcknowledgeExpiredBubbleIfNeeded(ulong netId, string message)
+        private static bool AcknowledgeExpiredBubbleIfNeeded(string playerKey, string message)
         {
-            var bubble = BubblesByNetId[netId] as BubbleUi;
+            var bubble = BubblesByPlayerKey[playerKey] as BubbleUi;
             if (bubble == null ||
                 bubble.DisplaySeconds <= 0f ||
                 !string.Equals(bubble.Message, message, StringComparison.Ordinal))
@@ -1760,28 +1779,29 @@ namespace CoopCallouts
                 return false;
             }
 
-            AcknowledgeBubble(netId, message);
+            AcknowledgeBubble(playerKey, message);
             return true;
         }
 
-        private static void AcknowledgeBubble(ulong netId, string message)
+        private static void AcknowledgeBubble(string playerKey, string message)
         {
-            AcknowledgedMessagesByNetId[netId] = message;
-            RemoveBubble(netId);
+            AcknowledgedMessagesByPlayerKey[playerKey] = message;
+            RemoveBubble(playerKey);
         }
 
         private static void UpsertBubble(
             Player player,
+            string playerKey,
             Node fallbackRoot,
             string message,
             StatusCallout primaryCallout)
         {
-            if (player == null || player.Creature == null)
+            if (player == null || player.Creature == null || string.IsNullOrWhiteSpace(playerKey))
             {
                 return;
             }
 
-            var bubble = BubblesByNetId[player.NetId] as BubbleUi;
+            var bubble = BubblesByPlayerKey[playerKey] as BubbleUi;
             if (bubble != null &&
                 bubble.SpeechBubble != null &&
                 GodotObject.IsInstanceValid(bubble.SpeechBubble) &&
@@ -1791,7 +1811,7 @@ namespace CoopCallouts
                 return;
             }
 
-            RemoveBubble(player.NetId);
+            RemoveBubble(playerKey);
             var gameBubble = TryCreateGameSpeechBubble(message, player.Creature, primaryCallout);
             if (TryAttachGameSpeechBubble(gameBubble, fallbackRoot))
             {
@@ -1802,12 +1822,12 @@ namespace CoopCallouts
                 bubble.SpeechBubble = gameBubble;
                 bubble.CreatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 bubble.DisplaySeconds = displaySeconds;
-                WireBubbleAcknowledgeInput(gameBubble, player.NetId, message);
-                BubblesByNetId[player.NetId] = bubble;
+                WireBubbleAcknowledgeInput(gameBubble, playerKey, message);
+                BubblesByPlayerKey[playerKey] = bubble;
             }
         }
 
-        private static void WireBubbleAcknowledgeInput(Node node, ulong netId, string message)
+        private static void WireBubbleAcknowledgeInput(Node node, string playerKey, string message)
         {
             if (node == null || !GodotObject.IsInstanceValid(node))
             {
@@ -1819,17 +1839,17 @@ namespace CoopCallouts
             {
                 control.MouseFilter = Control.MouseFilterEnum.Stop;
                 control.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-                control.GuiInput += inputEvent => OnBubbleGuiInput(netId, message, inputEvent);
+                control.GuiInput += inputEvent => OnBubbleGuiInput(playerKey, message, inputEvent);
             }
 
             var children = node.GetChildren();
             for (var i = 0; i < children.Count; i++)
             {
-                WireBubbleAcknowledgeInput(children[i] as Node, netId, message);
+                WireBubbleAcknowledgeInput(children[i] as Node, playerKey, message);
             }
         }
 
-        private static void OnBubbleGuiInput(ulong netId, string message, InputEvent inputEvent)
+        private static void OnBubbleGuiInput(string playerKey, string message, InputEvent inputEvent)
         {
             var mouseButton = inputEvent as InputEventMouseButton;
             if (mouseButton == null || !mouseButton.Pressed || mouseButton.ButtonIndex != MouseButton.Left)
@@ -1837,7 +1857,7 @@ namespace CoopCallouts
                 return;
             }
 
-            AcknowledgeBubble(netId, message);
+            AcknowledgeBubble(playerKey, message);
         }
 
         private static bool TryAttachGameSpeechBubble(NSpeechBubbleVfx speechBubble, Node fallbackRoot)
@@ -1928,41 +1948,41 @@ namespace CoopCallouts
             }
         }
 
-        private static void RemoveInactiveBubbles(Hashtable activeNetIds)
+        private static void RemoveInactiveBubbles(Hashtable activePlayerKeys)
         {
-            var staleNetIds = new ArrayList();
-            foreach (var key in BubblesByNetId.Keys)
+            var stalePlayerKeys = new ArrayList();
+            foreach (var key in BubblesByPlayerKey.Keys)
             {
-                if (!activeNetIds.ContainsKey(key))
+                if (!activePlayerKeys.ContainsKey(key))
                 {
-                    staleNetIds.Add(key);
+                    stalePlayerKeys.Add(key);
                 }
             }
 
-            for (var i = 0; i < staleNetIds.Count; i++)
+            for (var i = 0; i < stalePlayerKeys.Count; i++)
             {
-                RemoveBubble((ulong)staleNetIds[i]);
+                RemoveBubble((string)stalePlayerKeys[i]);
             }
 
-            var staleMessageNetIds = new ArrayList();
-            foreach (var key in LastMessagesByNetId.Keys)
+            var staleMessagePlayerKeys = new ArrayList();
+            foreach (var key in LastMessagesByPlayerKey.Keys)
             {
-                if (!activeNetIds.ContainsKey(key))
+                if (!activePlayerKeys.ContainsKey(key))
                 {
-                    staleMessageNetIds.Add(key);
+                    staleMessagePlayerKeys.Add(key);
                 }
             }
 
-            for (var i = 0; i < staleMessageNetIds.Count; i++)
+            for (var i = 0; i < staleMessagePlayerKeys.Count; i++)
             {
-                LastMessagesByNetId.Remove(staleMessageNetIds[i]);
-                AcknowledgedMessagesByNetId.Remove(staleMessageNetIds[i]);
+                LastMessagesByPlayerKey.Remove(staleMessagePlayerKeys[i]);
+                AcknowledgedMessagesByPlayerKey.Remove(staleMessagePlayerKeys[i]);
             }
         }
 
-        private static void RemoveBubble(ulong netId)
+        private static void RemoveBubble(string playerKey)
         {
-            var bubble = BubblesByNetId[netId] as BubbleUi;
+            var bubble = BubblesByPlayerKey[playerKey] as BubbleUi;
             if (bubble == null)
             {
                 return;
@@ -1980,20 +2000,20 @@ namespace CoopCallouts
                 }
             }
 
-            BubblesByNetId.Remove(netId);
+            BubblesByPlayerKey.Remove(playerKey);
         }
 
         private static void ClearAllBubbles()
         {
-            var allNetIds = new ArrayList();
-            foreach (var key in BubblesByNetId.Keys)
+            var allPlayerKeys = new ArrayList();
+            foreach (var key in BubblesByPlayerKey.Keys)
             {
-                allNetIds.Add(key);
+                allPlayerKeys.Add(key);
             }
 
-            for (var i = 0; i < allNetIds.Count; i++)
+            for (var i = 0; i < allPlayerKeys.Count; i++)
             {
-                RemoveBubble((ulong)allNetIds[i]);
+                RemoveBubble((string)allPlayerKeys[i]);
             }
         }
     }
