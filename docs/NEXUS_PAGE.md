@@ -3,7 +3,7 @@
 ## Short Description
 
 ```text
-Native speech-bubble callouts for co-op hands, with self and teammate messages, click-to-acknowledge, and an optional timer.
+Native "Hey, listen!" speech-bubble callouts for useful co-op cards, with self/teammate messages, click-to-dismiss, and timer settings.
 ```
 
 ## Full Description
@@ -11,18 +11,19 @@ Native speech-bubble callouts for co-op hands, with self and teammate messages, 
 ```bbcode
 [b]Hey, listen![/b] adds native in-game speech bubbles for Slay the Spire 2 co-op play.
 
-It helps highlight useful hand moments before anyone commits their turn, such as setup cards, helpful effects, or other actions worth noticing.
+It watches co-op hands during combat and calls out useful cards before a turn gets committed. If you have the setup card, your own character can say it. If a teammate has it, their character can say it.
 
-The mod uses the game's own speech bubble style, so callouts stay lightweight and feel like part of the normal UI.
+The mod uses the game's own speech bubble style instead of a custom overlay, so the callouts feel like they belong in combat.
 
 [b]Features[/b]
 
 [list]
 [*]Native Slay the Spire 2 speech bubbles.
-[*]Self and teammate "Hey, listen!" callouts.
+[*]Self and teammate "Hey, listen!" callouts for useful cards.
+[*]Self callouts use highlighted "I have ..." wording.
+[*]Detects helpful setup effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
 [*]Click a bubble to acknowledge and dismiss it.
 [*]Optional timer for automatic dismissal.
-[*]Timeline-aware callout behavior.
 [*]Vortex-ready install package.
 [/list]
 
@@ -57,5 +58,5 @@ Hey, listen! is made for existing co-op/multiplayer setups. It does not add mult
 
 [b]Why use it?[/b]
 
-Co-op can get visually busy fast. This mod keeps hand callouts readable, simple, and close to the game's own style.
+Co-op can get visually busy fast. Hey, listen! keeps useful card reminders readable, quick to dismiss, and close to the game's own style.
 ```

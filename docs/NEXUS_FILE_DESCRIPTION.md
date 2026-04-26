@@ -1,1 +1,1 @@
-Native speech-bubble callouts for co-op hands, with self and teammate messages, click-to-acknowledge, a configurable timer, and Vortex-ready packaging.
+Native "Hey, listen!" speech-bubble callouts for useful co-op cards, with self/teammate messages, click-to-dismiss, timer settings, and Vortex-ready packaging.
