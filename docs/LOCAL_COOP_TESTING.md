@@ -20,6 +20,13 @@ To install the GitHub release used for local testing:
 .\scripts\install-lan-multiplayer.ps1 -GameRoot "<Slay the Spire 2 install folder>"
 ```
 
+For the current local STS2 build, the upstream LAN DLL can hit a `Label.font` compatibility error. Clone the LAN source next to this repo and rebuild the patched DLL:
+
+```powershell
+gh repo clone kmyuhkyuk/SlayTheSpire2.LAN.Multiplayer ..\SlayTheSpire2.LAN.Multiplayer
+.\scripts\build-patched-lan-multiplayer.ps1 -GameRoot "<Slay the Spire 2 install folder>"
+```
+
 The LAN mod adds LAN Host and Join Friends options. Host from client 1, then join from client 2 with:
 
 ```text
