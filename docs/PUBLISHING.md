@@ -48,6 +48,34 @@ If the same version tag already exists and you intentionally want to refresh it:
 .\scripts\publish-github-release.ps1 -GameRoot "<Slay the Spire 2 install folder>" -MoveTag
 ```
 
+## Local Full Publish
+
+The preferred release flow runs from your own machine so the build can reference your local Slay the Spire 2 install without uploading game DLLs anywhere.
+
+```powershell
+.\scripts\publish-local-release.ps1 -FileGroupId "<nexus-file-group-id>" -ArchiveExistingFile
+```
+
+This does all of the following:
+
+- Builds the mod against your local game files.
+- Creates or updates the GitHub release and uploads the release zips.
+- Uploads `Co-op-Callouts-<version>.zip` to Nexus Mods from your machine.
+
+By default this creates a public GitHub release. Add `-Draft` if you want the GitHub release to stay in draft mode.
+
+For first-time Nexus setup, either set:
+
+```powershell
+$env:NEXUSMODS_API_KEY = "<nexus-api-key>"
+```
+
+or let the script prompt and save it to your Windows user environment:
+
+```powershell
+.\scripts\publish-local-release.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureNexusApiKey -SaveNexusApiKey
+```
+
 ## Nexus Mods / Vortex
 
 Upload `dist/Co-op-Callouts-<version>.zip` as the main file on the Slay The Spire II Nexus Mods page and keep `Mod Manager Download` enabled.
@@ -64,13 +92,25 @@ The package layout follows the extension's expected game-root behavior: archives
 
 Nexus Mods' upload API can update an existing mod file group. Create the Nexus mod page manually first and upload the first main file through the site. Then find the file group ID from the Files tab `API Info` menu or the Manage Files edit menu.
 
-Set the API key once:
+To upload directly from your local machine:
+
+```powershell
+.\scripts\publish-nexus-local.ps1 -FileGroupId "<nexus-file-group-id>"
+```
+
+To configure the local API key once:
+
+```powershell
+.\scripts\publish-nexus-local.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureApiKey -SaveApiKey
+```
+
+The repo also keeps a GitHub-hosted Nexus workflow as an optional fallback. Configure the GitHub secret once:
 
 ```powershell
 .\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>" -ConfigureApiKey
 ```
 
-For later releases:
+For later remote uploads:
 
 ```powershell
 .\scripts\publish-nexus.ps1 -FileGroupId "<nexus-file-group-id>" -Watch
@@ -83,4 +123,4 @@ $env:NEXUSMODS_FILE_GROUP_ID = "<nexus-file-group-id>"
 .\scripts\publish-nexus.ps1 -Watch
 ```
 
-The local script triggers `.github/workflows/publish-nexus.yml`. That workflow downloads `Co-op-Callouts-<version>.zip` from the matching GitHub release and uploads it with the official `Nexus-Mods/upload-action`.
+The remote helper script triggers `.github/workflows/publish-nexus.yml`. That workflow downloads `Co-op-Callouts-<version>.zip` from the matching GitHub release and uploads it with the official `Nexus-Mods/upload-action`.

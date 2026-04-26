@@ -73,6 +73,13 @@ try {
         foreach ($zipPath in $zipPaths) {
             gh release upload $tag $zipPath --clobber
         }
+
+        if (!$NoDraft) {
+            Write-Host "Release $tag remains a draft."
+        }
+        else {
+            gh release edit $tag --draft=false
+        }
     }
     else {
         $args = @(
