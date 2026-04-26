@@ -180,7 +180,7 @@ namespace HeyListen
         private const string ModId = "heylisten";
         private const string ModDisplayName = "Hey, listen!";
         private const string BubbleIntro = "Hey, listen!";
-        private const string SelfSubject = "[color=#36d9ff][b]I[/b][/color]";
+        private const string SelfSubject = "I";
         private const string EnabledKey = "enabled";
         private const string ShowSelfCalloutsKey = "show_self_callouts";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
@@ -1893,13 +1893,7 @@ namespace HeyListen
                     : displayName + GetUpgradeSuffix(callout.UpgradeLevel);
             }
 
-            var color = GetTextColor(callout.Callout);
-            if (string.IsNullOrEmpty(color))
-            {
-                return displayName;
-            }
-
-            return "[color=" + color + "][b]" + displayName + "[/b][/color]";
+            return displayName;
         }
 
         private static string GetUpgradeSuffix(int upgradeLevel)
@@ -1934,29 +1928,6 @@ namespace HeyListen
                     return "Weak";
                 default:
                     return "support card";
-            }
-        }
-
-        private static string GetTextColor(StatusCallout callout)
-        {
-            switch (callout)
-            {
-                case StatusCallout.Vulnerable:
-                    return "#d85a2a";
-                case StatusCallout.DoubleDamage:
-                    return "#d63232";
-                case StatusCallout.Strength:
-                    return "#b87500";
-                case StatusCallout.Vigor:
-                    return "#238f3b";
-                case StatusCallout.Focus:
-                    return "#2378d9";
-                case StatusCallout.Poison:
-                    return "#2a9d5b";
-                case StatusCallout.Weak:
-                    return "#5a74d6";
-                default:
-                    return string.Empty;
             }
         }
 

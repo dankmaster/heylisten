@@ -20,8 +20,8 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [list]
 [*]Native Slay the Spire 2 speech bubbles.
 [*]Self and teammate "Hey, listen!" callouts for useful cards.
-[*]Self callouts use highlighted "I have ..." wording.
-[*]Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
+[*]Self callouts use "I have ..." wording.
+[*]Status names show upgrade markers when the useful card is upgraded.
 [*]Detects helpful setup effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
 [*]Click a bubble to acknowledge and dismiss it.
 [*]Optional timer for automatic dismissal.
