@@ -276,6 +276,7 @@ namespace HeyListen
         public bool Enabled { get; set; } = true;
         public string Language { get; set; } = "auto";
         public string CalloutIntro { get; set; } = string.Empty;
+        public bool ShowSelfCallouts { get; set; } = true;
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
@@ -298,10 +299,13 @@ namespace HeyListen
                 config.Enabled = ReadBool(raw, "enabled", config.Enabled);
                 config.Language = SimpleJson.ReadString(raw, "language", config.Language);
                 config.CalloutIntro = SimpleJson.ReadString(raw, "callout_intro", config.CalloutIntro);
+                config.ShowSelfCallouts = ReadBool(raw, "show_self_callouts", config.ShowSelfCallouts);
                 config.OnlyShowPlayableNow = ReadBool(raw, "only_show_playable_now", config.OnlyShowPlayableNow);
                 config.ShowGenericSupport = ReadBool(raw, "show_generic_support", config.ShowGenericSupport);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
-                if (!HasKey(raw, "language") || !HasKey(raw, "callout_intro") || HasKey(raw, "show_self_callouts"))
+                if (!HasKey(raw, "language") ||
+                    !HasKey(raw, "callout_intro") ||
+                    !HasKey(raw, "show_self_callouts"))
                 {
                     config.Save();
                 }
@@ -335,6 +339,7 @@ namespace HeyListen
             sb.AppendLine($"  \"enabled\": {Enabled.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"language\": \"{SimpleJson.EscapeString(Language)}\",");
             sb.AppendLine($"  \"callout_intro\": \"{SimpleJson.EscapeString(CalloutIntro)}\",");
+            sb.AppendLine($"  \"show_self_callouts\": {ShowSelfCallouts.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"only_show_playable_now\": {OnlyShowPlayableNow.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_generic_support\": {ShowGenericSupport.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
@@ -399,6 +404,7 @@ namespace HeyListen
         private const string EnabledKey = "enabled";
         private const string LanguageKey = "language";
         private const string CalloutIntroKey = "callout_intro";
+        private const string ShowSelfCalloutsKey = "show_self_callouts";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
         private const string ShowGenericSupportKey = "show_generic_support";
         private const string DisplaySecondsKey = "display_seconds";
@@ -751,6 +757,8 @@ namespace HeyListen
             var root = NGame.Instance != null && NGame.Instance.GetTree() != null
                 ? NGame.Instance.GetTree().Root
                 : null;
+            var localPlayer = ResolveLocalPlayer(runState, combatState, localNetId);
+            var localNetIdIsUnique = IsNetIdUnique(runState, localNetId);
 
             var activePlayerKeys = new Hashtable();
             for (var i = 0; i < runState.Players.Count; i++)
@@ -762,6 +770,11 @@ namespace HeyListen
                 }
 
                 var playerKey = GetPlayerKey(player);
+                if (!Config.ShowSelfCallouts && IsLocalPlayer(player, localPlayer, localNetId, localNetIdIsUnique))
+                {
+                    continue;
+                }
+
                 var callouts = CollectCallouts(player);
                 if (callouts.Length == 0)
                 {
@@ -834,7 +847,7 @@ namespace HeyListen
 
             try
             {
-                var entries = Array.CreateInstance(entryType, 6);
+                var entries = Array.CreateInstance(entryType, 7);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -869,12 +882,21 @@ namespace HeyListen
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
+                    ShowSelfCalloutsKey,
+                    "Self Bubbles",
+                    "Show callout bubbles above your own character when you hold useful cards.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowSelfCallouts,
+                    new Action<object>(value => ApplyShowSelfCalloutsSetting(ConvertToBool(value, true), true))), 3);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
                     OnlyShowPlayableNowKey,
                     "Playable Now Only",
                     "Only show bubbles for cards the holder can currently afford and play this turn.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.OnlyShowPlayableNow,
-                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 3);
+                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 4);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -883,7 +905,7 @@ namespace HeyListen
                     "Show a generic Support bubble for ally-helping cards even when no named status keyword was matched.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.ShowGenericSupport,
-                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 4);
+                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 5);
                 var displaySecondsEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -900,7 +922,7 @@ namespace HeyListen
                     MaxBubbleDisplaySeconds,
                     1f,
                     "{0}s");
-                entries.SetValue(displaySecondsEntry, 5);
+                entries.SetValue(displaySecondsEntry, 6);
 
                 var registerMethod = apiType.GetMethod(
                     "Register",
@@ -923,6 +945,9 @@ namespace HeyListen
                     false);
                 ApplyCalloutIntroSetting(
                     ReadModConfigStringAllowEmpty(apiType, CalloutIntroKey, Config.CalloutIntro),
+                    false);
+                ApplyShowSelfCalloutsSetting(
+                    ReadModConfigBool(apiType, ShowSelfCalloutsKey, Config.ShowSelfCallouts),
                     false);
                 ApplyOnlyShowPlayableNowSetting(
                     ReadModConfigBool(apiType, OnlyShowPlayableNowKey, Config.OnlyShowPlayableNow),
@@ -1206,6 +1231,18 @@ namespace HeyListen
         private static void ApplyCalloutIntroSetting(string calloutIntro, bool save)
         {
             Config.CalloutIntro = NormalizeCalloutIntro(calloutIntro);
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ClearAcknowledgements();
+            ForceRefresh();
+        }
+
+        private static void ApplyShowSelfCalloutsSetting(bool showSelfCallouts, bool save)
+        {
+            Config.ShowSelfCallouts = showSelfCallouts;
             if (save)
             {
                 Config.Save();

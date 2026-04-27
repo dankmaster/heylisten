@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.97
+
+- Added a `Self Bubbles` setting so players can turn off callout bubbles above their own character while keeping teammate bubbles enabled.
+
 ## 0.96
 
 - Added translation pack loading from `mods/heylisten/translations`.
