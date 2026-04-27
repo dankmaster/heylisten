@@ -9,6 +9,7 @@ param(
     [string]$FileCategory = "main",
     [string]$NexusApiKey,
     [switch]$ArchiveExistingFile,
+    [switch]$NoDefaultModManagerDownload,
     [switch]$ConfigureNexusApiKey,
     [switch]$Draft,
     [switch]$MoveTag,
@@ -100,6 +101,10 @@ try {
 
         if ($ArchiveExistingFile) {
             $nexusArgs.ArchiveExistingFile = $true
+        }
+
+        if ($NoDefaultModManagerDownload) {
+            $nexusArgs.NoDefaultModManagerDownload = $true
         }
 
         if ($ConfigureNexusApiKey) {

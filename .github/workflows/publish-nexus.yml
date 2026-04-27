@@ -31,6 +31,10 @@ on:
         description: Archive the existing file in this group
         required: false
         default: "false"
+      primary_mod_manager_download:
+        description: Make this file the default download for mod managers
+        required: false
+        default: "true"
 
 permissions:
   contents: read
@@ -43,6 +47,9 @@ jobs:
       NEXUS_FILE_GROUP_ID: ${{ inputs.file_group_id || secrets.NEXUSMODS_FILE_GROUP_ID }}
 
     steps:
+      - name: Checkout upload helper
+        uses: actions/checkout@v4
+
       - name: Validate Nexus file group
         run: test -n "$NEXUS_FILE_GROUP_ID"
 
@@ -57,14 +64,16 @@ jobs:
           test -f "dist/${RELEASE_ASSET_NAME}"
 
       - name: Upload to Nexus Mods
-        uses: Nexus-Mods/upload-action@main
         env:
-          INPUT_ARCHIVE_EXISTING_FILE: ${{ inputs.archive_existing_file }}
-        with:
-          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
-          file_group_id: ${{ env.NEXUS_FILE_GROUP_ID }}
-          filename: "dist/${{ inputs.release_asset_name }}"
-          version: "${{ inputs.version }}"
-          display_name: "${{ inputs.display_name }}"
-          description: "${{ inputs.description }}"
-          file_category: "${{ inputs.file_category }}"
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
+          NEXUS_FILE_GROUP_ID: ${{ env.NEXUS_FILE_GROUP_ID }}
+          NEXUS_UPLOAD_FILENAME: "dist/${{ inputs.release_asset_name }}"
+          NEXUS_UPLOAD_VERSION: "${{ inputs.version }}"
+          NEXUS_UPLOAD_DISPLAY_NAME: "${{ inputs.display_name }}"
+          NEXUS_UPLOAD_DESCRIPTION: "${{ inputs.description }}"
+          NEXUS_UPLOAD_FILE_CATEGORY: "${{ inputs.file_category }}"
+          NEXUS_ARCHIVE_EXISTING_FILE: ${{ inputs.archive_existing_file }}
+          NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD: ${{ inputs.primary_mod_manager_download }}
+          NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD: "true"
+          NEXUS_SHOW_REQUIREMENTS_POP_UP: "false"
+        run: node scripts/upload-nexus-file.mjs

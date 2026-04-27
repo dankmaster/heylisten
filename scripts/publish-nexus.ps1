@@ -7,6 +7,7 @@ param(
     [string]$Description,
     [string]$FileCategory = "main",
     [switch]$ArchiveExistingFile,
+    [switch]$NoDefaultModManagerDownload,
     [switch]$ConfigureApiKey,
     [switch]$ConfigureFileGroupId,
     [switch]$Watch
@@ -92,6 +93,7 @@ try {
     }
 
     $archiveExisting = if ($ArchiveExistingFile) { "true" } else { "false" }
+    $primaryModManagerDownload = if ($NoDefaultModManagerDownload) { "false" } else { "true" }
     $workflowArgs = @(
         "workflow", "run", "publish-nexus.yml",
         "-f", "version=$Version",
@@ -99,7 +101,8 @@ try {
         "-f", "display_name=$DisplayName",
         "-f", "description=$Description",
         "-f", "file_category=$FileCategory",
-        "-f", "archive_existing_file=$archiveExisting"
+        "-f", "archive_existing_file=$archiveExisting",
+        "-f", "primary_mod_manager_download=$primaryModManagerDownload"
     )
     if (![string]::IsNullOrWhiteSpace($FileGroupId)) {
         $workflowArgs += @("-f", "file_group_id=$FileGroupId")

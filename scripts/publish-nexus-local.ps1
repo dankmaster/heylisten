@@ -8,8 +8,8 @@ param(
     [string]$Description,
     [string]$FileCategory = "main",
     [string]$NexusApiKey,
-    [string]$ActionDir,
     [switch]$ArchiveExistingFile,
+    [switch]$NoDefaultModManagerDownload,
     [switch]$ConfigureApiKey,
     [switch]$DryRun
 )
@@ -50,6 +50,7 @@ if (!(Test-Path -LiteralPath $ZipPath)) {
 
 $ZipPath = (Resolve-Path -LiteralPath $ZipPath).Path
 $archiveExisting = if ($ArchiveExistingFile) { "true" } else { "false" }
+$defaultModManagerDownload = if ($NoDefaultModManagerDownload) { "false" } else { "true" }
 
 if ($DryRun) {
     Write-Host "Would upload to Nexus Mods:"
@@ -60,6 +61,7 @@ if ($DryRun) {
     Write-Host "  Description: $Description"
     Write-Host "  Category: $FileCategory"
     Write-Host "  Archive existing file: $archiveExisting"
+    Write-Host "  Default mod-manager download: $defaultModManagerDownload"
     return
 }
 
@@ -89,51 +91,28 @@ if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
 
 }
 
-if ([string]::IsNullOrWhiteSpace($ActionDir)) {
-    $ActionDir = Join-Path $BuildRoot "nexus-upload-action"
-}
-
-$actionRepo = "https://github.com/Nexus-Mods/upload-action.git"
-$actionIndex = Join-Path $ActionDir "dist\index.js"
-
-if (!(Test-Path -LiteralPath $actionIndex)) {
-    $git = Get-Command git -ErrorAction SilentlyContinue
-    if (!$git) {
-        throw "Git is required to download the Nexus Mods upload action."
-    }
-
-    if (Test-Path -LiteralPath $ActionDir) {
-        Remove-Item -LiteralPath $ActionDir -Recurse -Force
-    }
-
-    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ActionDir) | Out-Null
-    git clone --depth 1 $actionRepo $ActionDir
-}
-else {
-    $git = Get-Command git -ErrorAction SilentlyContinue
-    if ($git -and (Test-Path -LiteralPath (Join-Path $ActionDir ".git"))) {
-        git -C $ActionDir pull --ff-only | Out-Null
-    }
-}
-
-if (!(Test-Path -LiteralPath $actionIndex)) {
-    throw "Could not find Nexus Mods upload action entry point: $actionIndex"
-}
-
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (!$node) {
-    throw "Node.js 20 or newer is required to run the Nexus Mods upload action locally."
+    throw "Node.js 20 or newer is required to upload to Nexus Mods locally."
+}
+
+$uploaderPath = Join-Path $PSScriptRoot "upload-nexus-file.mjs"
+if (!(Test-Path -LiteralPath $uploaderPath)) {
+    throw "Nexus upload helper missing: $uploaderPath"
 }
 
 $envNames = @(
-    "INPUT_API_KEY",
-    "INPUT_FILE_GROUP_ID",
-    "INPUT_FILENAME",
-    "INPUT_VERSION",
-    "INPUT_DISPLAY_NAME",
-    "INPUT_DESCRIPTION",
-    "INPUT_FILE_CATEGORY",
-    "INPUT_ARCHIVE_EXISTING_FILE"
+    "NEXUSMODS_API_KEY",
+    "NEXUS_FILE_GROUP_ID",
+    "NEXUS_UPLOAD_FILENAME",
+    "NEXUS_UPLOAD_VERSION",
+    "NEXUS_UPLOAD_DISPLAY_NAME",
+    "NEXUS_UPLOAD_DESCRIPTION",
+    "NEXUS_UPLOAD_FILE_CATEGORY",
+    "NEXUS_ARCHIVE_EXISTING_FILE",
+    "NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD",
+    "NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD",
+    "NEXUS_SHOW_REQUIREMENTS_POP_UP"
 )
 
 $previousEnv = @{}
@@ -142,16 +121,19 @@ foreach ($name in $envNames) {
 }
 
 try {
-    $env:INPUT_API_KEY = $NexusApiKey
-    $env:INPUT_FILE_GROUP_ID = $FileGroupId
-    $env:INPUT_FILENAME = $ZipPath
-    $env:INPUT_VERSION = $Version
-    $env:INPUT_DISPLAY_NAME = $DisplayName
-    $env:INPUT_DESCRIPTION = $Description
-    $env:INPUT_FILE_CATEGORY = $FileCategory
-    $env:INPUT_ARCHIVE_EXISTING_FILE = $archiveExisting
+    $env:NEXUSMODS_API_KEY = $NexusApiKey
+    $env:NEXUS_FILE_GROUP_ID = $FileGroupId
+    $env:NEXUS_UPLOAD_FILENAME = $ZipPath
+    $env:NEXUS_UPLOAD_VERSION = $Version
+    $env:NEXUS_UPLOAD_DISPLAY_NAME = $DisplayName
+    $env:NEXUS_UPLOAD_DESCRIPTION = $Description
+    $env:NEXUS_UPLOAD_FILE_CATEGORY = $FileCategory
+    $env:NEXUS_ARCHIVE_EXISTING_FILE = $archiveExisting
+    $env:NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD = $defaultModManagerDownload
+    $env:NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD = "true"
+    $env:NEXUS_SHOW_REQUIREMENTS_POP_UP = "false"
 
-    $actionOutput = & $node.Source $actionIndex 2>&1
+    $actionOutput = & $node.Source $uploaderPath 2>&1
     $actionExitCode = $LASTEXITCODE
     foreach ($entry in $actionOutput) {
         $line = $entry.ToString()

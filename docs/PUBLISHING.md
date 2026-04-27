@@ -146,6 +146,7 @@ The Nexus upload flow sends:
 - `version`: the manifest/release version, shown in the Nexus Version column.
 - `display_name`: `Hey Listen <version>`, shown in current and archived file rows.
 - `description`: generated from the matching `CHANGELOG.md` section.
+- `primary_mod_manager_download`: `true` by default, so the newly uploaded file becomes the Vortex/mod-manager default. Pass `-NoDefaultModManagerDownload` only for special cases.
 - `archive_existing_file`: archives the previous file in the group when requested.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so the page description in `NEXUS_PAGE.md` still needs to be pasted into the Nexus page editor.
