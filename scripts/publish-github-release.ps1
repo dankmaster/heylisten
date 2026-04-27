@@ -88,7 +88,11 @@ try {
             gh release upload $tag $zipPath --clobber
         }
 
-        $expectedAssetNames = @($zipPaths | ForEach-Object { Split-Path -Leaf $_ })
+        $expectedAssetNames = @($zipPaths | ForEach-Object {
+            $assetName = Split-Path -Leaf $_
+            $assetName
+            $assetName.Replace(" ", ".")
+        }) | Select-Object -Unique
         $release = gh release view $tag --json assets | ConvertFrom-Json
         foreach ($asset in $release.assets) {
             if ($asset.name.EndsWith(".zip") -and $asset.name -notin $expectedAssetNames) {

@@ -76,7 +76,7 @@ try {
     $assetsJson = gh release view $tag --json assets
     $assets = ($assetsJson | ConvertFrom-Json).assets
     if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
-        $sourceHintPattern = "^Hey Listen $([Regex]::Escape($Version))-$([Regex]::Escape($NexusModId))-.*\.zip$"
+        $sourceHintPattern = "^Hey[ .]Listen[ .]$([Regex]::Escape($Version))-$([Regex]::Escape($NexusModId))-.*\.zip$"
         $sourceHintAsset = @($assets | Where-Object { $_.name -match $sourceHintPattern } | Select-Object -First 1)
         if ($sourceHintAsset.Count -gt 0) {
             $ReleaseAssetName = $sourceHintAsset[0].name

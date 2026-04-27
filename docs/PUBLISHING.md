@@ -70,6 +70,8 @@ mods/
 
 Users can extract or drag either archive into the Slay the Spire 2 folder. For GitHub downloads, local builds, and Nexus uploads, prefer the Nexus-style source-hint filename so Vortex can infer the Slay The Spire II Nexus mod ID.
 
+GitHub may display spaces in release asset names as dots, for example `Hey.Listen.<version>-697-...zip`; the Nexus source-hint tokens are still preserved.
+
 ## GitHub
 
 Commit the release changes first, then run:
