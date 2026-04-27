@@ -7,5 +7,6 @@
 - Enabled self callouts in singleplayer when the `Self Bubbles` setting is on.
 - Stopped card-family damage scaling such as `Hang` from being announced as `Double Damage`.
 - Stopped incoming-damage penalties such as `Tank` from being announced as `Double Damage`.
+- Added an identical Nexus-style Vortex source-hint package copy for manual zip installs.
 
 Install with Vortex or extract into the Slay the Spire 2 folder.

@@ -1,7 +1,9 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
     [string]$Version,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT
+    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
+    [switch]$SkipVortexSourceCopy
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,11 +35,21 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine package version."
 }
 
+if (!$SkipVortexSourceCopy) {
+    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+}
+
 $gameRootZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
 $legacyModFolderPackageRoot = Join-Path $BuildRoot "package-mod-folder"
 $legacyModFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
+$oldVortexSourceZipPaths = @()
+if (!$SkipVortexSourceCopy -and (Test-Path -LiteralPath $BuildRoot)) {
+    $oldVortexSourceZipPaths = @(Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Hey Listen *-$NexusModId-*.zip" |
+        ForEach-Object { $_.FullName })
+}
 
-foreach ($path in @($gameRootPackageRoot, $legacyModFolderPackageRoot, $gameRootZipPath, $legacyModFolderZipPath)) {
+$cleanupPaths = @($gameRootPackageRoot, $legacyModFolderPackageRoot, $gameRootZipPath, $legacyModFolderZipPath) + $oldVortexSourceZipPaths
+foreach ($path in $cleanupPaths) {
     Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $path
 
     if (Test-Path -LiteralPath $path) {
@@ -73,4 +85,24 @@ Compress-Archive -Path (Join-Path $gameRootPackageRoot "*") -DestinationPath $ga
 & (Join-Path $PSScriptRoot "verify-package.ps1") -Version $Version -BuildRoot $BuildRoot
 
 Write-Host "Packaged game-root/Vortex zip: $gameRootZipPath"
-Write-Output $gameRootZipPath
+$packageOutputs = New-Object System.Collections.Generic.List[string]
+$packageOutputs.Add($gameRootZipPath) | Out-Null
+
+if (!$SkipVortexSourceCopy) {
+    $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $vortexSourceZipName = Get-HeyListenNexusStyleFileName -Version $Version -ModId $NexusModId -Timestamp $timestamp
+    $vortexSourceZipPath = Join-Path $BuildRoot $vortexSourceZipName
+    Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $vortexSourceZipPath
+    Copy-Item -LiteralPath $gameRootZipPath -Destination $vortexSourceZipPath -Force
+
+    $canonicalHash = (Get-FileHash -LiteralPath $gameRootZipPath -Algorithm SHA256).Hash
+    $sourceCopyHash = (Get-FileHash -LiteralPath $vortexSourceZipPath -Algorithm SHA256).Hash
+    if ($canonicalHash -ne $sourceCopyHash) {
+        throw "Vortex source-hint copy does not match canonical package: $vortexSourceZipPath"
+    }
+
+    Write-Host "Packaged Vortex source-hint zip: $vortexSourceZipPath"
+    $packageOutputs.Add($vortexSourceZipPath) | Out-Null
+}
+
+Write-Output $packageOutputs

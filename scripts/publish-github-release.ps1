@@ -1,6 +1,7 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
     [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [string]$Version,
     [switch]$NoDraft,
     [switch]$MoveTag
@@ -23,9 +24,11 @@ try {
     }
 
     $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
+    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
     $packageArgs = @{
         BuildRoot = $BuildRoot
         Version = $Version
+        NexusModId = $NexusModId
     }
     if (![string]::IsNullOrWhiteSpace($GameRoot)) {
         $packageArgs.GameRoot = $GameRoot

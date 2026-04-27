@@ -2,6 +2,7 @@ param(
     [string]$Version,
     [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
+    [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [string]$ZipPath,
     [string]$DisplayName,
     [string]$Description,
@@ -26,7 +27,11 @@ $Version = Resolve-HeyListenVersion $Version
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 
 if ([string]::IsNullOrWhiteSpace($ZipPath)) {
-    $ZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+    $ZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
+    if ([string]::IsNullOrWhiteSpace($ZipPath)) {
+        $ZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+    }
 }
 
 $FileGroupId = Resolve-NexusFileGroupId $FileGroupId

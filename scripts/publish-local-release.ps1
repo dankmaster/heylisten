@@ -3,6 +3,7 @@ param(
     [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
     [string]$Version,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
+    [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [string]$DisplayName,
     [string]$Description,
     [string]$FileCategory = "main",
@@ -26,7 +27,8 @@ $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $Version = Resolve-HeyListenVersion $Version
 
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
-$zipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+$NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+$canonicalZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
 $DisplayName = Resolve-HeyListenReleaseDisplayName `
     -Version $Version `
     -DisplayName $DisplayName
@@ -42,6 +44,7 @@ try {
         $githubArgs = @{
             BuildRoot = $BuildRoot
             Version = $Version
+            NexusModId = $NexusModId
         }
 
         if (![string]::IsNullOrWhiteSpace($GameRoot)) {
@@ -58,25 +61,34 @@ try {
 
         & (Join-Path $PSScriptRoot "publish-github-release.ps1") @githubArgs
     }
-    elseif (!(Test-Path -LiteralPath $zipPath)) {
+    else {
+        $sourceHintZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
         $packageArgs = @{
             BuildRoot = $BuildRoot
             Version = $Version
+            NexusModId = $NexusModId
         }
         if (![string]::IsNullOrWhiteSpace($GameRoot)) {
             $packageArgs.GameRoot = $GameRoot
         }
 
-        & (Join-Path $PSScriptRoot "package.ps1") @packageArgs | Out-Host
+        if (!(Test-Path -LiteralPath $canonicalZipPath) -or [string]::IsNullOrWhiteSpace($sourceHintZipPath)) {
+            & (Join-Path $PSScriptRoot "package.ps1") @packageArgs | Out-Host
+        }
     }
 
     if (!$SkipNexus) {
         $FileGroupId = Resolve-NexusFileGroupId $FileGroupId
+        $nexusZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
+        if ([string]::IsNullOrWhiteSpace($nexusZipPath)) {
+            $nexusZipPath = $canonicalZipPath
+        }
+
         $nexusArgs = @{
             Version = $Version
             BuildRoot = $BuildRoot
             FileGroupId = $FileGroupId
-            ZipPath = $zipPath
+            ZipPath = $nexusZipPath
             DisplayName = $DisplayName
             Description = $Description
             FileCategory = $FileCategory

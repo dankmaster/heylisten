@@ -46,13 +46,19 @@ or pass `-BuildRoot` to the build, package, and publish scripts.
 
 Local machine values can live in ignored `local.settings.json`. Local secrets such as the Nexus API key can live in ignored `.env`.
 
-By default, it creates and verifies one public archive:
+By default, it creates and verifies the canonical public archive:
 
 ```text
 dist/Hey-Listen-<version>.zip
 ```
 
-Use `Hey-Listen-<version>.zip` as the public file. It is packed relative to the game root:
+It also creates an identical Nexus-style source-hint copy for manual Vortex installs:
+
+```text
+dist/Hey Listen <version>-697-<version-token>-<timestamp>.zip
+```
+
+Both archives are byte-identical and packed relative to the game root:
 
 ```text
 mods/
@@ -62,7 +68,7 @@ mods/
     translations/
 ```
 
-Users can extract or drag this archive into the Slay the Spire 2 folder, or install the same file with Vortex.
+Users can extract or drag either archive into the Slay the Spire 2 folder. For GitHub downloads, local builds, and Nexus uploads, prefer the Nexus-style source-hint filename so Vortex can infer the Slay The Spire II Nexus mod ID.
 
 ## GitHub
 
@@ -92,7 +98,7 @@ This does all of the following:
 
 - Builds the mod against your local game files.
 - Creates or updates the GitHub release and uploads the release zips.
-- Uploads `Hey-Listen-<version>.zip` to Nexus Mods from your machine.
+- Uploads the Nexus-style source-hint zip to Nexus Mods from your machine, falling back to `Hey-Listen-<version>.zip` only if the source-hint copy is missing.
 - Sends the Nexus API `version`, `display_name`, and `description` fields from the prepared release data.
 
 The Nexus file display name defaults to `Hey Listen <version>`, for example `Hey Listen 0.96`. This keeps archived Nexus rows readable.
@@ -125,7 +131,7 @@ https://www.nexusmods.com/site/mods/1727
 
 The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/heylisten`. The generated package also includes `vortex_override_instructions.json` at the archive root. This sets the Vortex mod type to `dinput` and explicitly copies every `mods/heylisten` file to the same relative game-root destination.
 
-Nexus/Vortex metadata is normally supplied by Nexus when users install with `Mod Manager Download`. Manual zip installs still use the same correct package layout, but Vortex may show the mod as local/unknown until the user runs `Guess IDs` or sets the source to Nexus Mods with Slay The Spire II mod ID `697`. Keep the GitHub and Nexus release zip bytes identical when possible so hash-based metadata matching has the best chance to work.
+Nexus/Vortex metadata is normally supplied by Nexus when users install with `Mod Manager Download`. Manual zip installs still use the same correct package layout. The package script creates an identical Nexus-style filename copy because Vortex can use that name to infer Slay The Spire II mod ID `697`; if Vortex still shows the mod as local/unknown, use `Guess IDs` or set the source to Nexus Mods with mod ID `697`. Keep the GitHub and Nexus release zip bytes identical when possible so hash-based metadata matching has the best chance to work.
 
 The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexus upload uses [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md) as the default file description.
 

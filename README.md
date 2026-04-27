@@ -21,6 +21,8 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 
 Download `Hey-Listen-<version>.zip` and extract it into your Slay the Spire 2 install folder.
 
+GitHub builds may also include an identical `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy. Use that copy when manually adding the mod to Vortex, because the Nexus-style filename helps Vortex associate the archive with the Hey Listen Nexus page.
+
 The zip already includes the `mods` folder, so the final layout should be:
 
 ```text
@@ -36,11 +38,11 @@ Launch the game normally after installing.
 
 ### Vortex / Nexus Mods
 
-Upload `Hey-Listen-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder. The package also includes Vortex override instructions that explicitly copy `mods/heylisten` into the game root.
+Upload the Nexus-style `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy as the main Nexus Mods file. It is byte-identical to `Hey-Listen-<version>.zip`, packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder, and named so Vortex can infer the Nexus source. The package also includes Vortex override instructions that explicitly copy `mods/heylisten` into the game root.
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
-Nexus page: [Hey Listen](https://www.nexusmods.com/slaythespire2/mods/697). If a user manually adds the zip to Vortex and it installs but shows as an unknown/local mod, they can use Vortex's metadata/Guess IDs flow and link it to Slay The Spire II Nexus mod ID `697`.
+Nexus page: [Hey Listen](https://www.nexusmods.com/slaythespire2/mods/697). If a user manually adds the zip to Vortex, prefer the Nexus-style filename copy. If it still installs as an unknown/local mod, they can use Vortex's metadata/Guess IDs flow and link it to Slay The Spire II Nexus mod ID `697`.
 
 ## Settings
 

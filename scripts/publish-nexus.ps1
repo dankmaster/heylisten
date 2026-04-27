@@ -1,6 +1,7 @@
 param(
     [string]$Version,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
+    [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [string]$ReleaseAssetName,
     [string]$DisplayName,
     [string]$Description,
@@ -20,10 +21,7 @@ $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 $Version = Resolve-HeyListenVersion $Version
-
-if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
-    $ReleaseAssetName = "Hey-Listen-$Version.zip"
-}
+$NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
 
 $FileGroupId = Resolve-NexusFileGroupId -FileGroupId $FileGroupId -Optional
 $DisplayName = Resolve-HeyListenReleaseDisplayName `
@@ -77,6 +75,17 @@ try {
 
     $assetsJson = gh release view $tag --json assets
     $assets = ($assetsJson | ConvertFrom-Json).assets
+    if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
+        $sourceHintPattern = "^Hey Listen $([Regex]::Escape($Version))-$([Regex]::Escape($NexusModId))-.*\.zip$"
+        $sourceHintAsset = @($assets | Where-Object { $_.name -match $sourceHintPattern } | Select-Object -First 1)
+        if ($sourceHintAsset.Count -gt 0) {
+            $ReleaseAssetName = $sourceHintAsset[0].name
+        }
+        else {
+            $ReleaseAssetName = "Hey-Listen-$Version.zip"
+        }
+    }
+
     $asset = @($assets | Where-Object { $_.name -eq $ReleaseAssetName })
     if ($asset.Count -eq 0) {
         throw "Release asset '$ReleaseAssetName' was not found on $tag."

@@ -122,6 +122,37 @@ function Resolve-NexusFileGroupId {
     throw "Nexus file group ID is required. Set NEXUSMODS_FILE_GROUP_ID, add it to .env/local.settings.json, or pass -FileGroupId."
 }
 
+function Resolve-NexusModId {
+    param(
+        [string]$ModId,
+        [string]$Default
+    )
+
+    if (![string]::IsNullOrWhiteSpace($ModId)) {
+        return $ModId.Trim()
+    }
+
+    if (![string]::IsNullOrWhiteSpace($env:NEXUSMODS_MOD_ID)) {
+        return $env:NEXUSMODS_MOD_ID.Trim()
+    }
+
+    $dotEnv = Get-HeyListenDotEnvSettings
+    if ($dotEnv.ContainsKey("NEXUSMODS_MOD_ID") -and ![string]::IsNullOrWhiteSpace($dotEnv["NEXUSMODS_MOD_ID"])) {
+        return $dotEnv["NEXUSMODS_MOD_ID"].Trim()
+    }
+
+    $localSettings = Get-HeyListenLocalSettings
+    if ($localSettings -and ![string]::IsNullOrWhiteSpace($localSettings.NexusModId)) {
+        return $localSettings.NexusModId.Trim()
+    }
+
+    if (![string]::IsNullOrWhiteSpace($Default)) {
+        return $Default.Trim()
+    }
+
+    throw "Nexus mod ID is required. Set NEXUSMODS_MOD_ID, add it to .env/local.settings.json, or pass -NexusModId."
+}
+
 function Resolve-NexusApiKey {
     param(
         [string]$NexusApiKey,
@@ -264,6 +295,56 @@ function Resolve-HeyListenReleaseDisplayName {
 
     $Version = Resolve-HeyListenVersion $Version
     return "Hey Listen $Version"
+}
+
+function Get-HeyListenNexusStyleFileName {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [Parameter(Mandatory = $true)][string]$ModId,
+        [Parameter(Mandatory = $true)][long]$Timestamp
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $versionToken = ($Version -replace '[^0-9A-Za-z]+', '-').Trim('-')
+    if ([string]::IsNullOrWhiteSpace($versionToken)) {
+        throw "Could not turn version into a Nexus-style filename token: $Version"
+    }
+
+    return "Hey Listen $Version-$ModId-$versionToken-$Timestamp.zip"
+}
+
+function Resolve-HeyListenNexusStyleZipPath {
+    param(
+        [string]$BuildRoot,
+        [string]$Version,
+        [string]$NexusModId,
+        [switch]$Optional
+    )
+
+    $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
+    $Version = Resolve-HeyListenVersion $Version
+    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+
+    if (!(Test-Path -LiteralPath $BuildRoot)) {
+        if ($Optional) {
+            return $null
+        }
+
+        throw "Build root was not found: $BuildRoot"
+    }
+
+    $matches = @(Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Hey Listen $Version-$NexusModId-*.zip" |
+        Sort-Object LastWriteTimeUtc -Descending)
+
+    if ($matches.Count -gt 0) {
+        return $matches[0].FullName
+    }
+
+    if ($Optional) {
+        return $null
+    }
+
+    throw "Could not find a Nexus-style Vortex source-hint zip for Hey Listen $Version in $BuildRoot."
 }
 
 function Set-HeyListenManifestVersion {
