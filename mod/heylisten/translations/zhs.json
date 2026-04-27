@@ -16,6 +16,12 @@
     "status.poison": "中毒",
     "status.weak": "虚弱",
     "status.support": "辅助牌",
-    "status.support_upgraded": "升级辅助牌"
+    "status.support_upgraded": "升级辅助牌",
+    "message.support_action": "我可以{1}使用 {0}",
+    "message.many_with_support_action": "我有 {0}，还有 {1} 个，并且可以{3}使用 {2}",
+    "message.two_with_support_action": "我有 {0}，还可以{2}使用 {1}",
+    "support_scope.team": "为我们",
+    "support_scope.general": "帮忙",
+    "support_scope.direct": "为你"
   }
 }

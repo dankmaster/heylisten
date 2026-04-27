@@ -16,6 +16,12 @@
     "status.poison": "중독",
     "status.weak": "약화",
     "status.support": "지원 카드",
-    "status.support_upgraded": "강화된 지원 카드"
+    "status.support_upgraded": "강화된 지원 카드",
+    "message.support_action": "{1} {0}을(를) 사용할 수 있어",
+    "message.many_with_support_action": "{0} 외 {1}개가 있고 {3} {2}을(를) 사용할 수 있어",
+    "message.two_with_support_action": "{0}이(가) 있고 {2} {1}을(를) 사용할 수 있어",
+    "support_scope.team": "우리에게",
+    "support_scope.general": "도움으로",
+    "support_scope.direct": "너에게"
   }
 }

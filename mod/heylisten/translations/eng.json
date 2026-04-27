@@ -16,6 +16,12 @@
     "status.poison": "Poison",
     "status.weak": "Weak",
     "status.support": "support card",
-    "status.support_upgraded": "upgraded support card"
+    "status.support_upgraded": "upgraded support card",
+    "message.support_action": "I can use {0} {1}",
+    "message.many_with_support_action": "I have {0} +{1} more and can use {2} {3}",
+    "message.two_with_support_action": "I have {0} and can use {1} {2}",
+    "support_scope.team": "for us",
+    "support_scope.general": "to help",
+    "support_scope.direct": "for you"
   }
 }

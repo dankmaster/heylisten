@@ -16,6 +16,12 @@
     "status.poison": "毒",
     "status.weak": "脱力",
     "status.support": "サポートカード",
-    "status.support_upgraded": "アップグレード済みサポートカード"
+    "status.support_upgraded": "アップグレード済みサポートカード",
+    "message.support_action": "{1}に{0}を使える",
+    "message.many_with_support_action": "{0}と他{1}個があり、{3}に{2}を使える",
+    "message.two_with_support_action": "{0}があり、{2}に{1}を使える",
+    "support_scope.team": "みんな",
+    "support_scope.general": "支援",
+    "support_scope.direct": "君"
   }
 }

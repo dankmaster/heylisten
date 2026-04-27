@@ -16,6 +16,12 @@
     "status.poison": "Zehir",
     "status.weak": "Zayıf",
     "status.support": "destek kartı",
-    "status.support_upgraded": "yükseltilmiş destek kartı"
+    "status.support_upgraded": "yükseltilmiş destek kartı",
+    "message.support_action": "{0} kartini {1} kullanabilirim",
+    "message.many_with_support_action": "{0} ve {1} tane daha var, ayrica {2} kartini {3} kullanabilirim",
+    "message.two_with_support_action": "{0} var ve {1} kartini {2} kullanabilirim",
+    "support_scope.team": "bizim icin",
+    "support_scope.general": "yardim etmek icin",
+    "support_scope.direct": "senin icin"
   }
 }

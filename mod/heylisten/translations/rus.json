@@ -16,6 +16,12 @@
     "status.poison": "Яд",
     "status.weak": "Слабость",
     "status.support": "карта поддержки",
-    "status.support_upgraded": "улучшенная карта поддержки"
+    "status.support_upgraded": "улучшенная карта поддержки",
+    "message.support_action": "Я могу использовать {0} {1}",
+    "message.many_with_support_action": "У меня есть {0} и еще {1}, и я могу использовать {2} {3}",
+    "message.two_with_support_action": "У меня есть {0}, и я могу использовать {1} {2}",
+    "support_scope.team": "для нас",
+    "support_scope.general": "чтобы помочь",
+    "support_scope.direct": "для тебя"
   }
 }

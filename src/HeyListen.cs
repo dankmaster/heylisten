@@ -39,6 +39,14 @@ namespace HeyListen
         Support,
     }
 
+    internal enum SupportOfferScope
+    {
+        None,
+        General,
+        Team,
+        Direct,
+    }
+
     internal sealed class BubbleUi
     {
         public Creature Creature;
@@ -59,6 +67,8 @@ namespace HeyListen
     {
         public StatusCallout Callout;
         public int UpgradeLevel;
+        public string SupportCardName;
+        public SupportOfferScope SupportScope;
     }
 
     internal sealed class TranslationPack
@@ -472,6 +482,7 @@ namespace HeyListen
             "intercept",
             "knockdown",
             "largesse",
+            "legionofbone",
             "lift",
             "mimic",
             "rally",
@@ -1356,8 +1367,14 @@ namespace HeyListen
             SetTranslation(pack, "message.single", "I have {0}");
             SetTranslation(pack, "message.support", "I have a {0}");
             SetTranslation(pack, "message.support_upgraded", "I have an {0}");
+            SetTranslation(pack, "message.support_action", "I can use {0} {1}");
             SetTranslation(pack, "message.two", "I have {0} and {1}");
+            SetTranslation(pack, "message.two_with_support_action", "I have {0} and can use {1} {2}");
             SetTranslation(pack, "message.many", "I have {0} +{1} more");
+            SetTranslation(pack, "message.many_with_support_action", "I have {0} +{1} more and can use {2} {3}");
+            SetTranslation(pack, "support_scope.direct", "for you");
+            SetTranslation(pack, "support_scope.team", "for us");
+            SetTranslation(pack, "support_scope.general", "to help");
             SetTranslation(pack, "status.vulnerable", "Vulnerable");
             SetTranslation(pack, "status.double_damage", "Double Damage");
             SetTranslation(pack, "status.strength", "Strength");
@@ -2611,6 +2628,8 @@ namespace HeyListen
 
             var seen = new bool[CalloutPriority.Length];
             var upgradeLevels = new int[CalloutPriority.Length];
+            var supportCardNames = new string[CalloutPriority.Length];
+            var supportScopes = new SupportOfferScope[CalloutPriority.Length];
             var hand = player.PlayerCombatState != null ? player.PlayerCombatState.Hand : null;
             var cards = hand != null ? hand.Cards : null;
             if (cards == null)
@@ -2640,6 +2659,22 @@ namespace HeyListen
                     if (callout.UpgradeLevel > upgradeLevels[calloutIndex])
                     {
                         upgradeLevels[calloutIndex] = callout.UpgradeLevel;
+                        if (callout.Callout == StatusCallout.Support &&
+                            !string.IsNullOrWhiteSpace(callout.SupportCardName))
+                        {
+                            supportCardNames[calloutIndex] = callout.SupportCardName;
+                            supportScopes[calloutIndex] = callout.SupportScope;
+                        }
+                    }
+                    else if (callout.Callout == StatusCallout.Support &&
+                        ShouldReplaceSupportOffer(
+                            supportCardNames[calloutIndex],
+                            supportScopes[calloutIndex],
+                            callout.SupportScope) &&
+                        !string.IsNullOrWhiteSpace(callout.SupportCardName))
+                    {
+                        supportCardNames[calloutIndex] = callout.SupportCardName;
+                        supportScopes[calloutIndex] = callout.SupportScope;
                     }
                 }
             }
@@ -2663,6 +2698,8 @@ namespace HeyListen
                     ordered[index] = new CalloutInfo();
                     ordered[index].Callout = callout;
                     ordered[index].UpgradeLevel = upgradeLevels[(int)callout];
+                    ordered[index].SupportCardName = supportCardNames[(int)callout] ?? string.Empty;
+                    ordered[index].SupportScope = supportScopes[(int)callout];
                     index++;
                 }
             }
@@ -2745,7 +2782,13 @@ namespace HeyListen
 
             if (hasGenericSupportCallout && Config.ShowGenericSupport)
             {
-                AddCallout(results, ref resultCount, StatusCallout.Support, upgradeLevel);
+                AddCallout(
+                    results,
+                    ref resultCount,
+                    StatusCallout.Support,
+                    upgradeLevel,
+                    GetSupportCardDisplayName(card, upgradeLevel),
+                    GetSupportOfferScope(card));
             }
 
             var final = new CalloutInfo[resultCount];
@@ -3004,7 +3047,13 @@ namespace HeyListen
             }
         }
 
-        private static void AddCallout(CalloutInfo[] results, ref int count, StatusCallout callout, int upgradeLevel)
+        private static void AddCallout(
+            CalloutInfo[] results,
+            ref int count,
+            StatusCallout callout,
+            int upgradeLevel,
+            string supportCardName = null,
+            SupportOfferScope supportScope = SupportOfferScope.None)
         {
             for (var i = 0; i < count; i++)
             {
@@ -3013,6 +3062,18 @@ namespace HeyListen
                     if (upgradeLevel > results[i].UpgradeLevel)
                     {
                         results[i].UpgradeLevel = upgradeLevel;
+                        if (callout == StatusCallout.Support && !string.IsNullOrWhiteSpace(supportCardName))
+                        {
+                            results[i].SupportCardName = supportCardName;
+                            results[i].SupportScope = supportScope;
+                        }
+                    }
+                    else if (callout == StatusCallout.Support &&
+                        ShouldReplaceSupportOffer(results[i].SupportCardName, results[i].SupportScope, supportScope) &&
+                        !string.IsNullOrWhiteSpace(supportCardName))
+                    {
+                        results[i].SupportCardName = supportCardName;
+                        results[i].SupportScope = supportScope;
                     }
 
                     return;
@@ -3022,7 +3083,37 @@ namespace HeyListen
             results[count] = new CalloutInfo();
             results[count].Callout = callout;
             results[count].UpgradeLevel = upgradeLevel;
+            results[count].SupportCardName = supportCardName ?? string.Empty;
+            results[count].SupportScope = supportScope;
             count++;
+        }
+
+        private static bool ShouldReplaceSupportOffer(
+            string existingCardName,
+            SupportOfferScope existingScope,
+            SupportOfferScope candidateScope)
+        {
+            if (string.IsNullOrWhiteSpace(existingCardName))
+            {
+                return true;
+            }
+
+            return GetSupportScopePriority(candidateScope) > GetSupportScopePriority(existingScope);
+        }
+
+        private static int GetSupportScopePriority(SupportOfferScope scope)
+        {
+            switch (scope)
+            {
+                case SupportOfferScope.Direct:
+                    return 3;
+                case SupportOfferScope.Team:
+                    return 2;
+                case SupportOfferScope.General:
+                    return 1;
+                default:
+                    return 0;
+            }
         }
 
         private static string SafeFormatLocString(LocString locString)
@@ -3059,6 +3150,39 @@ namespace HeyListen
             return string.Empty;
         }
 
+        private static string GetSupportCardDisplayName(CardModel card, int upgradeLevel)
+        {
+            var title = SafeFormatLocString(card.TitleLocString);
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = card.Title;
+            }
+
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = card.GetType().Name;
+            }
+
+            title = StripCardUpgradeMarker(title).Trim();
+            return upgradeLevel > 0
+                ? title + GetUpgradeSuffix(upgradeLevel)
+                : title;
+        }
+
+        private static SupportOfferScope GetSupportOfferScope(CardModel card)
+        {
+            switch (card.TargetType)
+            {
+                case TargetType.AnyPlayer:
+                case TargetType.AnyAlly:
+                    return SupportOfferScope.Direct;
+                case TargetType.AllAllies:
+                    return SupportOfferScope.Team;
+                default:
+                    return SupportOfferScope.General;
+            }
+        }
+
         private static bool ContainsAny(string text, params string[] needles)
         {
             for (var i = 0; i < needles.Length; i++)
@@ -3080,6 +3204,38 @@ namespace HeyListen
             }
 
             var intro = GetCalloutIntro() + "\n";
+            var supportOfferIndex = FindSupportOfferIndex(callouts);
+            if (supportOfferIndex >= 0)
+            {
+                var supportCardName = GetSupportOfferDisplayName(callouts[supportOfferIndex]);
+                var supportScope = GetSupportScopePhrase(callouts[supportOfferIndex].SupportScope);
+                if (callouts.Length == 1)
+                {
+                    return intro + FormatTranslation("message.support_action", supportCardName, supportScope);
+                }
+
+                var firstStatusIndex = FindFirstNonSupportIndex(callouts);
+                if (firstStatusIndex >= 0)
+                {
+                    var statusCount = callouts.Length - 1;
+                    if (statusCount == 1)
+                    {
+                        return intro + FormatTranslation(
+                            "message.two_with_support_action",
+                            GetDisplayName(callouts[firstStatusIndex]),
+                            supportCardName,
+                            supportScope);
+                    }
+
+                    return intro + FormatTranslation(
+                        "message.many_with_support_action",
+                        GetDisplayName(callouts[firstStatusIndex]),
+                        statusCount - 1,
+                        supportCardName,
+                        supportScope);
+                }
+            }
+
             if (callouts.Length == 1)
             {
                 if (callouts[0].Callout == StatusCallout.Support)
@@ -3099,6 +3255,53 @@ namespace HeyListen
             }
 
             return intro + FormatTranslation("message.many", GetDisplayName(callouts[0]), callouts.Length - 1);
+        }
+
+        private static int FindSupportOfferIndex(CalloutInfo[] callouts)
+        {
+            for (var i = 0; i < callouts.Length; i++)
+            {
+                if (callouts[i].Callout == StatusCallout.Support &&
+                    !string.IsNullOrWhiteSpace(callouts[i].SupportCardName))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int FindFirstNonSupportIndex(CalloutInfo[] callouts)
+        {
+            for (var i = 0; i < callouts.Length; i++)
+            {
+                if (callouts[i].Callout != StatusCallout.Support)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static string GetSupportOfferDisplayName(CalloutInfo callout)
+        {
+            return string.IsNullOrWhiteSpace(callout.SupportCardName)
+                ? GetDisplayName(callout)
+                : callout.SupportCardName;
+        }
+
+        private static string GetSupportScopePhrase(SupportOfferScope scope)
+        {
+            switch (scope)
+            {
+                case SupportOfferScope.Direct:
+                    return Translate("support_scope.direct");
+                case SupportOfferScope.Team:
+                    return Translate("support_scope.team");
+                default:
+                    return Translate("support_scope.general");
+            }
         }
 
         private static string GetCalloutIntro()

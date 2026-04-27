@@ -16,6 +16,12 @@
     "status.poison": "พิษ",
     "status.weak": "ความอ่อนแอ",
     "status.support": "การ์ดสนับสนุน",
-    "status.support_upgraded": "การ์ดสนับสนุนที่อัปเกรดแล้ว"
+    "status.support_upgraded": "การ์ดสนับสนุนที่อัปเกรดแล้ว",
+    "message.support_action": "ฉันใช้ {0} {1} ได้",
+    "message.many_with_support_action": "ฉันมี {0} อีก {1} อย่าง และใช้ {2} {3} ได้",
+    "message.two_with_support_action": "ฉันมี {0} และใช้ {1} {2} ได้",
+    "support_scope.team": "ให้พวกเรา",
+    "support_scope.general": "เพื่อช่วย",
+    "support_scope.direct": "ให้คุณ"
   }
 }

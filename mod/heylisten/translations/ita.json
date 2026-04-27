@@ -16,6 +16,12 @@
     "status.poison": "Veleno",
     "status.weak": "Debolezza",
     "status.support": "carta di supporto",
-    "status.support_upgraded": "carta di supporto migliorata"
+    "status.support_upgraded": "carta di supporto migliorata",
+    "message.support_action": "Posso usare {0} {1}",
+    "message.many_with_support_action": "Ho {0} +{1} in piu e posso usare {2} {3}",
+    "message.two_with_support_action": "Ho {0} e posso usare {1} {2}",
+    "support_scope.team": "per noi",
+    "support_scope.general": "per aiutare",
+    "support_scope.direct": "per te"
   }
 }

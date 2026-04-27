@@ -16,6 +16,12 @@
     "status.poison": "Poison",
     "status.weak": "Affaibli",
     "status.support": "carte de soutien",
-    "status.support_upgraded": "carte de soutien améliorée"
+    "status.support_upgraded": "carte de soutien améliorée",
+    "message.support_action": "Je peux utiliser {0} {1}",
+    "message.many_with_support_action": "J'ai {0} +{1} de plus et je peux utiliser {2} {3}",
+    "message.two_with_support_action": "J'ai {0} et je peux utiliser {1} {2}",
+    "support_scope.team": "pour nous",
+    "support_scope.general": "pour aider",
+    "support_scope.direct": "pour toi"
   }
 }

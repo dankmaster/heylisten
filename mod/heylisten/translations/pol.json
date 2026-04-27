@@ -16,6 +16,12 @@
     "status.poison": "Trucizna",
     "status.weak": "Słabość",
     "status.support": "karta wsparcia",
-    "status.support_upgraded": "ulepszona karta wsparcia"
+    "status.support_upgraded": "ulepszona karta wsparcia",
+    "message.support_action": "Moge uzyc {0} {1}",
+    "message.many_with_support_action": "Mam {0} +{1} wiecej i moge uzyc {2} {3}",
+    "message.two_with_support_action": "Mam {0} i moge uzyc {1} {2}",
+    "support_scope.team": "dla nas",
+    "support_scope.general": "zeby pomoc",
+    "support_scope.direct": "dla ciebie"
   }
 }

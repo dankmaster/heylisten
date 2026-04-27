@@ -16,6 +16,12 @@
     "status.poison": "Gift",
     "status.weak": "Schwach",
     "status.support": "Unterstützungskarte",
-    "status.support_upgraded": "verbesserte Unterstützungskarte"
+    "status.support_upgraded": "verbesserte Unterstützungskarte",
+    "message.support_action": "Ich kann {0} {1} einsetzen",
+    "message.many_with_support_action": "Ich habe {0} +{1} mehr und kann {2} {3} einsetzen",
+    "message.two_with_support_action": "Ich habe {0} und kann {1} {2} einsetzen",
+    "support_scope.team": "fuer uns",
+    "support_scope.general": "zur Hilfe",
+    "support_scope.direct": "fuer dich"
   }
 }
