@@ -3,33 +3,42 @@
 ## Short Description
 
 ```text
-Native "Hey, listen!" speech-bubble callouts for useful co-op cards, with translation packs, click-to-dismiss, and timer settings.
+Native co-op speech-bubble reminders for useful cards, with game-language translations and configurable self callouts.
 ```
 
 ## Full Description
 
 ```bbcode
-[b]Hey, listen![/b] adds native in-game speech bubbles for Slay the Spire 2 co-op play.
+[b]Hey, listen![/b] adds native in-game speech bubbles for Slay the Spire 2 co-op.
 
-It watches co-op hands during combat and calls out useful cards before a turn gets committed. If you have the setup card, your own character can say it. If a teammate has it, their character can say it.
+It watches each player's hand during combat and calls out useful setup cards before a turn gets committed. If a teammate has an important card, their character can say it. If you have one, your own character can say it too, unless you turn self bubbles off.
 
-The mod uses the game's own speech bubble style instead of a custom overlay, so the callouts feel like they belong in combat.
+The mod uses the game's own speech bubble style instead of a custom overlay, so reminders stay close to the characters and feel like part of combat.
 
 [b]Features[/b]
 
 [list]
 [*]Native Slay the Spire 2 speech bubbles.
-[*]Self and teammate "Hey, listen!" callouts for useful cards.
+[*]Self and teammate callouts for useful cards.
 [*]First-person "I have ..." wording so each character speaks for their own hand.
 [*]Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
-[*]Detects helpful setup effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
-[*]Includes bubble-text translation packs for the same language IDs exposed by the base game.
-[*]Lets players customize the opening callout line, or leave it blank to use the translated default.
-[*]Can hide your own character's callout bubbles while keeping teammate bubbles enabled.
+[*]Detects helpful setup effects such as Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and support cards.
+[*]Includes bubble-text translation packs for the same language IDs used by the base game.
+[*]Auto language mode follows the game's selected language when a matching pack is available.
+[*]Custom opening callout line, or the translated default if left blank.
+[*]Optional self bubbles, so you can keep teammate reminders without reminders for your own hand.
 [*]Click a bubble to acknowledge and dismiss it.
-[*]Optional timer for automatic dismissal.
+[*]Optional timer for automatic dismissal, including a never-auto-hide mode.
 [*]Vortex-ready install package.
 [/list]
+
+[b]Languages[/b]
+
+Included translation pack codes:
+
+[code]eng, deu, esp, fra, ita, jpn, kor, pol, ptb, rus, spa, tha, tur, zhs[/code]
+
+The status names are copied from the base game where possible. Bubble phrasing lives in normal JSON files, so players can adjust wording or add their own pack.
 
 [b]Settings[/b]
 
@@ -55,7 +64,7 @@ Translation packs are JSON files in:
 
 [code]mods/heylisten/translations/[/code]
 
-Players can copy an included file to adjust wording, then select it in ModConfig or set its code in the config file. Included pack codes are [code]eng[/code], [code]deu[/code], [code]esp[/code], [code]fra[/code], [code]ita[/code], [code]jpn[/code], [code]kor[/code], [code]pol[/code], [code]ptb[/code], [code]rus[/code], [code]spa[/code], [code]tha[/code], [code]tur[/code], and [code]zhs[/code].
+Players can copy an included file to adjust wording, then select it in ModConfig or set its code in the config file.
 
 [b]Installation[/b]
 
@@ -69,7 +78,7 @@ After installation, the mod should appear here:
 
 Hey, listen! is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
 
-[b]Why use it?[/b]
+[b]Why This Exists[/b]
 
-Co-op can get visually busy fast. Hey, listen! keeps useful card reminders readable, quick to dismiss, and close to the game's own style.
+Co-op can get visually busy fast, and useful setup cards are easy to miss when everyone is planning at once. Hey, listen! keeps those reminders readable, quick to dismiss, and close to the game's own style.
 ```
