@@ -1,0 +1,21 @@
+{
+  "code": "zh-CN",
+  "name": "Chinese (Simplified)",
+  "strings": {
+    "bubble_intro": "嘿，听我说！",
+    "message.single": "我有 {0}",
+    "message.support": "我有一张 {0}",
+    "message.support_upgraded": "我有一张 {0}",
+    "message.two": "我有 {0} 和 {1}",
+    "message.many": "我有 {0}，还有 {1} 个",
+    "status.vulnerable": "易伤",
+    "status.double_damage": "双倍伤害",
+    "status.strength": "力量",
+    "status.vigor": "活力",
+    "status.focus": "集中",
+    "status.poison": "中毒",
+    "status.weak": "虚弱",
+    "status.support": "辅助牌",
+    "status.support_upgraded": "升级辅助牌"
+  }
+}

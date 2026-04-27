@@ -8,8 +8,9 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 
 - Native game speech bubbles, attached through the normal combat VFX layer.
 - Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
-- Self callouts use `I have ...` wording so your own character's bubble reads differently from teammate bubbles.
+- Self and teammate bubbles use first-person `I have ...` wording so each character speaks for their own hand.
 - Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
+- Translation packs for bubble text, with English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese included.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
@@ -26,6 +27,7 @@ Slay the Spire 2/
     heylisten/
       heylisten.dll
       heylisten.json
+      translations/
 ```
 
 Launch the game normally after installing.
@@ -41,7 +43,7 @@ Users can install it with Nexus Mods' `Mod Manager Download` button when they ha
 The mod works without extra configuration. If ModConfig is installed, it adds:
 
 - `Enable Bubbles`
-- `Show Self Callouts`
+- `Language`
 - `Playable Now Only`
 - `Include Support`
 - `Bubble Timer`
@@ -51,6 +53,16 @@ Settings are stored under:
 ```text
 %APPDATA%/SlayTheSpire2/heylisten/config.json
 ```
+
+The `language` value defaults to `auto`. You can also set it to a pack code such as `en`, `zh-CN`, `zh-TW`, `es-ES`, or `ja-JP`.
+
+Translation packs are regular JSON files stored under:
+
+```text
+Slay the Spire 2/mods/heylisten/translations/
+```
+
+Copy an existing file, change its `code`, `name`, and strings, then select that language in ModConfig or put its code in `config.json`.
 
 ## Build
 

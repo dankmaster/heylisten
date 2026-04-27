@@ -60,10 +60,220 @@ namespace HeyListen
         public int UpgradeLevel;
     }
 
+    internal sealed class TranslationPack
+    {
+        public string Code;
+        public string Name;
+        public Hashtable Strings = new Hashtable();
+    }
+
+    internal static class SimpleJson
+    {
+        public static string ReadString(string raw, string key, string fallback)
+        {
+            var pattern = "\"" + Regex.Escape(key) + "\"\\s*:\\s*\"(?<value>(?:\\\\.|[^\"\\\\])*)\"";
+            var match = Regex.Match(raw, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!match.Success)
+            {
+                return fallback;
+            }
+
+            var value = DecodeString(match.Groups["value"].Value);
+            return value ?? fallback;
+        }
+
+        public static string EscapeString(string value)
+        {
+            if (value == null)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < value.Length; i++)
+            {
+                var ch = value[i];
+                switch (ch)
+                {
+                    case '\\':
+                        sb.Append("\\\\");
+                        break;
+                    case '"':
+                        sb.Append("\\\"");
+                        break;
+                    case '\b':
+                        sb.Append("\\b");
+                        break;
+                    case '\f':
+                        sb.Append("\\f");
+                        break;
+                    case '\n':
+                        sb.Append("\\n");
+                        break;
+                    case '\r':
+                        sb.Append("\\r");
+                        break;
+                    case '\t':
+                        sb.Append("\\t");
+                        break;
+                    default:
+                        if (char.IsControl(ch))
+                        {
+                            sb.Append("\\u");
+                            sb.Append(((int)ch).ToString("x4", CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            sb.Append(ch);
+                        }
+
+                        break;
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        public static string DecodeString(string value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < value.Length; i++)
+            {
+                var ch = value[i];
+                if (ch != '\\' || i + 1 >= value.Length)
+                {
+                    sb.Append(ch);
+                    continue;
+                }
+
+                i++;
+                var escaped = value[i];
+                switch (escaped)
+                {
+                    case '"':
+                    case '\\':
+                    case '/':
+                        sb.Append(escaped);
+                        break;
+                    case 'b':
+                        sb.Append('\b');
+                        break;
+                    case 'f':
+                        sb.Append('\f');
+                        break;
+                    case 'n':
+                        sb.Append('\n');
+                        break;
+                    case 'r':
+                        sb.Append('\r');
+                        break;
+                    case 't':
+                        sb.Append('\t');
+                        break;
+                    case 'u':
+                        if (i + 4 < value.Length)
+                        {
+                            var hex = value.Substring(i + 1, 4);
+                            if (int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var code))
+                            {
+                                sb.Append((char)code);
+                                i += 4;
+                                break;
+                            }
+                        }
+
+                        sb.Append("\\u");
+                        break;
+                    default:
+                        sb.Append(escaped);
+                        break;
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        public static string ExtractObjectBody(string raw, string key)
+        {
+            if (string.IsNullOrEmpty(raw))
+            {
+                return string.Empty;
+            }
+
+            var pattern = "\"" + Regex.Escape(key) + "\"\\s*:\\s*\\{";
+            var match = Regex.Match(raw, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!match.Success)
+            {
+                return string.Empty;
+            }
+
+            var start = raw.IndexOf('{', match.Index);
+            if (start < 0)
+            {
+                return string.Empty;
+            }
+
+            var depth = 0;
+            var inString = false;
+            var escaped = false;
+            for (var i = start; i < raw.Length; i++)
+            {
+                var ch = raw[i];
+                if (inString)
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                    }
+                    else if (ch == '\\')
+                    {
+                        escaped = true;
+                    }
+                    else if (ch == '"')
+                    {
+                        inString = false;
+                    }
+
+                    continue;
+                }
+
+                if (ch == '"')
+                {
+                    inString = true;
+                    continue;
+                }
+
+                if (ch == '{')
+                {
+                    depth++;
+                    continue;
+                }
+
+                if (ch != '}')
+                {
+                    continue;
+                }
+
+                depth--;
+                if (depth == 0)
+                {
+                    return raw.Substring(start + 1, i - start - 1);
+                }
+            }
+
+            return string.Empty;
+        }
+    }
+
     internal sealed class HeyListenConfig
     {
         public bool Enabled { get; set; } = true;
-        public bool ShowSelfCallouts { get; set; } = true;
+        public string Language { get; set; } = "auto";
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
@@ -84,11 +294,11 @@ namespace HeyListen
 
                 var raw = File.ReadAllText(path);
                 config.Enabled = ReadBool(raw, "enabled", config.Enabled);
-                config.ShowSelfCallouts = ReadBool(raw, "show_self_callouts", config.ShowSelfCallouts);
+                config.Language = SimpleJson.ReadString(raw, "language", config.Language);
                 config.OnlyShowPlayableNow = ReadBool(raw, "only_show_playable_now", config.OnlyShowPlayableNow);
                 config.ShowGenericSupport = ReadBool(raw, "show_generic_support", config.ShowGenericSupport);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
-                if (!HasKey(raw, "show_self_callouts"))
+                if (!HasKey(raw, "language") || HasKey(raw, "show_self_callouts"))
                 {
                     config.Save();
                 }
@@ -120,7 +330,7 @@ namespace HeyListen
             var sb = new StringBuilder();
             sb.AppendLine("{");
             sb.AppendLine($"  \"enabled\": {Enabled.ToString().ToLowerInvariant()},");
-            sb.AppendLine($"  \"show_self_callouts\": {ShowSelfCallouts.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"language\": \"{SimpleJson.EscapeString(Language)}\",");
             sb.AppendLine($"  \"only_show_playable_now\": {OnlyShowPlayableNow.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_generic_support\": {ShowGenericSupport.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
@@ -179,10 +389,11 @@ namespace HeyListen
     {
         private const string ModId = "heylisten";
         private const string ModDisplayName = "Hey, listen!";
-        private const string BubbleIntro = "Hey, listen!";
-        private const string SelfSubject = "I";
+        private const string AutoLanguageCode = "auto";
+        private const string DefaultLanguageCode = "en";
+        private const string TranslationsDirectoryName = "translations";
         private const string EnabledKey = "enabled";
-        private const string ShowSelfCalloutsKey = "show_self_callouts";
+        private const string LanguageKey = "language";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
         private const string ShowGenericSupportKey = "show_generic_support";
         private const string DisplaySecondsKey = "display_seconds";
@@ -381,6 +592,9 @@ namespace HeyListen
         private static RunManager _observedRunManager;
         private static CombatManager _observedCombatManager;
         private static HeyListenConfig Config = new HeyListenConfig();
+        private static readonly TranslationPack EnglishFallbackPack = CreateEnglishTranslationPack();
+        private static TranslationPack[] TranslationPacks = new TranslationPack[0];
+        private static TranslationPack ActiveTranslationPack = EnglishFallbackPack;
         private static bool _modConfigRegistered;
         private static bool _assemblyLoadHooked;
 
@@ -390,6 +604,9 @@ namespace HeyListen
             {
                 Config = HeyListenConfig.Load();
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
+                LoadTranslationPacks();
+                Config.Language = NormalizeLanguageSettingValue(Config.Language);
+                ApplyActiveTranslationPack();
                 HookAssemblyLoad();
                 Harmony.PatchAll(Assembly.GetExecutingAssembly());
                 TryWireManagerEvents();
@@ -519,10 +736,6 @@ namespace HeyListen
                 : null;
 
             var activePlayerKeys = new Hashtable();
-            var localNetIdIsUnique = IsNetIdUnique(runState, localNetId);
-            var localPlayer = localNetIdIsUnique
-                ? ResolveLocalPlayer(runState, combatState, localNetId)
-                : null;
             for (var i = 0; i < runState.Players.Count; i++)
             {
                 var player = runState.Players[i];
@@ -543,13 +756,7 @@ namespace HeyListen
                     continue;
                 }
 
-                var isLocalPlayer = IsLocalPlayer(player, localPlayer, localNetId, localNetIdIsUnique);
-                if (isLocalPlayer && !Config.ShowSelfCallouts)
-                {
-                    continue;
-                }
-
-                var message = BuildBubbleMessage(callouts, isLocalPlayer);
+                var message = BuildBubbleMessage(callouts);
                 UpdateLastMessage(playerKey, message);
                 if (AcknowledgeExpiredBubbleIfNeeded(playerKey, message) ||
                     IsAcknowledged(playerKey, message))
@@ -620,15 +827,17 @@ namespace HeyListen
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.Enabled,
                     new Action<object>(value => ApplyEnabledSetting(ConvertToBool(value, true), true))), 0);
-                entries.SetValue(CreateModConfigEntry(
+                var languageEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
-                    ShowSelfCalloutsKey,
-                    "Show Self Callouts",
-                    "Show bubbles over your own character when you have useful setup cards.",
-                    Enum.Parse(configTypeEnum, "Toggle"),
-                    Config.ShowSelfCallouts,
-                    new Action<object>(value => ApplyShowSelfCalloutsSetting(ConvertToBool(value, true), true))), 1);
+                    LanguageKey,
+                    "Language",
+                    "Speech-bubble text language. Auto follows the system locale when a matching translation pack is installed.",
+                    Enum.Parse(configTypeEnum, "Dropdown"),
+                    GetLanguageOptionLabel(Config.Language),
+                    new Action<object>(value => ApplyLanguageSetting(ConvertToString(value, Config.Language), true)));
+                ConfigureDropdownEntry(entryType, languageEntry, BuildLanguageOptions());
+                entries.SetValue(languageEntry, 1);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -681,8 +890,8 @@ namespace HeyListen
                 _modConfigRegistered = true;
 
                 ApplyEnabledSetting(ReadModConfigBool(apiType, EnabledKey, Config.Enabled), false);
-                ApplyShowSelfCalloutsSetting(
-                    ReadModConfigBool(apiType, ShowSelfCalloutsKey, Config.ShowSelfCallouts),
+                ApplyLanguageSetting(
+                    ReadModConfigString(apiType, LanguageKey, Config.Language),
                     false);
                 ApplyOnlyShowPlayableNowSetting(
                     ReadModConfigBool(apiType, OnlyShowPlayableNowKey, Config.OnlyShowPlayableNow),
@@ -737,6 +946,11 @@ namespace HeyListen
             entryType.GetProperty("Format")?.SetValue(entry, format);
         }
 
+        private static void ConfigureDropdownEntry(Type entryType, object entry, string[] options)
+        {
+            entryType.GetProperty("Options")?.SetValue(entry, options);
+        }
+
         private static bool ReadModConfigBool(Type apiType, string key, bool fallback)
         {
             try
@@ -750,6 +964,46 @@ namespace HeyListen
                 var genericMethod = getValueMethod.MakeGenericMethod(typeof(bool));
                 var value = genericMethod.Invoke(null, new object[] { ModId, key });
                 return ConvertToBool(value, fallback);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static string ReadModConfigString(Type apiType, string key, string fallback)
+        {
+            try
+            {
+                var getValueMethod = apiType.GetMethod("GetValue", BindingFlags.Public | BindingFlags.Static);
+                if (getValueMethod == null)
+                {
+                    return fallback;
+                }
+
+                var genericMethod = getValueMethod.MakeGenericMethod(typeof(string));
+                var value = genericMethod.Invoke(null, new object[] { ModId, key });
+                return ConvertToString(value, fallback);
+            }
+            catch
+            {
+                return ReadModConfigObjectAsString(apiType, key, fallback);
+            }
+        }
+
+        private static string ReadModConfigObjectAsString(Type apiType, string key, string fallback)
+        {
+            try
+            {
+                var getValueMethod = apiType.GetMethod("GetValue", BindingFlags.Public | BindingFlags.Static);
+                if (getValueMethod == null)
+                {
+                    return fallback;
+                }
+
+                var genericMethod = getValueMethod.MakeGenericMethod(typeof(object));
+                var value = genericMethod.Invoke(null, new object[] { ModId, key });
+                return ConvertToString(value, fallback);
             }
             catch
             {
@@ -802,6 +1056,19 @@ namespace HeyListen
             return bool.TryParse(value.ToString(), out var parsed)
                 ? parsed
                 : fallback;
+        }
+
+        private static string ConvertToString(object value, string fallback)
+        {
+            if (value == null)
+            {
+                return fallback;
+            }
+
+            var raw = value.ToString();
+            return string.IsNullOrWhiteSpace(raw)
+                ? fallback
+                : raw;
         }
 
         private static float ConvertToFloat(object value, float fallback)
@@ -859,14 +1126,16 @@ namespace HeyListen
             ClearAllBubbles();
         }
 
-        private static void ApplyShowSelfCalloutsSetting(bool showSelfCallouts, bool save)
+        private static void ApplyLanguageSetting(string language, bool save)
         {
-            Config.ShowSelfCallouts = showSelfCallouts;
+            Config.Language = NormalizeLanguageSettingValue(language);
+            ApplyActiveTranslationPack();
             if (save)
             {
                 Config.Save();
             }
 
+            ClearAcknowledgements();
             ForceRefresh();
         }
 
@@ -902,6 +1171,428 @@ namespace HeyListen
 
             ClearAllBubbles();
             ForceRefresh();
+        }
+
+        private static void LoadTranslationPacks()
+        {
+            var packs = new ArrayList();
+            AddOrReplaceTranslationPack(packs, EnglishFallbackPack);
+
+            try
+            {
+                var directory = GetTranslationsDirectory();
+                if (Directory.Exists(directory))
+                {
+                    var files = Directory.GetFiles(directory, "*.json");
+                    Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+                    for (var i = 0; i < files.Length; i++)
+                    {
+                        var pack = TryLoadTranslationPack(files[i]);
+                        if (pack != null)
+                        {
+                            AddOrReplaceTranslationPack(packs, pack);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[heylisten] Failed to load translation packs: " + ex.Message);
+            }
+
+            TranslationPacks = new TranslationPack[packs.Count];
+            packs.CopyTo(TranslationPacks);
+            Array.Sort(TranslationPacks, CompareTranslationPacks);
+        }
+
+        private static string GetTranslationsDirectory()
+        {
+            var assemblyPath = Assembly.GetExecutingAssembly().Location;
+            var assemblyDir = !string.IsNullOrWhiteSpace(assemblyPath)
+                ? Path.GetDirectoryName(assemblyPath)
+                : null;
+            if (!string.IsNullOrWhiteSpace(assemblyDir))
+            {
+                return Path.Combine(assemblyDir, TranslationsDirectoryName);
+            }
+
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, TranslationsDirectoryName);
+        }
+
+        private static TranslationPack TryLoadTranslationPack(string path)
+        {
+            try
+            {
+                var raw = File.ReadAllText(path, Encoding.UTF8);
+                var code = NormalizeLanguageCode(SimpleJson.ReadString(raw, "code", string.Empty));
+                var name = SimpleJson.ReadString(raw, "name", code);
+                var stringsBody = SimpleJson.ExtractObjectBody(raw, "strings");
+                if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(stringsBody))
+                {
+                    return null;
+                }
+
+                var pack = new TranslationPack();
+                pack.Code = code;
+                pack.Name = string.IsNullOrWhiteSpace(name) ? code : name;
+
+                var matches = Regex.Matches(
+                    stringsBody,
+                    "\"(?<key>(?:\\\\.|[^\"\\\\])*)\"\\s*:\\s*\"(?<value>(?:\\\\.|[^\"\\\\])*)\"",
+                    RegexOptions.Singleline);
+                for (var i = 0; i < matches.Count; i++)
+                {
+                    var key = SimpleJson.DecodeString(matches[i].Groups["key"].Value);
+                    var value = SimpleJson.DecodeString(matches[i].Groups["value"].Value);
+                    if (!string.IsNullOrWhiteSpace(key) && value != null)
+                    {
+                        pack.Strings[key] = value;
+                    }
+                }
+
+                return pack.Strings.Count > 0 ? pack : null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("[heylisten] Failed to load translation pack '" + path + "': " + ex.Message);
+                return null;
+            }
+        }
+
+        private static TranslationPack CreateEnglishTranslationPack()
+        {
+            var pack = new TranslationPack();
+            pack.Code = DefaultLanguageCode;
+            pack.Name = "English";
+            SetTranslation(pack, "bubble_intro", "Hey, listen!");
+            SetTranslation(pack, "message.single", "I have {0}");
+            SetTranslation(pack, "message.support", "I have a {0}");
+            SetTranslation(pack, "message.support_upgraded", "I have an {0}");
+            SetTranslation(pack, "message.two", "I have {0} and {1}");
+            SetTranslation(pack, "message.many", "I have {0} +{1} more");
+            SetTranslation(pack, "status.vulnerable", "Vulnerable");
+            SetTranslation(pack, "status.double_damage", "Double Damage");
+            SetTranslation(pack, "status.strength", "Strength");
+            SetTranslation(pack, "status.vigor", "Vigor");
+            SetTranslation(pack, "status.focus", "Focus");
+            SetTranslation(pack, "status.poison", "Poison");
+            SetTranslation(pack, "status.weak", "Weak");
+            SetTranslation(pack, "status.support", "support card");
+            SetTranslation(pack, "status.support_upgraded", "upgraded support card");
+            return pack;
+        }
+
+        private static void SetTranslation(TranslationPack pack, string key, string value)
+        {
+            pack.Strings[key] = value;
+        }
+
+        private static void AddOrReplaceTranslationPack(ArrayList packs, TranslationPack pack)
+        {
+            if (pack == null || string.IsNullOrWhiteSpace(pack.Code))
+            {
+                return;
+            }
+
+            for (var i = 0; i < packs.Count; i++)
+            {
+                var existing = packs[i] as TranslationPack;
+                if (existing != null && string.Equals(existing.Code, pack.Code, StringComparison.OrdinalIgnoreCase))
+                {
+                    packs[i] = pack;
+                    return;
+                }
+            }
+
+            packs.Add(pack);
+        }
+
+        private static int CompareTranslationPacks(TranslationPack left, TranslationPack right)
+        {
+            var leftWeight = GetLanguageSortWeight(left != null ? left.Code : string.Empty);
+            var rightWeight = GetLanguageSortWeight(right != null ? right.Code : string.Empty);
+            if (leftWeight != rightWeight)
+            {
+                return leftWeight.CompareTo(rightWeight);
+            }
+
+            return string.Compare(
+                left != null ? left.Name : string.Empty,
+                right != null ? right.Name : string.Empty,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int GetLanguageSortWeight(string code)
+        {
+            if (string.Equals(code, DefaultLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+
+            if (string.Equals(code, "zh-CN", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            if (string.Equals(code, "zh-TW", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+
+            if (string.Equals(code, "es-ES", StringComparison.OrdinalIgnoreCase))
+            {
+                return 3;
+            }
+
+            if (string.Equals(code, "ja-JP", StringComparison.OrdinalIgnoreCase))
+            {
+                return 4;
+            }
+
+            return 100;
+        }
+
+        private static void ApplyActiveTranslationPack()
+        {
+            ActiveTranslationPack =
+                ResolveTranslationPack(Config.Language) ??
+                FindTranslationPackExact(DefaultLanguageCode) ??
+                EnglishFallbackPack;
+        }
+
+        private static TranslationPack ResolveTranslationPack(string language)
+        {
+            var requested = NormalizeLanguageSettingValue(language);
+            if (!string.Equals(requested, AutoLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return FindTranslationPackForCandidate(requested);
+            }
+
+            var candidates = GetAutoLanguageCandidates();
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                var pack = FindTranslationPackForCandidate(candidates[i]);
+                if (pack != null)
+                {
+                    return pack;
+                }
+            }
+
+            return FindTranslationPackExact(DefaultLanguageCode);
+        }
+
+        private static string[] GetAutoLanguageCandidates()
+        {
+            var candidates = new ArrayList();
+            try
+            {
+                candidates.Add(CultureInfo.CurrentUICulture.Name);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                candidates.Add(CultureInfo.CurrentCulture.Name);
+            }
+            catch
+            {
+            }
+
+            var result = new string[candidates.Count];
+            candidates.CopyTo(result);
+            return result;
+        }
+
+        private static TranslationPack FindTranslationPackForCandidate(string candidate)
+        {
+            var normalized = NormalizeLanguageCode(candidate);
+            if (string.IsNullOrWhiteSpace(normalized) ||
+                string.Equals(normalized, AutoLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var exact = FindTranslationPackExact(normalized);
+            if (exact != null)
+            {
+                return exact;
+            }
+
+            var lower = normalized.ToLowerInvariant();
+            if (lower == "zh" || lower.StartsWith("zh-hans") || lower.StartsWith("zh-cn") || lower.StartsWith("zh-sg"))
+            {
+                var simplified = FindTranslationPackExact("zh-CN");
+                if (simplified != null)
+                {
+                    return simplified;
+                }
+            }
+
+            if (lower.StartsWith("zh-hant") || lower.StartsWith("zh-tw") || lower.StartsWith("zh-hk") || lower.StartsWith("zh-mo"))
+            {
+                var traditional = FindTranslationPackExact("zh-TW");
+                if (traditional != null)
+                {
+                    return traditional;
+                }
+            }
+
+            var separatorIndex = normalized.IndexOf('-');
+            var neutral = separatorIndex > 0
+                ? normalized.Substring(0, separatorIndex)
+                : normalized;
+            for (var i = 0; i < TranslationPacks.Length; i++)
+            {
+                var pack = TranslationPacks[i];
+                if (pack != null &&
+                    (string.Equals(pack.Code, neutral, StringComparison.OrdinalIgnoreCase) ||
+                     pack.Code.StartsWith(neutral + "-", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return pack;
+                }
+            }
+
+            return null;
+        }
+
+        private static TranslationPack FindTranslationPackExact(string code)
+        {
+            for (var i = 0; i < TranslationPacks.Length; i++)
+            {
+                var pack = TranslationPacks[i];
+                if (pack != null && string.Equals(pack.Code, code, StringComparison.OrdinalIgnoreCase))
+                {
+                    return pack;
+                }
+            }
+
+            return null;
+        }
+
+        private static string NormalizeLanguageSettingValue(string language)
+        {
+            var normalized = NormalizeLanguageCode(language);
+            if (string.IsNullOrWhiteSpace(normalized) ||
+                string.Equals(normalized, AutoLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return AutoLanguageCode;
+            }
+
+            if (int.TryParse(normalized, NumberStyles.Integer, CultureInfo.InvariantCulture, out var optionIndex))
+            {
+                if (optionIndex == 0)
+                {
+                    return AutoLanguageCode;
+                }
+
+                if (optionIndex > 0 && optionIndex <= TranslationPacks.Length)
+                {
+                    return TranslationPacks[optionIndex - 1].Code;
+                }
+            }
+
+            for (var i = 0; i < TranslationPacks.Length; i++)
+            {
+                var pack = TranslationPacks[i];
+                if (pack == null)
+                {
+                    continue;
+                }
+
+                if (string.Equals(normalized, pack.Code, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(language, pack.Name, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(language, GetLanguageOptionLabel(pack.Code), StringComparison.OrdinalIgnoreCase))
+                {
+                    return pack.Code;
+                }
+            }
+
+            return normalized;
+        }
+
+        private static string NormalizeLanguageCode(string language)
+        {
+            if (string.IsNullOrWhiteSpace(language))
+            {
+                return AutoLanguageCode;
+            }
+
+            var raw = language.Trim();
+            if (string.Equals(raw, "Auto", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(raw, "Automatic", StringComparison.OrdinalIgnoreCase))
+            {
+                return AutoLanguageCode;
+            }
+
+            var codeMatch = Regex.Match(raw, "\\(([a-z]{2,3}(?:[-_][a-z0-9]+){0,2})\\)\\s*$", RegexOptions.IgnoreCase);
+            if (codeMatch.Success)
+            {
+                raw = codeMatch.Groups[1].Value;
+            }
+
+            if (string.Equals(raw, "English", StringComparison.OrdinalIgnoreCase))
+            {
+                return DefaultLanguageCode;
+            }
+
+            return raw.Replace('_', '-');
+        }
+
+        private static string[] BuildLanguageOptions()
+        {
+            var options = new string[TranslationPacks.Length + 1];
+            options[0] = "Auto";
+            for (var i = 0; i < TranslationPacks.Length; i++)
+            {
+                options[i + 1] = GetLanguageOptionLabel(TranslationPacks[i].Code);
+            }
+
+            return options;
+        }
+
+        private static string GetLanguageOptionLabel(string code)
+        {
+            if (string.Equals(code, AutoLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return "Auto";
+            }
+
+            var pack = FindTranslationPackExact(code);
+            if (pack == null)
+            {
+                return code;
+            }
+
+            return pack.Name + " (" + pack.Code + ")";
+        }
+
+        private static string Translate(string key)
+        {
+            var value = ActiveTranslationPack != null
+                ? ActiveTranslationPack.Strings[key] as string
+                : null;
+            if (!string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            value = EnglishFallbackPack.Strings[key] as string;
+            return !string.IsNullOrEmpty(value) ? value : key;
+        }
+
+        private static string FormatTranslation(string key, params object[] args)
+        {
+            var template = Translate(key);
+            try
+            {
+                return string.Format(CultureInfo.InvariantCulture, template, args);
+            }
+            catch
+            {
+                return template;
+            }
         }
 
         private static void TryWireManagerEvents()
@@ -1977,33 +2668,33 @@ namespace HeyListen
             return false;
         }
 
-        private static string BuildBubbleMessage(CalloutInfo[] callouts, bool isLocalPlayer)
+        private static string BuildBubbleMessage(CalloutInfo[] callouts)
         {
             if (callouts.Length == 0)
             {
                 return string.Empty;
             }
 
-            var subject = isLocalPlayer ? SelfSubject : "I";
+            var intro = Translate("bubble_intro") + "\n";
             if (callouts.Length == 1)
             {
                 if (callouts[0].Callout == StatusCallout.Support)
                 {
-                    var article = callouts[0].UpgradeLevel > 0 ? "an" : "a";
-                    return isLocalPlayer
-                        ? BubbleIntro + "\n" + subject + " have " + article + " " + GetDisplayName(callouts[0])
-                        : BubbleIntro + "\nI got " + article + " " + GetDisplayName(callouts[0]);
+                    var key = callouts[0].UpgradeLevel > 0
+                        ? "message.support_upgraded"
+                        : "message.support";
+                    return intro + FormatTranslation(key, GetDisplayName(callouts[0]));
                 }
 
-                return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]);
+                return intro + FormatTranslation("message.single", GetDisplayName(callouts[0]));
             }
 
             if (callouts.Length == 2)
             {
-                return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " and " + GetDisplayName(callouts[1]);
+                return intro + FormatTranslation("message.two", GetDisplayName(callouts[0]), GetDisplayName(callouts[1]));
             }
 
-            return BubbleIntro + "\n" + subject + " have " + GetDisplayName(callouts[0]) + " +" + (callouts.Length - 1) + " more";
+            return intro + FormatTranslation("message.many", GetDisplayName(callouts[0]), callouts.Length - 1);
         }
 
         private static string GetDisplayName(CalloutInfo callout)
@@ -2012,7 +2703,7 @@ namespace HeyListen
             if (callout.UpgradeLevel > 0)
             {
                 displayName = callout.Callout == StatusCallout.Support
-                    ? "upgraded " + displayName
+                    ? Translate("status.support_upgraded")
                     : displayName + GetUpgradeSuffix(callout.UpgradeLevel);
             }
 
@@ -2039,21 +2730,21 @@ namespace HeyListen
             switch (callout)
             {
                 case StatusCallout.Vulnerable:
-                    return "Vulnerable";
+                    return Translate("status.vulnerable");
                 case StatusCallout.DoubleDamage:
-                    return "Double Damage";
+                    return Translate("status.double_damage");
                 case StatusCallout.Strength:
-                    return "Strength";
+                    return Translate("status.strength");
                 case StatusCallout.Vigor:
-                    return "Vigor";
+                    return Translate("status.vigor");
                 case StatusCallout.Focus:
-                    return "Focus";
+                    return Translate("status.focus");
                 case StatusCallout.Poison:
-                    return "Poison";
+                    return Translate("status.poison");
                 case StatusCallout.Weak:
-                    return "Weak";
+                    return Translate("status.weak");
                 default:
-                    return "support card";
+                    return Translate("status.support");
             }
         }
 

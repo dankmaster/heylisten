@@ -38,6 +38,7 @@ $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 $dataDir = Join-Path $GameRoot "data_sts2_windows_x86_64"
 $sourcePath = Join-Path $repoRoot "src\HeyListen.cs"
 $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$translationsSourceDir = Join-Path $repoRoot "mod\heylisten\translations"
 $distModDir = Join-Path $BuildRoot "heylisten"
 $outputPath = Join-Path $distModDir "heylisten.dll"
 $runtimeDir = Split-Path -Parent ([System.Text.RegularExpressions.Regex].Assembly.Location)
@@ -144,6 +145,9 @@ if (Test-Path -LiteralPath $distModDir) {
 
 New-Item -ItemType Directory -Force $distModDir | Out-Null
 Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "heylisten.json") -Force
+if (Test-Path -LiteralPath $translationsSourceDir) {
+    Copy-Item -LiteralPath $translationsSourceDir -Destination $distModDir -Recurse -Force
+}
 
 if (-not (Invoke-RoslynCompile -SourcePath $sourcePath -OutputAssemblyPath $outputPath -ReferencePaths $references)) {
     Add-Type `
@@ -167,5 +171,10 @@ if ($Install) {
     New-Item -ItemType Directory -Force $targetModDir | Out-Null
     Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.json") -Destination (Join-Path $targetModDir "heylisten.json") -Force
     Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.dll") -Destination (Join-Path $targetModDir "heylisten.dll") -Force
+    $distTranslationsDir = Join-Path $distModDir "translations"
+    if (Test-Path -LiteralPath $distTranslationsDir) {
+        Copy-Item -LiteralPath $distTranslationsDir -Destination $targetModDir -Recurse -Force
+    }
+
     Write-Host "Installed $targetModDir"
 }

@@ -9,6 +9,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$translationsSourceDir = Join-Path $repoRoot "mod\heylisten\translations"
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
@@ -30,6 +31,11 @@ $expectedEntries = @(
     "mods/heylisten/heylisten.dll",
     "mods/heylisten/heylisten.json"
 )
+
+if (Test-Path -LiteralPath $translationsSourceDir) {
+    $expectedEntries += Get-ChildItem -LiteralPath $translationsSourceDir -File |
+        ForEach-Object { "mods/heylisten/translations/$($_.Name)" }
+}
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)

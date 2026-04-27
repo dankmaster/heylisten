@@ -59,6 +59,7 @@ mods/
   heylisten/
     heylisten.dll
     heylisten.json
+    translations/
 ```
 
 Users can extract or drag this archive into the Slay the Spire 2 folder, or install the same file with Vortex.

@@ -1,0 +1,21 @@
+{
+  "code": "ja-JP",
+  "name": "Japanese",
+  "strings": {
+    "bubble_intro": "ねえ、聞いて！",
+    "message.single": "{0} がある",
+    "message.support": "{0} がある",
+    "message.support_upgraded": "{0} がある",
+    "message.two": "{0} と {1} がある",
+    "message.many": "{0} ほか {1} 件",
+    "status.vulnerable": "弱体",
+    "status.double_damage": "2倍ダメージ",
+    "status.strength": "筋力",
+    "status.vigor": "活力",
+    "status.focus": "集中",
+    "status.poison": "毒",
+    "status.weak": "脱力",
+    "status.support": "サポートカード",
+    "status.support_upgraded": "アップグレード済みサポートカード"
+  }
+}

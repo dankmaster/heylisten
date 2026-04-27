@@ -1,0 +1,21 @@
+{
+  "code": "zh-TW",
+  "name": "Chinese (Traditional)",
+  "strings": {
+    "bubble_intro": "嘿，聽我說！",
+    "message.single": "我有 {0}",
+    "message.support": "我有一張 {0}",
+    "message.support_upgraded": "我有一張 {0}",
+    "message.two": "我有 {0} 和 {1}",
+    "message.many": "我有 {0}，還有 {1} 個",
+    "status.vulnerable": "易傷",
+    "status.double_damage": "雙倍傷害",
+    "status.strength": "力量",
+    "status.vigor": "活力",
+    "status.focus": "集中",
+    "status.poison": "中毒",
+    "status.weak": "虛弱",
+    "status.support": "輔助牌",
+    "status.support_upgraded": "升級輔助牌"
+  }
+}
