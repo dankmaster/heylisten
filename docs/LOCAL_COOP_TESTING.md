@@ -53,6 +53,9 @@ Useful options:
 # Launch without rebuilding the mod.
 .\scripts\launch-local-coop-test.ps1 -SkipBuild
 
+# Launch for normal LAN play without Hey, listen! installed.
+.\scripts\launch-local-coop-test.ps1 -WithoutHeyListen
+
 # Launch four clients.
 .\scripts\launch-local-coop-test.ps1 -Clients 4
 
