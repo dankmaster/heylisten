@@ -40,6 +40,8 @@ Upload `Hey-Listen-<version>.zip` as the main Nexus Mods file. It is packed rela
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
+Nexus page: [Hey Listen](https://www.nexusmods.com/slaythespire2/mods/697). If a user manually adds the zip to Vortex and it installs but shows as an unknown/local mod, they can use Vortex's metadata/Guess IDs flow and link it to Slay The Spire II Nexus mod ID `697`.
+
 ## Settings
 
 The mod works without extra configuration. If ModConfig is installed, it adds:

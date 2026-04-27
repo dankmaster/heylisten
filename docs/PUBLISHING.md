@@ -125,6 +125,8 @@ https://www.nexusmods.com/site/mods/1727
 
 The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/heylisten`.
 
+Nexus/Vortex metadata is normally supplied by Nexus when users install with `Mod Manager Download`. Manual zip installs still use the same correct package layout, but Vortex may show the mod as local/unknown until the user runs `Guess IDs` or sets the source to Nexus Mods with Slay The Spire II mod ID `697`. Keep the GitHub and Nexus release zip bytes identical when possible so hash-based metadata matching has the best chance to work.
+
 The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexus upload uses [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md) as the default file description.
 
 ## Nexus Upload Workflow

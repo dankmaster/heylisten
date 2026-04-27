@@ -74,6 +74,14 @@ After installation, the mod should appear here:
 
 [code]mods/heylisten/[/code]
 
+[b]Vortex Notes[/b]
+
+For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to Slay The Spire II Nexus mod ID:
+
+[code]697[/code]
+
+If Vortex does not recognize Slay the Spire 2 yet, install the Slay the Spire 2 Vortex Extension from Nexus Mods.
+
 [b]Compatibility[/b]
 
 Hey, listen! is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
