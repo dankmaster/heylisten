@@ -4,6 +4,8 @@ You can run multiple Slay the Spire 2 clients on one PC for quick co-op mod test
 
 This is good for checking Hey, listen! behavior such as self/teammate bubbles, click-to-acknowledge, timer cleanup, and Timeline cleanup. It is not full save/profile isolation: both clients use the same Windows user and the same SlayTheSpire2 AppData folder.
 
+The LAN multiplayer mod is only needed for same-machine debugging. For normal play, keep Hey, listen! installed and remove the LAN debugging mod after testing.
+
 ## LAN Mod
 
 Steam multiplayer may still treat both windows as the same Steam account. For same-machine testing, use a LAN multiplayer mod.
@@ -53,9 +55,6 @@ Useful options:
 # Launch without rebuilding the mod.
 .\scripts\launch-local-coop-test.ps1 -SkipBuild
 
-# Launch for normal LAN play without Hey, listen! installed.
-.\scripts\launch-local-coop-test.ps1 -WithoutHeyListen
-
 # Launch four clients.
 .\scripts\launch-local-coop-test.ps1 -Clients 4
 
@@ -76,6 +75,20 @@ Logs are written under:
 
 ```text
 local-test-logs/
+```
+
+## Return To Normal Play
+
+After closing the test clients, remove the LAN debugging mod while keeping Hey, listen! installed:
+
+```powershell
+.\scripts\prepare-normal-play.ps1
+```
+
+If you only want to remove the LAN multiplayer mod without reinstalling Hey, listen!:
+
+```powershell
+.\scripts\remove-lan-multiplayer.ps1
 ```
 
 ## Notes

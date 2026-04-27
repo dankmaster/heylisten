@@ -10,7 +10,6 @@ param(
     [int]$MaxFps = 30,
     [int]$QuitAfter = 0,
     [switch]$SkipBuild,
-    [switch]$WithoutHeyListen,
     [switch]$RequireLanMod,
     [switch]$NoSteamAppIdFile,
     [switch]$Audio,
@@ -36,7 +35,7 @@ if ($PSVersionTable.PSEdition -ne "Core") {
             }
         }
 
-        foreach ($switchName in @("SkipBuild", "WithoutHeyListen", "RequireLanMod", "NoSteamAppIdFile", "Audio", "DryRun")) {
+        foreach ($switchName in @("SkipBuild", "RequireLanMod", "NoSteamAppIdFile", "Audio", "DryRun")) {
             if ($PSBoundParameters.ContainsKey($switchName) -and $PSBoundParameters[$switchName]) {
                 $args += "-$switchName"
             }
@@ -60,25 +59,6 @@ $steamAppIdPath = Join-Path $GameRoot "steam_appid.txt"
 
 if (!(Test-Path -LiteralPath $gameExe)) {
     throw "Could not find SlayTheSpire2.exe under: $GameRoot"
-}
-
-if ($WithoutHeyListen) {
-    $SkipBuild = $true
-    $targetModDir = Join-Path $modsDir "heylisten"
-    $resolvedModsDir = [System.IO.Path]::GetFullPath($modsDir)
-    $resolvedTargetModDir = [System.IO.Path]::GetFullPath($targetModDir)
-    $relativeTargetModDir = [System.IO.Path]::GetRelativePath($resolvedModsDir, $resolvedTargetModDir)
-    if ($relativeTargetModDir -ne "heylisten") {
-        throw "Refusing to remove an unexpected mod path: $targetModDir"
-    }
-
-    if (Test-Path -LiteralPath $targetModDir) {
-        if (!$DryRun) {
-            Remove-Item -LiteralPath $targetModDir -Recurse -Force
-        }
-
-        Write-Host "Removed installed Hey, listen! for this launch: $targetModDir"
-    }
 }
 
 if (!$SkipBuild) {
