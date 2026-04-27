@@ -2,7 +2,7 @@
   "id": "heylisten",
   "name": "Hey, listen!",
   "author": "Codex",
-  "description": "Shows clickable native game speech-bubble callouts in multiplayer combat when you or a teammate currently hold helpful setup effects like Vulnerable, Strength, Vigor, or Weak. Uses audited card detection to avoid cards that only mention a status. Includes translation packs, colored upgraded-status text, and ModConfig settings for language, playable-only filtering, support callouts, and the callout timer.",
+  "description": "Shows clickable native game speech-bubble callouts in multiplayer combat when you or a teammate currently hold helpful setup effects like Vulnerable, Strength, Vigor, or Weak. Uses audited card detection to avoid cards that only mention a status. Includes game-language translation packs, colored upgraded-status text, and ModConfig settings for language, playable-only filtering, support callouts, and the callout timer.",
   "version": "0.96",
   "has_pck": false,
   "has_dll": true,

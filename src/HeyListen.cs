@@ -23,6 +23,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Timeline;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Saves;
 
 namespace HeyListen
 {
@@ -390,7 +391,7 @@ namespace HeyListen
         private const string ModId = "heylisten";
         private const string ModDisplayName = "Hey, listen!";
         private const string AutoLanguageCode = "auto";
-        private const string DefaultLanguageCode = "en";
+        private const string DefaultLanguageCode = "eng";
         private const string TranslationsDirectoryName = "translations";
         private const string EnabledKey = "enabled";
         private const string LanguageKey = "language";
@@ -597,6 +598,7 @@ namespace HeyListen
         private static TranslationPack ActiveTranslationPack = EnglishFallbackPack;
         private static bool _modConfigRegistered;
         private static bool _assemblyLoadHooked;
+        private static bool _localeChangeHooked;
 
         public static void Initialize()
         {
@@ -605,8 +607,15 @@ namespace HeyListen
                 Config = HeyListenConfig.Load();
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 LoadTranslationPacks();
+                var loadedLanguage = Config.Language;
                 Config.Language = NormalizeLanguageSettingValue(Config.Language);
+                if (!string.Equals(loadedLanguage, Config.Language, StringComparison.OrdinalIgnoreCase))
+                {
+                    Config.Save();
+                }
+
                 ApplyActiveTranslationPack();
+                TryHookLocaleChanges();
                 HookAssemblyLoad();
                 Harmony.PatchAll(Assembly.GetExecutingAssembly());
                 TryWireManagerEvents();
@@ -832,7 +841,7 @@ namespace HeyListen
                     configTypeEnum,
                     LanguageKey,
                     "Language",
-                    "Speech-bubble text language. Auto follows the system locale when a matching translation pack is installed.",
+                    "Speech-bubble text language. Auto follows the game's language setting when a matching translation pack is installed.",
                     Enum.Parse(configTypeEnum, "Dropdown"),
                     GetLanguageOptionLabel(Config.Language),
                     new Action<object>(value => ApplyLanguageSetting(ConvertToString(value, Config.Language), true)));
@@ -1324,29 +1333,75 @@ namespace HeyListen
 
         private static int GetLanguageSortWeight(string code)
         {
-            if (string.Equals(code, DefaultLanguageCode, StringComparison.OrdinalIgnoreCase))
+            var normalized = NormalizeLanguageCode(code);
+            if (string.Equals(normalized, "eng", StringComparison.OrdinalIgnoreCase))
             {
                 return 0;
             }
 
-            if (string.Equals(code, "zh-CN", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "deu", StringComparison.OrdinalIgnoreCase))
             {
                 return 1;
             }
 
-            if (string.Equals(code, "zh-TW", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "esp", StringComparison.OrdinalIgnoreCase))
             {
                 return 2;
             }
 
-            if (string.Equals(code, "es-ES", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "fra", StringComparison.OrdinalIgnoreCase))
             {
                 return 3;
             }
 
-            if (string.Equals(code, "ja-JP", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "ita", StringComparison.OrdinalIgnoreCase))
             {
                 return 4;
+            }
+
+            if (string.Equals(normalized, "jpn", StringComparison.OrdinalIgnoreCase))
+            {
+                return 5;
+            }
+
+            if (string.Equals(normalized, "kor", StringComparison.OrdinalIgnoreCase))
+            {
+                return 6;
+            }
+
+            if (string.Equals(normalized, "pol", StringComparison.OrdinalIgnoreCase))
+            {
+                return 7;
+            }
+
+            if (string.Equals(normalized, "ptb", StringComparison.OrdinalIgnoreCase))
+            {
+                return 8;
+            }
+
+            if (string.Equals(normalized, "rus", StringComparison.OrdinalIgnoreCase))
+            {
+                return 9;
+            }
+
+            if (string.Equals(normalized, "spa", StringComparison.OrdinalIgnoreCase))
+            {
+                return 10;
+            }
+
+            if (string.Equals(normalized, "tha", StringComparison.OrdinalIgnoreCase))
+            {
+                return 11;
+            }
+
+            if (string.Equals(normalized, "tur", StringComparison.OrdinalIgnoreCase))
+            {
+                return 12;
+            }
+
+            if (string.Equals(normalized, "zhs", StringComparison.OrdinalIgnoreCase))
+            {
+                return 13;
             }
 
             return 100;
@@ -1384,9 +1439,12 @@ namespace HeyListen
         private static string[] GetAutoLanguageCandidates()
         {
             var candidates = new ArrayList();
+            AddLanguageCandidate(candidates, GetLocManagerLanguage());
+            AddLanguageCandidate(candidates, GetSettingsSaveLanguage());
+
             try
             {
-                candidates.Add(CultureInfo.CurrentUICulture.Name);
+                AddLanguageCandidate(candidates, CultureInfo.CurrentUICulture.Name);
             }
             catch
             {
@@ -1394,7 +1452,7 @@ namespace HeyListen
 
             try
             {
-                candidates.Add(CultureInfo.CurrentCulture.Name);
+                AddLanguageCandidate(candidates, CultureInfo.CurrentCulture.Name);
             }
             catch
             {
@@ -1403,6 +1461,91 @@ namespace HeyListen
             var result = new string[candidates.Count];
             candidates.CopyTo(result);
             return result;
+        }
+
+        private static void AddLanguageCandidate(ArrayList candidates, string candidate)
+        {
+            var normalized = NormalizeLanguageCode(candidate);
+            if (string.IsNullOrWhiteSpace(normalized) ||
+                string.Equals(normalized, AutoLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                if (string.Equals(candidates[i] as string, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            candidates.Add(normalized);
+        }
+
+        private static string GetLocManagerLanguage()
+        {
+            try
+            {
+                var locManager = LocManager.Instance;
+                return locManager != null
+                    ? locManager.Language
+                    : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string GetSettingsSaveLanguage()
+        {
+            try
+            {
+                var saveManager = SaveManager.Instance;
+                return saveManager != null && saveManager.SettingsSave != null
+                    ? saveManager.SettingsSave.Language
+                    : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static void TryHookLocaleChanges()
+        {
+            if (_localeChangeHooked)
+            {
+                return;
+            }
+
+            try
+            {
+                var locManager = LocManager.Instance;
+                if (locManager == null)
+                {
+                    return;
+                }
+
+                locManager.SubscribeToLocaleChange(OnGameLocaleChanged);
+                _localeChangeHooked = true;
+            }
+            catch
+            {
+            }
+        }
+
+        private static void OnGameLocaleChanged()
+        {
+            if (!string.Equals(Config.Language, AutoLanguageCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            ApplyActiveTranslationPack();
+            ClearAcknowledgements();
+            ForceRefresh();
         }
 
         private static TranslationPack FindTranslationPackForCandidate(string candidate)
@@ -1418,25 +1561,6 @@ namespace HeyListen
             if (exact != null)
             {
                 return exact;
-            }
-
-            var lower = normalized.ToLowerInvariant();
-            if (lower == "zh" || lower.StartsWith("zh-hans") || lower.StartsWith("zh-cn") || lower.StartsWith("zh-sg"))
-            {
-                var simplified = FindTranslationPackExact("zh-CN");
-                if (simplified != null)
-                {
-                    return simplified;
-                }
-            }
-
-            if (lower.StartsWith("zh-hant") || lower.StartsWith("zh-tw") || lower.StartsWith("zh-hk") || lower.StartsWith("zh-mo"))
-            {
-                var traditional = FindTranslationPackExact("zh-TW");
-                if (traditional != null)
-                {
-                    return traditional;
-                }
             }
 
             var separatorIndex = normalized.IndexOf('-');
@@ -1537,7 +1661,183 @@ namespace HeyListen
                 return DefaultLanguageCode;
             }
 
-            return raw.Replace('_', '-');
+            return NormalizeLanguageAlias(raw.Replace('_', '-'));
+        }
+
+        private static string NormalizeLanguageAlias(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return AutoLanguageCode;
+            }
+
+            var lower = code.ToLowerInvariant();
+            switch (lower)
+            {
+                case "eng":
+                case "deu":
+                case "esp":
+                case "fra":
+                case "ita":
+                case "jpn":
+                case "kor":
+                case "pol":
+                case "ptb":
+                case "rus":
+                case "spa":
+                case "tha":
+                case "tur":
+                case "zhs":
+                    return lower;
+                case "en":
+                case "en-us":
+                case "en-gb":
+                case "en-au":
+                case "en-ca":
+                    return "eng";
+                case "de":
+                case "de-de":
+                case "de-at":
+                case "de-ch":
+                    return "deu";
+                case "es":
+                case "es-es":
+                    return "spa";
+                case "es-419":
+                case "es-mx":
+                case "es-ar":
+                case "es-bo":
+                case "es-cl":
+                case "es-co":
+                case "es-cr":
+                case "es-cu":
+                case "es-do":
+                case "es-ec":
+                case "es-gt":
+                case "es-hn":
+                case "es-ni":
+                case "es-pa":
+                case "es-pe":
+                case "es-pr":
+                case "es-py":
+                case "es-sv":
+                case "es-us":
+                case "es-uy":
+                case "es-ve":
+                    return "esp";
+                case "fr":
+                case "fr-fr":
+                case "fr-be":
+                case "fr-ca":
+                case "fr-ch":
+                    return "fra";
+                case "it":
+                case "it-it":
+                case "it-ch":
+                    return "ita";
+                case "ja":
+                case "ja-jp":
+                    return "jpn";
+                case "ko":
+                case "ko-kr":
+                    return "kor";
+                case "pl":
+                case "pl-pl":
+                    return "pol";
+                case "pt":
+                case "pt-br":
+                    return "ptb";
+                case "ru":
+                case "ru-ru":
+                    return "rus";
+                case "th":
+                case "th-th":
+                    return "tha";
+                case "tr":
+                case "tr-tr":
+                    return "tur";
+                case "zh":
+                case "zh-cn":
+                case "zh-hans":
+                case "zh-hans-cn":
+                case "zh-sg":
+                case "zh-hans-sg":
+                case "zh-tw":
+                case "zh-hant":
+                case "zh-hant-tw":
+                case "zh-hk":
+                case "zh-hant-hk":
+                case "zh-mo":
+                case "zh-hant-mo":
+                    return "zhs";
+            }
+
+            if (lower.StartsWith("en-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "eng";
+            }
+
+            if (lower.StartsWith("de-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "deu";
+            }
+
+            if (lower.StartsWith("es-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "esp";
+            }
+
+            if (lower.StartsWith("fr-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "fra";
+            }
+
+            if (lower.StartsWith("it-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "ita";
+            }
+
+            if (lower.StartsWith("ja-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "jpn";
+            }
+
+            if (lower.StartsWith("ko-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "kor";
+            }
+
+            if (lower.StartsWith("pl-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "pol";
+            }
+
+            if (lower.StartsWith("pt-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "ptb";
+            }
+
+            if (lower.StartsWith("ru-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "rus";
+            }
+
+            if (lower.StartsWith("th-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "tha";
+            }
+
+            if (lower.StartsWith("tr-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "tur";
+            }
+
+            if (lower.StartsWith("zh-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "zhs";
+            }
+
+            return code;
         }
 
         private static string[] BuildLanguageOptions()
@@ -1599,6 +1899,7 @@ namespace HeyListen
         {
             try
             {
+                TryHookLocaleChanges();
                 WireRunManagerEvents();
                 WireCombatManagerEvents();
                 SyncObservedPlayers();

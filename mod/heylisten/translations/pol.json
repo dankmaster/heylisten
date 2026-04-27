@@ -1,0 +1,21 @@
+{
+  "code": "pol",
+  "name": "Polski",
+  "strings": {
+    "bubble_intro": "Hej, słuchaj!",
+    "message.single": "Mam {0}",
+    "message.support": "Mam {0}",
+    "message.support_upgraded": "Mam {0}",
+    "message.two": "Mam {0} i {1}",
+    "message.many": "Mam {0} +{1} więcej",
+    "status.vulnerable": "Wrażliwość",
+    "status.double_damage": "Podwójne obrażenia",
+    "status.strength": "Siła",
+    "status.vigor": "Wigor",
+    "status.focus": "Skupienie",
+    "status.poison": "Trucizna",
+    "status.weak": "Słabość",
+    "status.support": "karta wsparcia",
+    "status.support_upgraded": "ulepszona karta wsparcia"
+  }
+}

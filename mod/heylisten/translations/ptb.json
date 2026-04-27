@@ -1,0 +1,21 @@
+{
+  "code": "ptb",
+  "name": "Português do Brasil",
+  "strings": {
+    "bubble_intro": "Ei, escuta!",
+    "message.single": "Tenho {0}",
+    "message.support": "Tenho uma {0}",
+    "message.support_upgraded": "Tenho uma {0}",
+    "message.two": "Tenho {0} e {1}",
+    "message.many": "Tenho {0} +{1} a mais",
+    "status.vulnerable": "Vulnerável",
+    "status.double_damage": "Dano em Dobro",
+    "status.strength": "Força",
+    "status.vigor": "Vigor",
+    "status.focus": "Foco",
+    "status.poison": "Veneno",
+    "status.weak": "Fraqueza",
+    "status.support": "carta de suporte",
+    "status.support_upgraded": "carta de suporte aprimorada"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "code": "kor",
+  "name": "한국어",
+  "strings": {
+    "bubble_intro": "저기, 들어봐!",
+    "message.single": "{0} 보유",
+    "message.support": "{0} 보유",
+    "message.support_upgraded": "{0} 보유",
+    "message.two": "{0} 및 {1} 보유",
+    "message.many": "{0} 외 {1}개",
+    "status.vulnerable": "취약",
+    "status.double_damage": "2배의 피해",
+    "status.strength": "힘",
+    "status.vigor": "활력",
+    "status.focus": "밀집",
+    "status.poison": "중독",
+    "status.weak": "약화",
+    "status.support": "지원 카드",
+    "status.support_upgraded": "강화된 지원 카드"
+  }
+}

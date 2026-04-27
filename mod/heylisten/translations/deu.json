@@ -1,0 +1,21 @@
+{
+  "code": "deu",
+  "name": "Deutsch",
+  "strings": {
+    "bubble_intro": "Hey, hör zu!",
+    "message.single": "Ich habe {0}",
+    "message.support": "Ich habe eine {0}",
+    "message.support_upgraded": "Ich habe eine {0}",
+    "message.two": "Ich habe {0} und {1}",
+    "message.many": "Ich habe {0} +{1} mehr",
+    "status.vulnerable": "Verwundbar",
+    "status.double_damage": "Doppelter Schaden",
+    "status.strength": "Stärke",
+    "status.vigor": "Elan",
+    "status.focus": "Fokus",
+    "status.poison": "Gift",
+    "status.weak": "Schwach",
+    "status.support": "Unterstützungskarte",
+    "status.support_upgraded": "verbesserte Unterstützungskarte"
+  }
+}

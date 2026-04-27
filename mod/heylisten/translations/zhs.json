@@ -1,6 +1,6 @@
 {
-  "code": "zh-CN",
-  "name": "Chinese (Simplified)",
+  "code": "zhs",
+  "name": "简体中文",
   "strings": {
     "bubble_intro": "嘿，听我说！",
     "message.single": "我有 {0}",

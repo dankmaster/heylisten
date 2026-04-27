@@ -23,7 +23,7 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [*]First-person "I have ..." wording so each character speaks for their own hand.
 [*]Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 [*]Detects helpful setup effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
-[*]Includes starter bubble-text translation packs for English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese.
+[*]Includes bubble-text translation packs for the same language IDs exposed by the base game.
 [*]Click a bubble to acknowledge and dismiss it.
 [*]Optional timer for automatic dismissal.
 [*]Vortex-ready install package.
@@ -41,7 +41,7 @@ Available settings:
 
 [list]
 [*][b]Enable Bubbles[/b] - Turns callout bubbles on or off.
-[*][b]Language[/b] - Selects bubble text language, or Auto to match the system locale when a pack is available.
+[*][b]Language[/b] - Selects bubble text language, or Auto to follow the game's language setting when a pack is available.
 [*][b]Playable Now Only[/b] - Only shows callouts for cards the holder can currently afford and play this turn.
 [*][b]Include Support[/b] - Allows generic support callouts for helpful cards that do not match a specific status keyword.
 [*][b]Bubble Timer[/b] - Controls how long bubbles stay visible. Set it to 0 to keep bubbles up until clicked.
@@ -51,7 +51,7 @@ Translation packs are JSON files in:
 
 [code]mods/heylisten/translations/[/code]
 
-Players can copy an included file to make another language pack, then select it in ModConfig or set its code in the config file.
+Players can copy an included file to adjust wording, then select it in ModConfig or set its code in the config file. Included pack codes are [code]eng[/code], [code]deu[/code], [code]esp[/code], [code]fra[/code], [code]ita[/code], [code]jpn[/code], [code]kor[/code], [code]pol[/code], [code]ptb[/code], [code]rus[/code], [code]spa[/code], [code]tha[/code], [code]tur[/code], and [code]zhs[/code].
 
 [b]Installation[/b]
 

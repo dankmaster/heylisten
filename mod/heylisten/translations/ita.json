@@ -1,0 +1,21 @@
+{
+  "code": "ita",
+  "name": "Italiano",
+  "strings": {
+    "bubble_intro": "Ehi, ascolta!",
+    "message.single": "Ho {0}",
+    "message.support": "Ho una {0}",
+    "message.support_upgraded": "Ho una {0}",
+    "message.two": "Ho {0} e {1}",
+    "message.many": "Ho {0} +{1} in più",
+    "status.vulnerable": "Vulnerabilità",
+    "status.double_damage": "Danno Doppio",
+    "status.strength": "Forza",
+    "status.vigor": "Vigore",
+    "status.focus": "Focus",
+    "status.poison": "Veleno",
+    "status.weak": "Debolezza",
+    "status.support": "carta di supporto",
+    "status.support_upgraded": "carta di supporto migliorata"
+  }
+}

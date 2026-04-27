@@ -1,0 +1,21 @@
+{
+  "code": "tur",
+  "name": "Türkçe",
+  "strings": {
+    "bubble_intro": "Hey, dinle!",
+    "message.single": "{0} var",
+    "message.support": "Bir {0} var",
+    "message.support_upgraded": "Bir {0} var",
+    "message.two": "{0} ve {1} var",
+    "message.many": "{0} +{1} daha var",
+    "status.vulnerable": "Savunmasız",
+    "status.double_damage": "İki Kat Hasar",
+    "status.strength": "Kuvvet",
+    "status.vigor": "Dinç",
+    "status.focus": "Odak",
+    "status.poison": "Zehir",
+    "status.weak": "Zayıf",
+    "status.support": "destek kartı",
+    "status.support_upgraded": "yükseltilmiş destek kartı"
+  }
+}

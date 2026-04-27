@@ -173,6 +173,18 @@ if ($Install) {
     Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.dll") -Destination (Join-Path $targetModDir "heylisten.dll") -Force
     $distTranslationsDir = Join-Path $distModDir "translations"
     if (Test-Path -LiteralPath $distTranslationsDir) {
+        $targetTranslationsDir = Join-Path $targetModDir "translations"
+        $resolvedTargetModDir = [System.IO.Path]::GetFullPath($targetModDir)
+        $resolvedTargetTranslationsDir = [System.IO.Path]::GetFullPath($targetTranslationsDir)
+        $relativeTargetTranslationsDir = [System.IO.Path]::GetRelativePath($resolvedTargetModDir, $resolvedTargetTranslationsDir)
+        if ($relativeTargetTranslationsDir -ne "translations") {
+            throw "Refusing to clean an unexpected translations path: $targetTranslationsDir"
+        }
+
+        if (Test-Path -LiteralPath $targetTranslationsDir) {
+            Remove-Item -LiteralPath $targetTranslationsDir -Recurse -Force
+        }
+
         Copy-Item -LiteralPath $distTranslationsDir -Destination $targetModDir -Recurse -Force
     }
 

@@ -10,7 +10,7 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
 - Self and teammate bubbles use first-person `I have ...` wording so each character speaks for their own hand.
 - Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
-- Translation packs for bubble text, with English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese included.
+- Translation packs for the same language IDs exposed by the base game, with Auto following the game's language setting by default.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
@@ -54,7 +54,9 @@ Settings are stored under:
 %APPDATA%/SlayTheSpire2/heylisten/config.json
 ```
 
-The `language` value defaults to `auto`. You can also set it to a pack code such as `en`, `zh-CN`, `zh-TW`, `es-ES`, or `ja-JP`.
+The `language` value defaults to `auto`, which follows the game's language setting when a matching pack is installed. If the game language is unavailable during startup, Auto falls back to the system locale and then English.
+
+You can also set `language` to a pack code such as `eng`, `deu`, `esp`, `fra`, `ita`, `jpn`, `kor`, `pol`, `ptb`, `rus`, `spa`, `tha`, `tur`, or `zhs`. Older values like `en`, `es-ES`, `ja-JP`, `zh-CN`, and `zh-TW` are still accepted and mapped to the matching game-style code.
 
 Translation packs are regular JSON files stored under:
 

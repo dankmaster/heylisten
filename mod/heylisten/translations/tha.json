@@ -1,0 +1,21 @@
+{
+  "code": "tha",
+  "name": "ไทย",
+  "strings": {
+    "bubble_intro": "ฟังนะ!",
+    "message.single": "ฉันมี {0}",
+    "message.support": "ฉันมี {0}",
+    "message.support_upgraded": "ฉันมี {0}",
+    "message.two": "ฉันมี {0} และ {1}",
+    "message.many": "ฉันมี {0} + อีก {1}",
+    "status.vulnerable": "จุดอ่อน",
+    "status.double_damage": "ความเสียหาย 2 เท่า",
+    "status.strength": "ความแข็งแรง",
+    "status.vigor": "ความกำยำ",
+    "status.focus": "โฟกัส",
+    "status.poison": "พิษ",
+    "status.weak": "ความอ่อนแอ",
+    "status.support": "การ์ดสนับสนุน",
+    "status.support_upgraded": "การ์ดสนับสนุนที่อัปเกรดแล้ว"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "code": "rus",
+  "name": "Русский",
+  "strings": {
+    "bubble_intro": "Эй, слушай!",
+    "message.single": "У меня есть {0}",
+    "message.support": "У меня есть {0}",
+    "message.support_upgraded": "У меня есть {0}",
+    "message.two": "У меня есть {0} и {1}",
+    "message.many": "У меня есть {0} + ещё {1}",
+    "status.vulnerable": "Уязвимость",
+    "status.double_damage": "Двойной урон",
+    "status.strength": "Сила",
+    "status.vigor": "Бодрость",
+    "status.focus": "Фокус",
+    "status.poison": "Яд",
+    "status.weak": "Слабость",
+    "status.support": "карта поддержки",
+    "status.support_upgraded": "улучшенная карта поддержки"
+  }
+}

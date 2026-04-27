@@ -1,0 +1,21 @@
+{
+  "code": "fra",
+  "name": "Français",
+  "strings": {
+    "bubble_intro": "Hé, écoute !",
+    "message.single": "J’ai {0}",
+    "message.support": "J’ai une {0}",
+    "message.support_upgraded": "J’ai une {0}",
+    "message.two": "J’ai {0} et {1}",
+    "message.many": "J’ai {0} +{1} de plus",
+    "status.vulnerable": "Vulnérable",
+    "status.double_damage": "Dégâts doublés",
+    "status.strength": "Force",
+    "status.vigor": "Vigueur",
+    "status.focus": "Focalisation",
+    "status.poison": "Poison",
+    "status.weak": "Affaibli",
+    "status.support": "carte de soutien",
+    "status.support_upgraded": "carte de soutien améliorée"
+  }
+}

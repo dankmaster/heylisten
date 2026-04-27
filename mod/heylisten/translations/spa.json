@@ -1,20 +1,20 @@
 {
-  "code": "es-ES",
-  "name": "Spanish",
+  "code": "spa",
+  "name": "Español (España)",
   "strings": {
-    "bubble_intro": "Oye, escucha!",
+    "bubble_intro": "¡Oye, escucha!",
     "message.single": "Tengo {0}",
     "message.support": "Tengo una {0}",
     "message.support_upgraded": "Tengo una {0}",
     "message.two": "Tengo {0} y {1}",
     "message.many": "Tengo {0} +{1} más",
-    "status.vulnerable": "Vulnerable",
+    "status.vulnerable": "Vulnerabilidad",
     "status.double_damage": "Daño doble",
     "status.strength": "Fuerza",
     "status.vigor": "Vigor",
     "status.focus": "Concentración",
     "status.poison": "Veneno",
-    "status.weak": "Débil",
+    "status.weak": "Debilidad",
     "status.support": "carta de apoyo",
     "status.support_upgraded": "carta de apoyo mejorada"
   }
