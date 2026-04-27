@@ -24,6 +24,7 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [*]Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 [*]Detects helpful setup effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
 [*]Includes bubble-text translation packs for the same language IDs exposed by the base game.
+[*]Lets players customize the opening callout line, or leave it blank to use the translated default.
 [*]Click a bubble to acknowledge and dismiss it.
 [*]Optional timer for automatic dismissal.
 [*]Vortex-ready install package.
@@ -42,6 +43,7 @@ Available settings:
 [list]
 [*][b]Enable Bubbles[/b] - Turns callout bubbles on or off.
 [*][b]Language[/b] - Selects bubble text language, or Auto to follow the game's language setting when a pack is available.
+[*][b]Callout Intro[/b] - Replaces the opening "Hey, listen!" line. Leave it blank to use the selected language's default.
 [*][b]Playable Now Only[/b] - Only shows callouts for cards the holder can currently afford and play this turn.
 [*][b]Include Support[/b] - Allows generic support callouts for helpful cards that do not match a specific status keyword.
 [*][b]Bubble Timer[/b] - Controls how long bubbles stay visible. Set it to 0 to keep bubbles up until clicked.

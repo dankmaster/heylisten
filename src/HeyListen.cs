@@ -275,6 +275,7 @@ namespace HeyListen
     {
         public bool Enabled { get; set; } = true;
         public string Language { get; set; } = "auto";
+        public string CalloutIntro { get; set; } = string.Empty;
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
@@ -296,10 +297,11 @@ namespace HeyListen
                 var raw = File.ReadAllText(path);
                 config.Enabled = ReadBool(raw, "enabled", config.Enabled);
                 config.Language = SimpleJson.ReadString(raw, "language", config.Language);
+                config.CalloutIntro = SimpleJson.ReadString(raw, "callout_intro", config.CalloutIntro);
                 config.OnlyShowPlayableNow = ReadBool(raw, "only_show_playable_now", config.OnlyShowPlayableNow);
                 config.ShowGenericSupport = ReadBool(raw, "show_generic_support", config.ShowGenericSupport);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
-                if (!HasKey(raw, "language") || HasKey(raw, "show_self_callouts"))
+                if (!HasKey(raw, "language") || !HasKey(raw, "callout_intro") || HasKey(raw, "show_self_callouts"))
                 {
                     config.Save();
                 }
@@ -332,6 +334,7 @@ namespace HeyListen
             sb.AppendLine("{");
             sb.AppendLine($"  \"enabled\": {Enabled.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"language\": \"{SimpleJson.EscapeString(Language)}\",");
+            sb.AppendLine($"  \"callout_intro\": \"{SimpleJson.EscapeString(CalloutIntro)}\",");
             sb.AppendLine($"  \"only_show_playable_now\": {OnlyShowPlayableNow.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_generic_support\": {ShowGenericSupport.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
@@ -395,9 +398,11 @@ namespace HeyListen
         private const string TranslationsDirectoryName = "translations";
         private const string EnabledKey = "enabled";
         private const string LanguageKey = "language";
+        private const string CalloutIntroKey = "callout_intro";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
         private const string ShowGenericSupportKey = "show_generic_support";
         private const string DisplaySecondsKey = "display_seconds";
+        private const int MaxCalloutIntroLength = 64;
         private const long DebouncedRefreshWindowMs = 45L;
         private const float DefaultBubbleDisplaySeconds = 12f;
         private const float MinBubbleDisplaySeconds = 0f;
@@ -608,8 +613,11 @@ namespace HeyListen
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 LoadTranslationPacks();
                 var loadedLanguage = Config.Language;
+                var loadedCalloutIntro = Config.CalloutIntro;
                 Config.Language = NormalizeLanguageSettingValue(Config.Language);
-                if (!string.Equals(loadedLanguage, Config.Language, StringComparison.OrdinalIgnoreCase))
+                Config.CalloutIntro = NormalizeCalloutIntro(Config.CalloutIntro);
+                if (!string.Equals(loadedLanguage, Config.Language, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(loadedCalloutIntro, Config.CalloutIntro, StringComparison.Ordinal))
                 {
                     Config.Save();
                 }
@@ -826,7 +834,7 @@ namespace HeyListen
 
             try
             {
-                var entries = Array.CreateInstance(entryType, 5);
+                var entries = Array.CreateInstance(entryType, 6);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -847,6 +855,17 @@ namespace HeyListen
                     new Action<object>(value => ApplyLanguageSetting(ConvertToString(value, Config.Language), true)));
                 ConfigureDropdownEntry(entryType, languageEntry, BuildLanguageOptions());
                 entries.SetValue(languageEntry, 1);
+                var calloutIntroEntry = CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    CalloutIntroKey,
+                    "Callout Intro",
+                    "Custom first line for callout bubbles. Leave empty to use the selected language's default.",
+                    Enum.Parse(configTypeEnum, "TextInput"),
+                    Config.CalloutIntro,
+                    new Action<object>(value => ApplyCalloutIntroSetting(ConvertToStringAllowEmpty(value, Config.CalloutIntro), true)));
+                ConfigureTextInputEntry(entryType, calloutIntroEntry, MaxCalloutIntroLength, Translate("bubble_intro"));
+                entries.SetValue(calloutIntroEntry, 2);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -855,7 +874,7 @@ namespace HeyListen
                     "Only show bubbles for cards the holder can currently afford and play this turn.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.OnlyShowPlayableNow,
-                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 2);
+                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 3);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -864,7 +883,7 @@ namespace HeyListen
                     "Show a generic Support bubble for ally-helping cards even when no named status keyword was matched.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.ShowGenericSupport,
-                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 3);
+                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 4);
                 var displaySecondsEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -881,7 +900,7 @@ namespace HeyListen
                     MaxBubbleDisplaySeconds,
                     1f,
                     "{0}s");
-                entries.SetValue(displaySecondsEntry, 4);
+                entries.SetValue(displaySecondsEntry, 5);
 
                 var registerMethod = apiType.GetMethod(
                     "Register",
@@ -901,6 +920,9 @@ namespace HeyListen
                 ApplyEnabledSetting(ReadModConfigBool(apiType, EnabledKey, Config.Enabled), false);
                 ApplyLanguageSetting(
                     ReadModConfigString(apiType, LanguageKey, Config.Language),
+                    false);
+                ApplyCalloutIntroSetting(
+                    ReadModConfigStringAllowEmpty(apiType, CalloutIntroKey, Config.CalloutIntro),
                     false);
                 ApplyOnlyShowPlayableNowSetting(
                     ReadModConfigBool(apiType, OnlyShowPlayableNowKey, Config.OnlyShowPlayableNow),
@@ -960,6 +982,12 @@ namespace HeyListen
             entryType.GetProperty("Options")?.SetValue(entry, options);
         }
 
+        private static void ConfigureTextInputEntry(Type entryType, object entry, int maxLength, string placeholder)
+        {
+            entryType.GetProperty("MaxLength")?.SetValue(entry, maxLength);
+            entryType.GetProperty("Placeholder")?.SetValue(entry, placeholder);
+        }
+
         private static bool ReadModConfigBool(Type apiType, string key, bool fallback)
         {
             try
@@ -997,6 +1025,26 @@ namespace HeyListen
             catch
             {
                 return ReadModConfigObjectAsString(apiType, key, fallback);
+            }
+        }
+
+        private static string ReadModConfigStringAllowEmpty(Type apiType, string key, string fallback)
+        {
+            try
+            {
+                var getValueMethod = apiType.GetMethod("GetValue", BindingFlags.Public | BindingFlags.Static);
+                if (getValueMethod == null)
+                {
+                    return fallback;
+                }
+
+                var genericMethod = getValueMethod.MakeGenericMethod(typeof(string));
+                var value = genericMethod.Invoke(null, new object[] { ModId, key });
+                return ConvertToStringAllowEmpty(value, fallback);
+            }
+            catch
+            {
+                return fallback;
             }
         }
 
@@ -1080,6 +1128,13 @@ namespace HeyListen
                 : raw;
         }
 
+        private static string ConvertToStringAllowEmpty(object value, string fallback)
+        {
+            return value != null
+                ? value.ToString()
+                : fallback;
+        }
+
         private static float ConvertToFloat(object value, float fallback)
         {
             if (value == null)
@@ -1139,6 +1194,18 @@ namespace HeyListen
         {
             Config.Language = NormalizeLanguageSettingValue(language);
             ApplyActiveTranslationPack();
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ClearAcknowledgements();
+            ForceRefresh();
+        }
+
+        private static void ApplyCalloutIntroSetting(string calloutIntro, bool save)
+        {
+            Config.CalloutIntro = NormalizeCalloutIntro(calloutIntro);
             if (save)
             {
                 Config.Save();
@@ -2237,6 +2304,19 @@ namespace HeyListen
             return displaySeconds;
         }
 
+        private static string NormalizeCalloutIntro(string calloutIntro)
+        {
+            if (string.IsNullOrWhiteSpace(calloutIntro))
+            {
+                return string.Empty;
+            }
+
+            var normalized = Regex.Replace(calloutIntro.Trim(), "\\s+", " ");
+            return normalized.Length <= MaxCalloutIntroLength
+                ? normalized
+                : normalized.Substring(0, MaxCalloutIntroLength);
+        }
+
         private static void ForceRefresh()
         {
             _lastRefreshAtUnixMs = 0;
@@ -2976,7 +3056,7 @@ namespace HeyListen
                 return string.Empty;
             }
 
-            var intro = Translate("bubble_intro") + "\n";
+            var intro = GetCalloutIntro() + "\n";
             if (callouts.Length == 1)
             {
                 if (callouts[0].Callout == StatusCallout.Support)
@@ -2996,6 +3076,13 @@ namespace HeyListen
             }
 
             return intro + FormatTranslation("message.many", GetDisplayName(callouts[0]), callouts.Length - 1);
+        }
+
+        private static string GetCalloutIntro()
+        {
+            return !string.IsNullOrWhiteSpace(Config.CalloutIntro)
+                ? Config.CalloutIntro
+                : Translate("bubble_intro");
         }
 
         private static string GetDisplayName(CalloutInfo callout)

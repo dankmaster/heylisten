@@ -11,6 +11,7 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Self and teammate bubbles use first-person `I have ...` wording so each character speaks for their own hand.
 - Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 - Translation packs for the same language IDs exposed by the base game, with Auto following the game's language setting by default.
+- Customizable callout intro text, defaulting to the selected language's `Hey, listen!` equivalent.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
@@ -44,6 +45,7 @@ The mod works without extra configuration. If ModConfig is installed, it adds:
 
 - `Enable Bubbles`
 - `Language`
+- `Callout Intro`
 - `Playable Now Only`
 - `Include Support`
 - `Bubble Timer`
@@ -57,6 +59,8 @@ Settings are stored under:
 The `language` value defaults to `auto`, which follows the game's language setting when a matching pack is installed. If the game language is unavailable during startup, Auto falls back to the system locale and then English.
 
 You can also set `language` to a pack code such as `eng`, `deu`, `esp`, `fra`, `ita`, `jpn`, `kor`, `pol`, `ptb`, `rus`, `spa`, `tha`, `tur`, or `zhs`. Older values like `en`, `es-ES`, `ja-JP`, `zh-CN`, and `zh-TW` are still accepted and mapped to the matching game-style code.
+
+The `callout_intro` value defaults to an empty string, which uses the selected language's `bubble_intro` translation. Set it to custom text if you want the first bubble line to say something else.
 
 Translation packs are regular JSON files stored under:
 
