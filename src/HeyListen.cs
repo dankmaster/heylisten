@@ -2412,30 +2412,31 @@ namespace HeyListen
             }
 
             var state = GetRunState(runManager);
-            if (state == null || state.Players == null || state.Players.Count <= 1)
+            if (state == null || state.Players == null || state.Players.Count == 0)
             {
                 return false;
             }
 
-            bool netServiceIsConnected;
-            ulong resolvedLocalNetId;
+            var isMultiplayerRun = state.Players.Count > 1;
+            var netServiceIsConnected = false;
+            var resolvedLocalNetId = 0UL;
             try
             {
                 var resolvedNetService = runManager.NetService;
-                if (resolvedNetService == null)
+                if (resolvedNetService != null)
                 {
-                    return false;
+                    netServiceIsConnected = resolvedNetService.IsConnected;
+                    if (netServiceIsConnected)
+                    {
+                        resolvedLocalNetId = resolvedNetService.NetId;
+                    }
                 }
-
-                netServiceIsConnected = resolvedNetService.IsConnected;
-                resolvedLocalNetId = resolvedNetService.NetId;
             }
             catch
             {
-                return false;
             }
 
-            if (!netServiceIsConnected)
+            if (isMultiplayerRun && !netServiceIsConnected)
             {
                 return false;
             }
@@ -2463,6 +2464,11 @@ namespace HeyListen
         {
             if (localNetId == 0)
             {
+                if (runState != null && runState.Players != null && runState.Players.Count == 1)
+                {
+                    return runState.Players[0];
+                }
+
                 return null;
             }
 
