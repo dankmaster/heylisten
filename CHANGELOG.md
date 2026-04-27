@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.98
+
+- Tightened the generic `Support` callout so it only appears for explicit audited support cards instead of every multiplayer-only or ally-targeted card.
+- Stopped summon-only cards, including `Legion of Bone`, from being announced as generic support.
+
 ## 0.97
 
 - Added a `Self Bubbles` setting so players can turn off callout bubbles above their own character while keeping teammate bubbles enabled.

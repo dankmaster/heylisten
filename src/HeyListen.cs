@@ -456,28 +456,6 @@ namespace HeyListen
         {
             "poison",
         };
-        private static readonly string[] SupportTokens =
-        {
-            "support",
-            "teammate",
-            "ally",
-            "multiplayer",
-            "coordinate",
-            "bodyguard",
-            "boostaway",
-            "pullaggro",
-            "spoilsofbattle",
-            "whistle",
-            "tagteam",
-            "signalboost",
-            "sicem",
-            "drumofbattle",
-            "howlfrombeyond",
-            "rally",
-            "believeinyou",
-            "taunt",
-            "guard",
-        };
         private static readonly string[] SupportCardNames =
         {
             "beaconofhope",
@@ -494,7 +472,6 @@ namespace HeyListen
             "intercept",
             "knockdown",
             "largesse",
-            "legionofbone",
             "lift",
             "mimic",
             "rally",
@@ -2705,7 +2682,6 @@ namespace HeyListen
                 return new CalloutInfo[0];
             }
 
-            var normalizedText = NormalizeForMatch(text);
             var effectText = BuildCardEffectText(card);
             var normalizedCardNames = BuildNormalizedCardNames(card);
             var upgradeLevel = GetCardUpgradeLevel(card);
@@ -2724,8 +2700,8 @@ namespace HeyListen
             var isSupportCard =
                 card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly ||
                 targetsAlly ||
-                MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames) ||
-                MatchesAnyNormalized(normalizedText, SupportTokens);
+                MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames);
+            var hasGenericSupportCallout = MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames);
 
             if (MatchesAnyExactNormalized(normalizedCardNames, VulnerableCardNames) ||
                 HasStatusApplication(effectText, VulnerableEffectNames))
@@ -2769,7 +2745,7 @@ namespace HeyListen
                 AddCallout(results, ref resultCount, StatusCallout.Poison, upgradeLevel);
             }
 
-            if (isSupportCard && Config.ShowGenericSupport)
+            if (hasGenericSupportCallout && Config.ShowGenericSupport)
             {
                 AddCallout(results, ref resultCount, StatusCallout.Support, upgradeLevel);
             }
@@ -3259,24 +3235,6 @@ namespace HeyListen
             return string.IsNullOrWhiteSpace(stripped)
                 ? text
                 : stripped;
-        }
-
-        private static bool MatchesAnyNormalized(string normalizedText, params string[] normalizedTokens)
-        {
-            if (string.IsNullOrEmpty(normalizedText))
-            {
-                return false;
-            }
-
-            for (var i = 0; i < normalizedTokens.Length; i++)
-            {
-                if (normalizedText.IndexOf(normalizedTokens[i], StringComparison.Ordinal) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static bool MatchesAnyExactNormalized(string[] normalizedTexts, params string[] normalizedTokens)
