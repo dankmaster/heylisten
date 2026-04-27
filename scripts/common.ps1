@@ -62,6 +62,16 @@ function Resolve-Sts2GameRoot {
         return [System.IO.Path]::GetFullPath($env:STS2_GAME_ROOT)
     }
 
+    $dotEnv = Get-HeyListenDotEnvSettings
+    if ($dotEnv.ContainsKey("STS2_GAME_ROOT") -and ![string]::IsNullOrWhiteSpace($dotEnv["STS2_GAME_ROOT"])) {
+        return [System.IO.Path]::GetFullPath($dotEnv["STS2_GAME_ROOT"])
+    }
+
+    $localSettings = Get-HeyListenLocalSettings
+    if ($localSettings -and ![string]::IsNullOrWhiteSpace($localSettings.GameRoot)) {
+        return [System.IO.Path]::GetFullPath($localSettings.GameRoot)
+    }
+
     $repoRoot = Get-HeyListenRepoRoot
     $candidates = @(
         (Join-Path $repoRoot "..\..\.."),
@@ -78,7 +88,7 @@ function Resolve-Sts2GameRoot {
         }
     }
 
-    throw "Could not auto-detect Slay the Spire 2. Pass -GameRoot or set STS2_GAME_ROOT."
+    throw "Could not auto-detect Slay the Spire 2. Pass -GameRoot, set STS2_GAME_ROOT, add STS2_GAME_ROOT to .env, or add GameRoot to local.settings.json."
 }
 
 function Resolve-NexusFileGroupId {
