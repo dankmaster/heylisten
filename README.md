@@ -36,7 +36,7 @@ Launch the game normally after installing.
 
 ### Vortex / Nexus Mods
 
-Upload `Hey-Listen-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder.
+Upload `Hey-Listen-<version>.zip` as the main Nexus Mods file. It is packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder. The package also includes Vortex override instructions that explicitly copy `mods/heylisten` into the game root.
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 

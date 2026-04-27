@@ -76,7 +76,7 @@ After installation, the mod should appear here:
 
 [b]Vortex Notes[/b]
 
-For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to Slay The Spire II Nexus mod ID:
+The zip includes Vortex override instructions so Vortex can deploy [code]mods/heylisten[/code] to the game root correctly. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to Slay The Spire II Nexus mod ID:
 
 [code]697[/code]
 
