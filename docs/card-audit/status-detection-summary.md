@@ -34,6 +34,7 @@ The mention_only_statuses column marks cards that mention a status without a mat
 - Outbreak (Outbreak): mentions Poison but strict signals are 
 - Piercing Wail (PiercingWail): mentions Strength but strict signals are 
 - Shared Fate (SharedFate): mentions Strength but strict signals are 
+- Tank (Tank): mentions DoubleDamage but strict signals are Support
 - Tracking (Tracking): mentions Weak but strict signals are DoubleDamage
 - Vicious (Vicious): mentions Vulnerable but strict signals are 
 

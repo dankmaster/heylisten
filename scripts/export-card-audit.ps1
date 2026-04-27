@@ -168,11 +168,15 @@ function Test-DoubleDamageSignal {
         [string[]]$Clauses
     )
 
-    if ([regex]::IsMatch($PlainText, "\bDouble Damage\b", "IgnoreCase")) {
-        return $true
+    if ($Clauses.Count -eq 0) {
+        return [regex]::IsMatch($PlainText, "\bDouble Damage\b", "IgnoreCase")
     }
 
     foreach ($clause in $Clauses) {
+        if (Test-IgnoredDoubleDamageSignal $clause) {
+            continue
+        }
+
         if ([regex]::IsMatch($clause, "\bdouble\b", "IgnoreCase") -and
             [regex]::IsMatch($clause, "\bdamage\b", "IgnoreCase")) {
             return $true
@@ -180,6 +184,14 @@ function Test-DoubleDamageSignal {
     }
 
     return $false
+}
+
+function Test-IgnoredDoubleDamageSignal {
+    param([string]$Clause)
+
+    return [regex]::IsMatch($Clause, "\bdouble\s+the\s+damage\b.{0,120}\bcards?\s+deal\b", "IgnoreCase") -or
+        [regex]::IsMatch($Clause, "^\s*take\s+double\s+damage\b", "IgnoreCase") -or
+        [regex]::IsMatch($Clause, "\byou\s+take\s+double\s+damage\b", "IgnoreCase")
 }
 
 function Get-PropertyValueText {

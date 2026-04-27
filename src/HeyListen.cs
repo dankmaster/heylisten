@@ -551,9 +551,7 @@ namespace HeyListen
         {
             "conqueror",
             "flanking",
-            "hang",
             "shadowstep",
-            "tank",
             "tracking",
         };
         private static readonly string[] FocusCardNames =
@@ -2863,6 +2861,11 @@ namespace HeyListen
             for (var i = 0; i < clauses.Length; i++)
             {
                 var clause = StripEffectMarkup(clauses[i]);
+                if (IsIgnoredDoubleDamageClause(clause))
+                {
+                    continue;
+                }
+
                 if (Regex.IsMatch(clause, "\\bdouble\\s+damage\\b", RegexOptions.IgnoreCase) ||
                     Regex.IsMatch(clause, "\\bdouble\\b.{0,80}\\bdamage\\b", RegexOptions.IgnoreCase))
                 {
@@ -2871,6 +2874,13 @@ namespace HeyListen
             }
 
             return false;
+        }
+
+        private static bool IsIgnoredDoubleDamageClause(string clause)
+        {
+            return Regex.IsMatch(clause, "\\bdouble\\s+the\\s+damage\\b.{0,120}\\bcards?\\s+deal\\b", RegexOptions.IgnoreCase) ||
+                Regex.IsMatch(clause, "^\\s*take\\s+double\\s+damage\\b", RegexOptions.IgnoreCase) ||
+                Regex.IsMatch(clause, "\\byou\\s+take\\s+double\\s+damage\\b", RegexOptions.IgnoreCase);
         }
 
         private static string[] SplitEffectClauses(string effectText)
