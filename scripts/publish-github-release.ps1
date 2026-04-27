@@ -12,6 +12,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$releaseNotesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = $manifest.version
@@ -49,7 +50,9 @@ try {
 
     $tag = "v$Version"
     $releaseTitle = "Hey, listen! $Version"
-    $releaseNotes = "Ready-to-install package for Hey, listen! $Version. Extract the zip into your Slay the Spire 2 folder or install it with Vortex."
+    $releaseNotes = Resolve-TextFromFileOrDefault `
+        -Path $releaseNotesPath `
+        -Default "Ready-to-install package for Hey, listen! $Version. Extract the zip into your Slay the Spire 2 folder or install it with Vortex."
 
     git fetch --tags | Out-Null
     $existingTag = git tag --list $tag

@@ -209,70 +209,29 @@ namespace HeyListen
             StatusCallout.Weak,
             StatusCallout.Support,
         };
-        private static readonly string[] VulnerableTokens =
+        private static readonly string[] VulnerableEffectNames =
         {
             "vulnerable",
-            "expose",
-            "fear",
         };
-        private static readonly string[] WeakTokens =
+        private static readonly string[] WeakEffectNames =
         {
             "weak",
-            "neutralize",
-            "suckerpunch",
-            "darkshackles",
         };
-        private static readonly string[] StrengthTokens =
+        private static readonly string[] StrengthEffectNames =
         {
-            "gainstrength",
-            "strengthnextturn",
-            "temporarystrength",
-            "drumofbattle",
-            "howlfrombeyond",
-            "rally",
-            "signalboost",
-            "believeinyou",
-            "tagteam",
-            "uproar",
-            "bulkup",
-            "inflame",
-            "demonform",
+            "strength",
         };
-        private static readonly string[] VigorTokens =
+        private static readonly string[] VigorEffectNames =
         {
             "vigor",
-            "vigorous",
-            "vitalspark",
-            "charge",
-            "refineblade",
         };
-        private static readonly string[] DoubleDamageTokens =
-        {
-            "doubledamage",
-            "doubleyourdamage",
-            "doubleitsdamage",
-            "celestialmight",
-        };
-        private static readonly string[] FocusTokens =
+        private static readonly string[] FocusEffectNames =
         {
             "focus",
-            "temporaryfocus",
-            "biasedcognition",
-            "defragment",
         };
-        private static readonly string[] PoisonTokens =
+        private static readonly string[] PoisonEffectNames =
         {
             "poison",
-            "poisoned",
-            "deadlypoison",
-            "poisonedstab",
-            "bouncingflask",
-            "envenom",
-            "noxiousfumes",
-            "outbreak",
-            "putrefy",
-            "snakebite",
-            "toxic",
         };
         private static readonly string[] SupportTokens =
         {
@@ -298,85 +257,124 @@ namespace HeyListen
         };
         private static readonly string[] SupportCardNames =
         {
+            "beaconofhope",
             "believeinyou",
-            "bodyguard",
-            "boostaway",
-            "celestialmight",
-            "charge",
             "coordinate",
-            "drumofbattle",
-            "howlfrombeyond",
-            "pullaggro",
+            "demonicshield",
+            "energysurge",
+            "flanking",
+            "gangup",
+            "glimpsebeyond",
+            "hammertime",
+            "huddleup",
+            "ignition",
+            "intercept",
+            "knockdown",
+            "largesse",
+            "legionofbone",
+            "lift",
+            "mimic",
             "rally",
-            "refineblade",
-            "sicem",
-            "signalboost",
-            "spoilsofbattle",
+            "sneaky",
             "tagteam",
-            "taunt",
-            "uproar",
-            "whistle",
+            "tank",
         };
         private static readonly string[] VulnerableCardNames =
         {
+            "assassinate",
             "bash",
             "beamcell",
-            "crushunder",
+            "break",
+            "comet",
+            "dominate",
             "expose",
+            "fallingstar",
             "fear",
+            "gammablast",
+            "highfive",
+            "knowthyplace",
+            "madscience",
+            "meteorshower",
+            "putrefy",
             "shockwave",
+            "squash",
+            "taunt",
             "thunderclap",
+            "tremble",
             "uppercut",
         };
         private static readonly string[] WeakCardNames =
         {
-            "bolas",
-            "crushunder",
-            "darkshackles",
+            "comet",
+            "deathbringer",
+            "defy",
+            "fallingstar",
+            "gammablast",
+            "gofortheeyes",
+            "knowthyplace",
+            "legsweep",
+            "madscience",
+            "malaise",
+            "meteorshower",
             "neutralize",
+            "null",
+            "putrefy",
             "shockwave",
             "suckerpunch",
+            "suppress",
             "uppercut",
         };
         private static readonly string[] StrengthCardNames =
         {
-            "believeinyou",
+            "arsenal",
+            "brand",
             "bulkup",
+            "coordinate",
             "demonform",
-            "drumofbattle",
-            "howlfrombeyond",
+            "dominate",
+            "feedingfrenzy",
+            "fightme",
             "inflame",
-            "rally",
-            "signalboost",
-            "tagteam",
-            "uproar",
+            "monologue",
+            "prowess",
+            "resonance",
+            "rupture",
+            "setupstrike",
         };
         private static readonly string[] VigorCardNames =
         {
-            "celestialmight",
-            "charge",
-            "refineblade",
+            "patter",
+            "preptime",
+            "terraforming",
         };
         private static readonly string[] DoubleDamageCardNames =
         {
-            "celestialmight",
+            "conqueror",
+            "flanking",
+            "hang",
+            "shadowstep",
+            "tank",
+            "tracking",
         };
         private static readonly string[] FocusCardNames =
         {
             "biasedcognition",
             "defragment",
+            "focusedstrike",
+            "hotfix",
+            "synchronize",
         };
         private static readonly string[] PoisonCardNames =
         {
             "bouncingflask",
+            "bubblebubble",
+            "corrosivewave",
             "deadlypoison",
             "envenom",
+            "haze",
             "noxiousfumes",
-            "outbreak",
             "poisonedstab",
-            "putrefy",
             "snakebite",
-            "toxic",
         };
 
         private static long _lastRefreshAtUnixMs;
@@ -1599,6 +1597,7 @@ namespace HeyListen
             }
 
             var normalizedText = NormalizeForMatch(text);
+            var effectText = BuildCardEffectText(card);
             var normalizedCardNames = BuildNormalizedCardNames(card);
             var upgradeLevel = GetCardUpgradeLevel(card);
             var targetType = card.TargetType;
@@ -1620,43 +1619,43 @@ namespace HeyListen
                 MatchesAnyNormalized(normalizedText, SupportTokens);
 
             if (MatchesAnyExactNormalized(normalizedCardNames, VulnerableCardNames) ||
-                (targetsEnemy && MatchesAnyNormalized(normalizedText, VulnerableTokens)))
+                HasStatusApplication(effectText, VulnerableEffectNames))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Vulnerable, upgradeLevel);
             }
 
             if (MatchesAnyExactNormalized(normalizedCardNames, WeakCardNames) ||
-                (targetsEnemy && MatchesAnyNormalized(normalizedText, WeakTokens)))
+                HasStatusApplication(effectText, WeakEffectNames))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Weak, upgradeLevel);
             }
 
             if (MatchesAnyExactNormalized(normalizedCardNames, StrengthCardNames) ||
-                ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, StrengthTokens)))
+                ((targetsSelf || targetsAlly || isSupportCard) && HasStatusGain(effectText, StrengthEffectNames)))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Strength, upgradeLevel);
             }
 
             if (MatchesAnyExactNormalized(normalizedCardNames, VigorCardNames) ||
-                ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, VigorTokens)))
+                ((targetsSelf || targetsAlly || isSupportCard) && HasStatusGain(effectText, VigorEffectNames)))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Vigor, upgradeLevel);
             }
 
             if (MatchesAnyExactNormalized(normalizedCardNames, DoubleDamageCardNames) ||
-                ((targetsSelf || targetsAlly || isSupportCard) && MatchesAnyNormalized(normalizedText, DoubleDamageTokens)))
+                HasDoubleDamageEffect(effectText))
             {
                 AddCallout(results, ref resultCount, StatusCallout.DoubleDamage, upgradeLevel);
             }
 
             if (MatchesAnyExactNormalized(normalizedCardNames, FocusCardNames) ||
-                ((targetsSelf || targetsAlly) && MatchesAnyNormalized(normalizedText, FocusTokens)))
+                ((targetsSelf || targetsAlly) && HasStatusGain(effectText, FocusEffectNames)))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Focus, upgradeLevel);
             }
 
             if (MatchesAnyExactNormalized(normalizedCardNames, PoisonCardNames) ||
-                (targetsEnemy && MatchesAnyNormalized(normalizedText, PoisonTokens)))
+                HasStatusApplication(effectText, PoisonEffectNames))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Poison, upgradeLevel);
             }
@@ -1698,6 +1697,130 @@ namespace HeyListen
             AddText(parts, ref partCount, SafeFormatLocString(card.Description));
 
             return string.Join(" ", parts, 0, partCount).ToLowerInvariant();
+        }
+
+        private static string BuildCardEffectText(CardModel card)
+        {
+            if (card == null)
+            {
+                return string.Empty;
+            }
+
+            return SafeFormatLocString(card.Description);
+        }
+
+        private static bool HasStatusApplication(string effectText, params string[] statusNames)
+        {
+            if (string.IsNullOrWhiteSpace(effectText))
+            {
+                return false;
+            }
+
+            var clauses = SplitEffectClauses(effectText);
+            for (var i = 0; i < clauses.Length; i++)
+            {
+                var clause = StripEffectMarkup(clauses[i]);
+                var matches = Regex.Matches(clause, "\\b(?:apply|applies)\\b", RegexOptions.IgnoreCase);
+                for (var matchIndex = 0; matchIndex < matches.Count; matchIndex++)
+                {
+                    var match = matches[matchIndex];
+                    var before = clause.Substring(0, match.Index);
+                    if (Regex.IsMatch(before, "\\byou\\s*$", RegexOptions.IgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var after = clause.Substring(match.Index + match.Length);
+                    if (ContainsEffectName(after, statusNames))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasStatusGain(string effectText, params string[] statusNames)
+        {
+            if (string.IsNullOrWhiteSpace(effectText))
+            {
+                return false;
+            }
+
+            var clauses = SplitEffectClauses(effectText);
+            for (var i = 0; i < clauses.Length; i++)
+            {
+                var clause = StripEffectMarkup(clauses[i]);
+                var matches = Regex.Matches(clause, "\\b(?:gain|gains|give|gives)\\b", RegexOptions.IgnoreCase);
+                for (var matchIndex = 0; matchIndex < matches.Count; matchIndex++)
+                {
+                    var match = matches[matchIndex];
+                    var after = clause.Substring(match.Index + match.Length);
+                    if (ContainsEffectName(after, statusNames))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasDoubleDamageEffect(string effectText)
+        {
+            if (string.IsNullOrWhiteSpace(effectText))
+            {
+                return false;
+            }
+
+            var clauses = SplitEffectClauses(effectText);
+            for (var i = 0; i < clauses.Length; i++)
+            {
+                var clause = StripEffectMarkup(clauses[i]);
+                if (Regex.IsMatch(clause, "\\bdouble\\s+damage\\b", RegexOptions.IgnoreCase) ||
+                    Regex.IsMatch(clause, "\\bdouble\\b.{0,80}\\bdamage\\b", RegexOptions.IgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string[] SplitEffectClauses(string effectText)
+        {
+            return Regex.Split(effectText, "[\\r\\n.;]+");
+        }
+
+        private static string StripEffectMarkup(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var stripped = Regex.Replace(text, "\\[[^\\]]+\\]", string.Empty);
+            stripped = Regex.Replace(stripped, "\\{([^}:]+)(?::[^}]*)?\\}", "$1");
+            return stripped;
+        }
+
+        private static bool ContainsEffectName(string text, params string[] statusNames)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < statusNames.Length; i++)
+            {
+                if (Regex.IsMatch(text, "\\b" + Regex.Escape(statusNames[i]) + "\\b", RegexOptions.IgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AddNormalizedCardName(string[] names, ref int count, string text)

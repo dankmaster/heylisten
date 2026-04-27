@@ -1,26 +1,23 @@
 # Changelog
 
+## 0.95
+
+- Rebuilt status-card detection from an export of all 577 base-game card models.
+- Fixed false-positive callouts from cards that only mention a status, such as `Dismantle`, `Bully`, `Debilitate`, and `Molten Fist`.
+- Added missing base-game status producers for Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and co-op support callouts.
+- Kept upgraded-card handling intact so upgraded setup cards still show the matching `+` status marker.
+- Added a reusable card-audit export script and generated audit files for future STS2 card updates.
+
 ## 0.9
 
 - Rename the visible mod name to `Hey, listen!`.
 - Add self callouts with highlighted `I have ...` messaging for your own character.
 
-## 0.9
+## 0.9 Release Candidate
 
 - Polish release candidate for Nexus Mods.
 - Use native game speech bubbles as the only callout display.
 - Add click-to-acknowledge behavior and configurable bubble timers.
-- Hide callouts while the Timeline screen is active.
 - Package the main release zip for game-root extraction and Nexus/Vortex installs.
 - Add local multi-client co-op testing helpers.
 - Handle duplicate LAN player identities so same-PC LAN testing does not suppress bubbles.
-
-## 0.3.0
-
-- First packaged release as `heylisten`.
-- Use native game speech bubbles for teammate setup-card callouts.
-- Add click-to-acknowledge behavior.
-- Add a ModConfig bubble timer slider.
-- Add options for playable-only filtering and generic support callouts.
-- Hide callouts while the Timeline screen is active.
-- Package the main release zip for game-root extraction and Nexus/Vortex installs.
