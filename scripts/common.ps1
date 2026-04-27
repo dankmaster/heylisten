@@ -219,3 +219,169 @@ function Resolve-TextFromFileOrDefault {
 
     return $Default
 }
+
+function Resolve-HeyListenVersion {
+    param(
+        [string]$Version
+    )
+
+    if (![string]::IsNullOrWhiteSpace($Version)) {
+        return $Version.Trim().TrimStart("v")
+    }
+
+    $manifestPath = Join-Path (Get-HeyListenRepoRoot) "mod\heylisten\heylisten.json"
+    if (!(Test-Path -LiteralPath $manifestPath)) {
+        throw "Manifest file missing: $manifestPath"
+    }
+
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if ([string]::IsNullOrWhiteSpace($manifest.version)) {
+        throw "Could not determine release version from manifest."
+    }
+
+    return $manifest.version.Trim().TrimStart("v")
+}
+
+function Resolve-HeyListenReleaseDisplayName {
+    param(
+        [string]$Version,
+        [string]$DisplayName
+    )
+
+    if (![string]::IsNullOrWhiteSpace($DisplayName)) {
+        return $DisplayName.Trim()
+    }
+
+    $Version = Resolve-HeyListenVersion $Version
+    return "Hey Listen $Version"
+}
+
+function Set-HeyListenManifestVersion {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $manifestPath = Join-Path (Get-HeyListenRepoRoot) "mod\heylisten\heylisten.json"
+    if (!(Test-Path -LiteralPath $manifestPath)) {
+        throw "Manifest file missing: $manifestPath"
+    }
+
+    $content = Get-Content -LiteralPath $manifestPath -Raw
+    $versionRegex = [Regex]::new('"version"\s*:\s*"[^"]+"')
+    if (!$versionRegex.IsMatch($content)) {
+        throw "Could not find version field in manifest: $manifestPath"
+    }
+
+    $updated = $versionRegex.Replace(
+        $content,
+        '"version": "' + $Version + '"',
+        1)
+
+    Set-Content -LiteralPath $manifestPath -Value $updated -NoNewline
+}
+
+function Get-HeyListenChangelogBody {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $changelogPath = Join-Path (Get-HeyListenRepoRoot) "CHANGELOG.md"
+    if (!(Test-Path -LiteralPath $changelogPath)) {
+        return $null
+    }
+
+    $content = Get-Content -LiteralPath $changelogPath -Raw
+    $pattern = "(?ms)^##\s+v?" + [Regex]::Escape($Version) + "\s*\r?\n(?<body>.*?)(?=^##\s+|\z)"
+    $match = [Regex]::Match($content, $pattern)
+    if (!$match.Success) {
+        return $null
+    }
+
+    return $match.Groups["body"].Value.Trim()
+}
+
+function Set-HeyListenChangelogBody {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [Parameter(Mandatory = $true)][string]$Body
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $Body = $Body.Trim()
+    if ([string]::IsNullOrWhiteSpace($Body)) {
+        throw "Changelog text is empty."
+    }
+
+    $repoRoot = Get-HeyListenRepoRoot
+    $changelogPath = Join-Path $repoRoot "CHANGELOG.md"
+    if (Test-Path -LiteralPath $changelogPath) {
+        $content = Get-Content -LiteralPath $changelogPath -Raw
+    }
+    else {
+        $content = "# Changelog`r`n"
+    }
+
+    $section = "## $Version`r`n`r`n$Body`r`n`r`n"
+    $pattern = "(?ms)^##\s+v?" + [Regex]::Escape($Version) + "\s*\r?\n.*?(?=^##\s+|\z)"
+    $sectionRegex = [Regex]::new($pattern)
+    if ($sectionRegex.IsMatch($content)) {
+        $updated = $sectionRegex.Replace($content, $section, 1)
+    }
+    else {
+        $headingRegex = [Regex]::new("(?ms)^#\s+Changelog\s*")
+        $updated = $headingRegex.Replace($content.TrimEnd(), "# Changelog`r`n`r`n$section", 1)
+        if ($updated -eq $content.TrimEnd()) {
+            $updated = "# Changelog`r`n`r`n$section" + $content.TrimStart()
+        }
+    }
+
+    Set-Content -LiteralPath $changelogPath -Value $updated.TrimEnd() -NoNewline
+}
+
+function Sync-HeyListenReleaseNotes {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [string]$OutputPath
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $body = Get-HeyListenChangelogBody -Version $Version
+    if ([string]::IsNullOrWhiteSpace($body)) {
+        throw "CHANGELOG.md is missing a '## $Version' section. Add it before preparing the release."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+        $OutputPath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_FILE_DESCRIPTION.md"
+    }
+
+    $notes = "$Version`r`n`r`n$body`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+    Set-Content -LiteralPath $OutputPath -Value $notes -NoNewline
+    return $notes
+}
+
+function Resolve-HeyListenReleaseNotes {
+    param(
+        [string]$Version,
+        [string]$Value,
+        [string]$Path,
+        [string]$Default
+    )
+
+    if (![string]::IsNullOrWhiteSpace($Value)) {
+        return $Value.Trim()
+    }
+
+    $changelogBody = Get-HeyListenChangelogBody -Version $Version
+    if (![string]::IsNullOrWhiteSpace($changelogBody)) {
+        $Version = Resolve-HeyListenVersion $Version
+        return "$Version`r`n`r`n$changelogBody`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+    }
+
+    if (![string]::IsNullOrWhiteSpace($Path) -and (Test-Path -LiteralPath $Path)) {
+        return (Get-Content -LiteralPath $Path -Raw).Trim()
+    }
+
+    return $Default
+}

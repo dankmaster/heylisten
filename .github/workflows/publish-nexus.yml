@@ -6,7 +6,7 @@ on:
       version:
         description: Release version without the leading v
         required: true
-        default: "0.9"
+        default: "0.95"
       file_group_id:
         description: Optional Nexus Mods file group ID. If blank, the NEXUSMODS_FILE_GROUP_ID secret is used.
         required: false
@@ -14,11 +14,11 @@ on:
       release_asset_name:
         description: GitHub release asset to publish
         required: true
-        default: "Hey-Listen-0.9.zip"
+        default: "Hey-Listen-0.95.zip"
       display_name:
-        description: Nexus file display name
+        description: Nexus file display name. Include the version, for example Hey Listen 0.95.
         required: false
-        default: "Hey, listen!"
+        default: "Hey Listen 0.95"
       description:
         description: Nexus file description
         required: false
@@ -65,6 +65,6 @@ jobs:
           file_group_id: ${{ env.NEXUS_FILE_GROUP_ID }}
           filename: "dist/${{ inputs.release_asset_name }}"
           version: "${{ inputs.version }}"
-          display_name: "${{ inputs.display_name }} ${{ inputs.version }}"
+          display_name: "${{ inputs.display_name }}"
           description: "${{ inputs.description }}"
           file_category: "${{ inputs.file_category }}"

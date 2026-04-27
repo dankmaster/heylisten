@@ -1,5 +1,31 @@
 # Publishing
 
+## Version And Changelog
+
+Each release should have one version and one changelog source:
+
+- `mod/heylisten/heylisten.json` stores the mod version.
+- `CHANGELOG.md` stores the version history.
+- `docs/NEXUS_FILE_DESCRIPTION.md` is generated from the matching changelog section and is used as the GitHub release notes and Nexus file description.
+
+Prepare a release before building or publishing:
+
+```powershell
+.\scripts\prepare-release.ps1 -Version 0.96
+```
+
+This requires a matching `## 0.96` section in `CHANGELOG.md`. To set the version and create or update the changelog section in one step:
+
+```powershell
+.\scripts\prepare-release.ps1 -Version 0.96 -ChangelogPath .\release-notes-0.96.md
+```
+
+The generated Nexus/GitHub notes are written to:
+
+```text
+docs/NEXUS_FILE_DESCRIPTION.md
+```
+
 ## Release Artifacts
 
 Run the package script from the repo root:
@@ -65,7 +91,10 @@ This does all of the following:
 
 - Builds the mod against your local game files.
 - Creates or updates the GitHub release and uploads the release zips.
-- Uploads `Hey-Listen-<version>.zip` to Nexus Mods from your machine. The Nexus file display name defaults to `Hey Listen` because the Nexus upload API does not allow punctuation such as commas or exclamation marks in file names.
+- Uploads `Hey-Listen-<version>.zip` to Nexus Mods from your machine.
+- Sends the Nexus API `version`, `display_name`, and `description` fields from the prepared release data.
+
+The Nexus file display name defaults to `Hey Listen <version>`, for example `Hey Listen 0.96`. This keeps archived Nexus rows readable.
 
 By default this creates a public GitHub release. Add `-Draft` if you want the GitHub release to stay in draft mode.
 
@@ -100,6 +129,13 @@ The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexu
 ## Nexus Upload Workflow
 
 Nexus Mods' upload API can update an existing mod file group. The file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, ignored `local.settings.json`, or the GitHub `NEXUSMODS_FILE_GROUP_ID` secret.
+
+The Nexus upload flow sends:
+
+- `version`: the manifest/release version, shown in the Nexus Version column.
+- `display_name`: `Hey Listen <version>`, shown in current and archived file rows.
+- `description`: generated from the matching `CHANGELOG.md` section.
+- `archive_existing_file`: archives the previous file in the group when requested.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so the page description in `NEXUS_PAGE.md` still needs to be pasted into the Nexus page editor.
 

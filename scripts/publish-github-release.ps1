@@ -13,14 +13,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $releaseNotesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
-$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-if ([string]::IsNullOrWhiteSpace($Version)) {
-    $Version = $manifest.version
-}
-
-if ([string]::IsNullOrWhiteSpace($Version)) {
-    throw "Could not determine release version."
-}
+$Version = Resolve-HeyListenVersion $Version
 
 Push-Location $repoRoot
 try {
@@ -50,7 +43,8 @@ try {
 
     $tag = "v$Version"
     $releaseTitle = "Hey, listen! $Version"
-    $releaseNotes = Resolve-TextFromFileOrDefault `
+    $releaseNotes = Resolve-HeyListenReleaseNotes `
+        -Version $Version `
         -Path $releaseNotesPath `
         -Default "Ready-to-install package for Hey, listen! $Version. Extract the zip into your Slay the Spire 2 folder or install it with Vortex."
 

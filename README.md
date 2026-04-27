@@ -126,6 +126,12 @@ You can also let the script prompt for the key for the current publish run:
 
 ## Nexus Mods
 
+Prepare the version and release notes first:
+
+```powershell
+.\scripts\prepare-release.ps1 -Version <version>
+```
+
 After the GitHub release is ready and the Nexus mod page has a file group, you can upload the local package directly:
 
 ```powershell
@@ -140,7 +146,7 @@ There is also a GitHub-hosted Nexus workflow available if you want GitHub to per
 
 Both Nexus publish paths use the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
-Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). The local Nexus upload uses [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md) as the default file description.
+Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and future Nexus file rows default to `Hey Listen <version>`.
 
 ## Local Co-op Testing
 

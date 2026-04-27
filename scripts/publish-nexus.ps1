@@ -2,7 +2,7 @@ param(
     [string]$Version,
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$ReleaseAssetName,
-    [string]$DisplayName = "Hey, listen!",
+    [string]$DisplayName,
     [string]$Description,
     [string]$FileCategory = "main",
     [switch]$ArchiveExistingFile,
@@ -19,21 +19,18 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
-if ([string]::IsNullOrWhiteSpace($Version)) {
-    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-    $Version = $manifest.version
-}
-
-if ([string]::IsNullOrWhiteSpace($Version)) {
-    throw "Could not determine Nexus publish version."
-}
+$Version = Resolve-HeyListenVersion $Version
 
 if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
     $ReleaseAssetName = "Hey-Listen-$Version.zip"
 }
 
 $FileGroupId = Resolve-NexusFileGroupId -FileGroupId $FileGroupId -Optional
-$Description = Resolve-TextFromFileOrDefault `
+$DisplayName = Resolve-HeyListenReleaseDisplayName `
+    -Version $Version `
+    -DisplayName $DisplayName
+$Description = Resolve-HeyListenReleaseNotes `
+    -Version $Version `
     -Value $Description `
     -Path $fileDescriptionPath `
     -Default "Vortex-ready Hey, listen! release."
