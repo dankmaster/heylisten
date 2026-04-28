@@ -20,11 +20,25 @@ This requires a matching `## 0.96` section in `CHANGELOG.md`. To set the version
 .\scripts\prepare-release.ps1 -Version 0.96 -ChangelogPath .\release-notes-0.96.md
 ```
 
+Release notes include a `Tested with Slay the Spire 2 v...` line. By default, the prepare script reads it from the local game's `release_info.json`; to override it:
+
+```powershell
+.\scripts\prepare-release.ps1 -Version 0.96 -TestedGameVersion v0.103.2
+```
+
 The generated Nexus/GitHub notes are written to:
 
 ```text
 docs/NEXUS_FILE_DESCRIPTION.md
 ```
+
+After switching Slay the Spire 2 branches or seeing a new game update, compare the live card audit against the committed baseline before preparing a public release:
+
+```powershell
+.\scripts\check-card-audit.ps1
+```
+
+Use `-FailOnDiff` when you want the check to block automation until new/reworked cards are reviewed.
 
 ## Release Artifacts
 
@@ -45,6 +59,12 @@ $env:HEYLISTEN_BUILD_ROOT = ".build"
 or pass `-BuildRoot` to the build, package, and publish scripts.
 
 Local machine values can live in ignored `local.settings.json`. Local secrets such as the Nexus API key can live in ignored `.env`.
+
+Package verification also checks that every translation pack has the same string keys as `eng.json`:
+
+```powershell
+.\scripts\verify-translations.ps1
+```
 
 By default, it creates and verifies the canonical public archive:
 

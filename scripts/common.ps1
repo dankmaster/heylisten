@@ -297,6 +297,50 @@ function Resolve-HeyListenReleaseDisplayName {
     return "Hey Listen $Version"
 }
 
+function Format-Sts2VersionLabel {
+    param([string]$Version)
+
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        return $null
+    }
+
+    $label = $Version.Trim()
+    if (!$label.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $label = "v$label"
+    }
+
+    return $label
+}
+
+function Get-Sts2ReleaseInfoVersion {
+    param(
+        [string]$GameRoot,
+        [switch]$Optional
+    )
+
+    try {
+        $resolvedGameRoot = Resolve-Sts2GameRoot $GameRoot
+        $releaseInfoPath = Join-Path $resolvedGameRoot "release_info.json"
+        if (!(Test-Path -LiteralPath $releaseInfoPath)) {
+            if ($Optional) {
+                return $null
+            }
+
+            throw "release_info.json was not found under: $resolvedGameRoot"
+        }
+
+        $releaseInfo = Get-Content -LiteralPath $releaseInfoPath -Raw | ConvertFrom-Json
+        return Format-Sts2VersionLabel $releaseInfo.version
+    }
+    catch {
+        if ($Optional) {
+            return $null
+        }
+
+        throw
+    }
+}
+
 function Get-HeyListenNexusStyleFileName {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
@@ -434,7 +478,8 @@ function Set-HeyListenChangelogBody {
 function Sync-HeyListenReleaseNotes {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
-        [string]$OutputPath
+        [string]$OutputPath,
+        [string]$TestedGameVersion
     )
 
     $Version = Resolve-HeyListenVersion $Version
@@ -447,7 +492,15 @@ function Sync-HeyListenReleaseNotes {
         $OutputPath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_FILE_DESCRIPTION.md"
     }
 
-    $notes = "$Version`r`n`r`n$body`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+    $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+    $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+        ""
+    }
+    else {
+        "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+    }
+
+    $notes = "$Version`r`n`r`n$body$testedLine`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
     Set-Content -LiteralPath $OutputPath -Value $notes -NoNewline
     return $notes
 }
@@ -457,21 +510,30 @@ function Resolve-HeyListenReleaseNotes {
         [string]$Version,
         [string]$Value,
         [string]$Path,
-        [string]$Default
+        [string]$Default,
+        [string]$TestedGameVersion
     )
 
     if (![string]::IsNullOrWhiteSpace($Value)) {
         return $Value.Trim()
     }
 
+    if (![string]::IsNullOrWhiteSpace($Path) -and (Test-Path -LiteralPath $Path)) {
+        return (Get-Content -LiteralPath $Path -Raw).Trim()
+    }
+
     $changelogBody = Get-HeyListenChangelogBody -Version $Version
     if (![string]::IsNullOrWhiteSpace($changelogBody)) {
         $Version = Resolve-HeyListenVersion $Version
-        return "$Version`r`n`r`n$changelogBody`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
-    }
+        $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+        $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+            ""
+        }
+        else {
+            "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+        }
 
-    if (![string]::IsNullOrWhiteSpace($Path) -and (Test-Path -LiteralPath $Path)) {
-        return (Get-Content -LiteralPath $Path -Raw).Trim()
+        return "$Version`r`n`r`n$changelogBody$testedLine`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
     }
 
     return $Default

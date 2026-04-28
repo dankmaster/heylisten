@@ -23,6 +23,8 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [*]First-person "I have ..." wording so each character speaks for their own hand.
 [*]Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 [*]Detects helpful setup effects such as Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and support cards.
+[*]Optional card-name wording can name the source card for the primary status callout.
+[*]Individual callout category toggles let players hide noisier status reminders.
 [*]Includes bubble-text translation packs for the same language IDs used by the base game.
 [*]Auto language mode follows the game's selected language when a matching pack is available.
 [*]Custom opening callout line, or the translated default if left blank.
@@ -56,7 +58,9 @@ Available settings:
 [*][b]Callout Intro[/b] - Replaces the opening "Hey, listen!" line. Leave it blank to use the selected language's default.
 [*][b]Self Bubbles[/b] - Shows or hides bubbles above your own character while keeping teammate bubbles available.
 [*][b]Playable Now Only[/b] - Only shows callouts for cards the holder can currently afford and play this turn.
+[*][b]Card Names[/b] - Names the source card for the primary status callout. Off by default to preserve the original wording.
 [*][b]Include Support[/b] - Allows generic support callouts for helpful cards that do not match a specific status keyword.
+[*][b]Status Filters[/b] - Show or hide Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage callouts individually.
 [*][b]Bubble Timer[/b] - Controls how long bubbles stay visible. Set it to 0 to keep bubbles up until clicked.
 [/list]
 
@@ -85,6 +89,8 @@ If Vortex does not recognize Slay the Spire 2 yet, install the Slay the Spire 2 
 [b]Compatibility[/b]
 
 Hey, listen! is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
+
+Current release notes include the Slay the Spire 2 version used for local testing. If Slay the Spire 2 has updated since that version, check the latest Hey, listen! release notes or GitHub build before assuming every new/reworked card has been audited.
 
 [b]Why This Exists[/b]
 

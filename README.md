@@ -13,6 +13,8 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Translation packs for the same language IDs exposed by the base game, with Auto following the game's language setting by default.
 - Customizable callout intro text, defaulting to the selected language's `Hey, listen!` equivalent.
 - Optional self bubbles so players can keep teammate reminders without showing their own hand reminders.
+- Optional card-name wording so callouts can name the source card for the primary status.
+- Per-status filters for players who want to hide noisier categories such as Poison, Focus, or Double Damage.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
@@ -53,7 +55,9 @@ The mod works without extra configuration. If ModConfig is installed, it adds:
 - `Callout Intro`
 - `Self Bubbles`
 - `Playable Now Only`
+- `Card Names`
 - `Include Support`
+- Individual callout toggles for Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage
 - `Bubble Timer`
 
 Settings are stored under:
@@ -69,6 +73,8 @@ You can also set `language` to a pack code such as `eng`, `deu`, `esp`, `fra`, `
 The `callout_intro` value defaults to an empty string, which uses the selected language's `bubble_intro` translation. Set it to custom text if you want the first bubble line to say something else.
 
 The `show_self_callouts` value defaults to `true`. Set it to `false` to hide bubbles above your own character while still seeing teammate bubbles.
+
+The `show_card_names` value defaults to `false`, preserving the original status-only wording. Set it to `true` to name the source card for the primary status callout, such as `I can play Bash for Vulnerable`.
 
 Translation packs are regular JSON files stored under:
 
@@ -173,6 +179,14 @@ There is also a GitHub-hosted Nexus workflow available if you want GitHub to per
 Both Nexus publish paths use the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
 Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and future Nexus file rows default to `Hey Listen <version>`.
+
+Before preparing a release after a Slay the Spire 2 branch switch or game update, run:
+
+```powershell
+.\scripts\check-card-audit.ps1
+```
+
+This compares the live game card export with the committed audit and warns when cards were added, removed, or changed. It is developer-only tooling and never runs for players.
 
 ## Local Co-op Testing
 

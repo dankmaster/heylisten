@@ -12,6 +12,8 @@ $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $translationsSourceDir = Join-Path $repoRoot "mod\heylisten\translations"
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 
+& (Join-Path $PSScriptRoot "verify-translations.ps1") -TranslationsDir $translationsSourceDir
+
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     $Version = $manifest.version

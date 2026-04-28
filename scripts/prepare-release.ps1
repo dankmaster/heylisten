@@ -1,5 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Version,
+    [string]$GameRoot = $env:STS2_GAME_ROOT,
+    [string]$TestedGameVersion,
     [string]$ChangelogText,
     [string]$ChangelogPath,
     [switch]$SkipManifest
@@ -12,6 +14,16 @@ $ErrorActionPreference = "Stop"
 $Version = Resolve-HeyListenVersion $Version
 $repoRoot = Get-HeyListenRepoRoot
 $notesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
+
+if ([string]::IsNullOrWhiteSpace($TestedGameVersion)) {
+    $TestedGameVersion = Get-Sts2ReleaseInfoVersion -GameRoot $GameRoot -Optional
+    if ([string]::IsNullOrWhiteSpace($TestedGameVersion)) {
+        Write-Warning "Could not detect the local Slay the Spire 2 version for release notes. Pass -TestedGameVersion to include it."
+    }
+}
+else {
+    $TestedGameVersion = Format-Sts2VersionLabel $TestedGameVersion
+}
 
 if (![string]::IsNullOrWhiteSpace($ChangelogPath)) {
     if (!(Test-Path -LiteralPath $ChangelogPath)) {
@@ -32,11 +44,15 @@ if (!$SkipManifest) {
     Set-HeyListenManifestVersion -Version $Version
 }
 
-$notes = Sync-HeyListenReleaseNotes -Version $Version -OutputPath $notesPath
+$notes = Sync-HeyListenReleaseNotes -Version $Version -OutputPath $notesPath -TestedGameVersion $TestedGameVersion
 $displayName = Resolve-HeyListenReleaseDisplayName -Version $Version
 
 Write-Host "Prepared Hey, listen! $Version"
 Write-Host "  Manifest version: $Version"
+if (![string]::IsNullOrWhiteSpace($TestedGameVersion)) {
+    Write-Host "  Tested game version: $TestedGameVersion"
+}
+
 Write-Host "  Nexus/GitHub display name: $displayName"
 Write-Host "  Release notes: $notesPath"
 Write-Host ""

@@ -1,12 +1,13 @@
-0.98
+0.99
 
-- Tightened the generic `Support` callout so it only appears for explicit audited support cards instead of every multiplayer-only or ally-targeted card.
-- Restored `Legion of Bone` as a support card and changed support-only bubbles to offer the playable support card by name.
-- Split support-offer wording between direct support, team support, and general help so summon-style team cards do not say they target another player.
-- Added localized support-offer message templates for translation packs.
-- Enabled self callouts in singleplayer when the `Self Bubbles` setting is on.
-- Stopped card-family damage scaling such as `Hang` from being announced as `Double Damage`.
-- Stopped incoming-damage penalties such as `Tank` from being announced as `Double Damage`.
-- Added an identical Nexus-style Vortex source-hint package copy for manual zip installs.
+- Added developer-only card audit checking so local Slay the Spire 2 card changes can be compared against the committed audit before release.
+- Added tested-game-version release notes, defaulting to the local Slay the Spire 2 `release_info.json` version when preparing a release.
+- Suppressed conditional setup and engine cards such as `Rupture`, `Arsenal`, `Envenom`, and `Shadow Step` from immediate status bubbles.
+- Added damage-multiplier wording so upgraded `Knockdown` is called out as `Triple Damage`.
+- Added optional `Card Names` wording so the primary status callout can name its source card.
+- Added per-callout filters for Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage.
+- Added translation key verification and card-name message templates to all included translation packs.
+
+Tested with Slay the Spire 2 v0.103.2.
 
 Install with Vortex or extract into the Slay the Spire 2 folder.
