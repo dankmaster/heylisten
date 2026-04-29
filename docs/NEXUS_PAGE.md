@@ -34,6 +34,25 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [*]Vortex-ready install package.
 [/list]
 
+[b]Latest Release[/b]
+
+[b]0.99.1[/b]
+
+[list]
+[*]Fixed compatibility with recent Slay the Spire 2 updates by removing the direct [code]CombatManager.IsPlayPhase[/code] dependency that could throw [code]MissingMethodException[/code] while wiring state listeners.
+[*]Bubbles now fall back to the live combat state when checking the player play phase, so the mod keeps working across the old and updated combat APIs.
+[/list]
+
+Tested with Slay the Spire 2 v0.103.2.
+
+[b]Documentation and Changelog[/b]
+
+[list]
+[*][url=https://github.com/dankmaster/heylisten/blob/main/CHANGELOG.md]Full changelog[/url]
+[*][url=https://github.com/dankmaster/heylisten#readme]Readme and install notes[/url]
+[*][url=https://github.com/dankmaster/heylisten/blob/main/docs/PUBLISHING.md]Release packaging notes[/url]
+[/list]
+
 [b]Languages[/b]
 
 Included translation pack codes:

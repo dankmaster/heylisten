@@ -2665,12 +2665,12 @@ namespace HeyListen
             }
 
             var combatManager = CombatManager.Instance;
-            if (combatManager == null || !combatManager.IsInProgress || !combatManager.IsPlayPhase)
+            if (!IsCombatInPlayerPlayPhase(combatManager))
             {
                 return false;
             }
 
-            var stateFromCombat = combatManager.DebugOnlyGetState();
+            var stateFromCombat = GetCombatState(combatManager);
             if (stateFromCombat == null)
             {
                 return false;
@@ -2793,6 +2793,177 @@ namespace HeyListen
             return null;
         }
 
+        private static CombatState GetCombatState(CombatManager combatManager)
+        {
+            if (combatManager == null)
+            {
+                return null;
+            }
+
+            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            try
+            {
+                var method = combatManager.GetType().GetMethod("DebugOnlyGetState", flags, null, Type.EmptyTypes, null);
+                if (method != null)
+                {
+                    return method.Invoke(combatManager, null) as CombatState;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var property = combatManager.GetType().GetProperty("State", flags);
+                if (property != null)
+                {
+                    return property.GetValue(combatManager) as CombatState;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var field = combatManager.GetType().GetField("_state", flags);
+                if (field != null)
+                {
+                    return field.GetValue(combatManager) as CombatState;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
+        private static bool IsCombatInPlayerPlayPhase(CombatManager combatManager)
+        {
+            if (combatManager == null)
+            {
+                return false;
+            }
+
+            bool isInProgress;
+            if (TryGetBooleanMember(combatManager, "IsInProgress", out isInProgress) && !isInProgress)
+            {
+                return false;
+            }
+
+            bool isPlayPhase;
+            if (TryGetBooleanMember(combatManager, "IsPlayPhase", out isPlayPhase))
+            {
+                return isPlayPhase;
+            }
+
+            var combatState = GetCombatState(combatManager);
+            if (combatState == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (combatState.CurrentSide != CombatSide.Player)
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            bool flag;
+            if (TryGetBooleanMember(combatManager, "PlayerActionsDisabled", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "_playerActionsDisabled", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "IsEnemyTurnStarted", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "EndingPlayerTurnPhaseOne", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "EndingPlayerTurnPhaseTwo", out flag) && flag)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryGetBooleanMember(object instance, string memberName, out bool value)
+        {
+            value = false;
+            if (instance == null || string.IsNullOrWhiteSpace(memberName))
+            {
+                return false;
+            }
+
+            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var type = instance.GetType();
+
+            try
+            {
+                var property = type.GetProperty(memberName, flags);
+                if (property != null && property.PropertyType == typeof(bool) && property.CanRead)
+                {
+                    value = (bool)property.GetValue(instance);
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            if (TryGetBooleanField(instance, memberName, out value))
+            {
+                return true;
+            }
+
+            return TryGetBooleanField(instance, "<" + memberName + ">k__BackingField", out value);
+        }
+
+        private static bool TryGetBooleanField(object instance, string fieldName, out bool value)
+        {
+            value = false;
+            if (instance == null || string.IsNullOrWhiteSpace(fieldName))
+            {
+                return false;
+            }
+
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                var field = instance.GetType().GetField(fieldName, flags);
+                if (field != null && field.FieldType == typeof(bool))
+                {
+                    value = (bool)field.GetValue(instance);
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
         private static bool IsObservedCombatState(PlayerCombatState combatState)
         {
             if (combatState == null)
@@ -2819,7 +2990,7 @@ namespace HeyListen
             }
 
             var combatManager = CombatManager.Instance;
-            if (combatManager == null || !combatManager.IsInProgress || !combatManager.IsPlayPhase)
+            if (!IsCombatInPlayerPlayPhase(combatManager))
             {
                 return false;
             }
