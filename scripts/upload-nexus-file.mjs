@@ -77,8 +77,6 @@ async function apiFetch(apiKey, route, options = {}) {
   const configLines = [
     "silent",
     "show-error",
-    `request = ${quoteCurlConfigValue(method)}`,
-    `url = ${quoteCurlConfigValue(`${apiBase}${route}`)}`,
     `write-out = ${quoteCurlConfigValue("\n__HEYLISTEN_CURL_STATUS__:%{http_code}")}`,
   ];
 
@@ -87,12 +85,12 @@ async function apiFetch(apiKey, route, options = {}) {
   }
 
   let bodyPath;
-  let extraArgs = [];
+  let extraArgs = ["--request", method, `${apiBase}${route}`];
   try {
     if (options.body !== undefined) {
       bodyPath = path.join(os.tmpdir(), `heylisten-nexus-${randomUUID()}.json`);
       await writeFile(bodyPath, options.body);
-      extraArgs = ["--data-binary", `@${bodyPath}`];
+      extraArgs = [...extraArgs, "--data-binary", `@${bodyPath}`];
     }
 
     const { code, stdout, stderr } = await runCurlWithConfig(configLines.join("\n"), extraArgs);
