@@ -232,30 +232,44 @@ async function getCookieHeader(client, targetUrl) {
 }
 
 async function postFlamework(client, endpoint, body, errorMessage) {
-  const baseUrl = await getRuntimeConfigValue(client, "NEXT_PUBLIC_SITE_URL", "https://next.nexusmods.com");
-  const url = new URL(endpoint, baseUrl).toString();
-  const cookieHeader = await getCookieHeader(client, url);
-  const userAgent = await evaluate(client, "navigator.userAgent", true);
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Cookie": cookieHeader,
-      "Origin": new URL(resolvedEditUrl).origin,
-      "Referer": resolvedEditUrl,
-      "User-Agent": userAgent,
-    },
-    body: JSON.stringify(body),
-  });
+  const result = await evaluate(client, `(async () => {
+    const endpoint = ${JSON.stringify(endpoint)};
+    const body = ${JSON.stringify(body)};
+    const baseUrl = window.__RUNTIME_CONFIG__?.NEXT_PUBLIC_SITE_URL || "https://next.nexusmods.com";
+    const response = await fetch(baseUrl + endpoint, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await response.text();
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    }
+    catch {
+      json = null;
+    }
 
-  const json = await response.json().catch(() => null);
-  if (!response.ok || !json || json.success !== true) {
-    const detail = json && typeof json === "object" && "error" in json ? String(json.error) : `status ${response.status}`;
+    return {
+      ok: response.ok,
+      status: response.status,
+      json,
+      text,
+    };
+  })()`);
+
+  if (!result.ok || !result.json || result.json.success !== true) {
+    const detail = result.json && typeof result.json === "object" && "error" in result.json
+      ? String(result.json.error)
+      : `status ${result.status}`;
     throw new Error(`${errorMessage} (${detail}).`);
   }
 
-  return json;
+  return result.json;
 }
 
 async function evaluate(client, expression, returnByValue = true) {
