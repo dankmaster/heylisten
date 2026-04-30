@@ -33,18 +33,16 @@ function readBool(name, defaultValue) {
   throw new Error(`${name} must be true or false.`);
 }
 
-function quoteCurlConfigValue(value) {
-  return `"${String(value)
-    .replaceAll("\\", "\\\\")
-    .replaceAll("\"", "\\\"")
-    .replaceAll("\r", "\\r")
-    .replaceAll("\n", "\\n")}"`;
-}
-
-async function runCurlWithConfig(configText, extraArgs = []) {
+async function runCurl(extraArgs = []) {
   return await new Promise((resolve, reject) => {
-    const child = spawn("curl", ["--config", "-", ...extraArgs], {
-      stdio: ["pipe", "pipe", "pipe"],
+    const child = spawn("curl", [
+      "--silent",
+      "--show-error",
+      "--write-out",
+      "\n__HEYLISTEN_CURL_STATUS__:%{http_code}",
+      ...extraArgs,
+    ], {
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
     let stdout = "";
@@ -61,7 +59,6 @@ async function runCurlWithConfig(configText, extraArgs = []) {
     child.once("close", (code) => {
       resolve({ code, stdout, stderr });
     });
-    child.stdin.end(configText);
   });
 }
 
@@ -69,31 +66,30 @@ async function apiFetch(apiKey, route, options = {}) {
   const method = options.method || "GET";
   const headers = {
     "Content-Type": "application/json",
-    apikey: apiKey,
     "User-Agent": "HeyListen release uploader",
     ...(options.headers || {}),
   };
 
-  const configLines = [
-    "silent",
-    "show-error",
-    `write-out = ${quoteCurlConfigValue("\n__HEYLISTEN_CURL_STATUS__:%{http_code}")}`,
-  ];
-
-  for (const [name, value] of Object.entries(headers)) {
-    configLines.push(`header = ${quoteCurlConfigValue(`${name}: ${value}`)}`);
-  }
-
   let bodyPath;
-  let extraArgs = ["--request", method, `${apiBase}${route}`];
+  let keyHeaderPath;
   try {
+    keyHeaderPath = path.join(os.tmpdir(), `heylisten-nexus-key-${randomUUID()}.txt`);
+    await writeFile(keyHeaderPath, `apikey: ${apiKey}`);
+
+    let extraArgs = ["--request", method, "--header", `@${keyHeaderPath}`];
+    for (const [name, value] of Object.entries(headers)) {
+      extraArgs = [...extraArgs, "--header", `${name}: ${value}`];
+    }
+
+    extraArgs = [...extraArgs, `${apiBase}${route}`];
+
     if (options.body !== undefined) {
       bodyPath = path.join(os.tmpdir(), `heylisten-nexus-${randomUUID()}.json`);
       await writeFile(bodyPath, options.body);
       extraArgs = [...extraArgs, "--data-binary", `@${bodyPath}`];
     }
 
-    const { code, stdout, stderr } = await runCurlWithConfig(configLines.join("\n"), extraArgs);
+    const { code, stdout, stderr } = await runCurl(extraArgs);
     if (code !== 0) {
       throw new Error(`${route} curl failed: ${code} ${stderr.trim()}`);
     }
@@ -122,6 +118,10 @@ async function apiFetch(apiKey, route, options = {}) {
   finally {
     if (bodyPath) {
       await rm(bodyPath, { force: true });
+    }
+
+    if (keyHeaderPath) {
+      await rm(keyHeaderPath, { force: true });
     }
   }
 }
