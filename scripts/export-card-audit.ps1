@@ -273,7 +273,10 @@ foreach ($type in $cardTypes) {
     $supportSignal =
         $targetType -in @("AnyPlayer", "AnyAlly", "AllAllies") -or
         $multiplayerConstraint -eq "MultiplayerOnly" -or
-        [regex]::IsMatch($plainDescription, "\b(ally|allies|teammate|support)\b", "IgnoreCase")
+        [regex]::IsMatch(
+            $plainDescription,
+            "\b(?:another|other)\s+players?\b|\ball\s+(?:players|allies)\b|\b(?:ally|allies|teammates?|support)\b",
+            "IgnoreCase")
 
     $strictCallouts = New-Object "System.Collections.Generic.List[string]"
     if (Test-EnemyStatusApplication $clauses "Vulnerable") { [void]$strictCallouts.Add("Vulnerable") }

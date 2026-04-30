@@ -4,7 +4,8 @@ param(
     [string]$TestedGameVersion,
     [string]$ChangelogText,
     [string]$ChangelogPath,
-    [switch]$SkipManifest
+    [switch]$SkipManifest,
+    [switch]$SkipNexusPage
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,6 +15,7 @@ $ErrorActionPreference = "Stop"
 $Version = Resolve-HeyListenVersion $Version
 $repoRoot = Get-HeyListenRepoRoot
 $notesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
+$nexusPagePath = Join-Path $repoRoot "docs\NEXUS_PAGE.md"
 
 if ([string]::IsNullOrWhiteSpace($TestedGameVersion)) {
     $TestedGameVersion = Get-Sts2ReleaseInfoVersion -GameRoot $GameRoot -Optional
@@ -45,6 +47,13 @@ if (!$SkipManifest) {
 }
 
 $notes = Sync-HeyListenReleaseNotes -Version $Version -OutputPath $notesPath -TestedGameVersion $TestedGameVersion
+if (!$SkipNexusPage) {
+    Sync-HeyListenNexusPageReleaseSummary `
+        -Version $Version `
+        -PagePath $nexusPagePath `
+        -TestedGameVersion $TestedGameVersion | Out-Null
+}
+
 $displayName = Resolve-HeyListenReleaseDisplayName -Version $Version
 
 Write-Host "Prepared Hey, listen! $Version"
@@ -55,5 +64,10 @@ if (![string]::IsNullOrWhiteSpace($TestedGameVersion)) {
 
 Write-Host "  Nexus/GitHub display name: $displayName"
 Write-Host "  Release notes: $notesPath"
+if (!$SkipNexusPage) {
+    Write-Host "  Nexus page copy: $nexusPagePath"
+    Write-Host "  Nexus page helper: .\scripts\update-nexus-page.ps1 -Version $Version"
+}
+
 Write-Host ""
 Write-Host $notes

@@ -8,13 +8,40 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Get-HeyListenRepoRoot
-$baselineCsvPath = Join-Path $repoRoot "docs\card-audit\cards.csv"
-if (!(Test-Path -LiteralPath $baselineCsvPath)) {
-    throw "Baseline card audit missing: $baselineCsvPath"
+$primaryBaselineCsvPath = Join-Path $repoRoot "docs\card-audit\cards.csv"
+if (!(Test-Path -LiteralPath $primaryBaselineCsvPath)) {
+    throw "Baseline card audit missing: $primaryBaselineCsvPath"
 }
 
 $tempAuditDir = Join-Path ([System.IO.Path]::GetTempPath()) ("heylisten-card-audit-" + [Guid]::NewGuid().ToString("N"))
 $hasDiff = $false
+
+function New-CardAuditBaseline {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string]$CsvPath
+    )
+
+    [pscustomobject]@{
+        Label = $Label
+        CsvPath = $CsvPath
+    }
+}
+
+$knownBaselines = New-Object "System.Collections.Generic.List[object]"
+[void]$knownBaselines.Add((New-CardAuditBaseline -Label "current public baseline" -CsvPath $primaryBaselineCsvPath))
+
+$versionedBaselineRoot = Join-Path $repoRoot "docs\card-audit\baselines"
+if (Test-Path -LiteralPath $versionedBaselineRoot) {
+    $versionedBaselines = @(Get-ChildItem -LiteralPath $versionedBaselineRoot -Directory |
+        Sort-Object Name)
+    foreach ($baselineDir in $versionedBaselines) {
+        $csvPath = Join-Path $baselineDir.FullName "cards.csv"
+        if (Test-Path -LiteralPath $csvPath) {
+            [void]$knownBaselines.Add((New-CardAuditBaseline -Label $baselineDir.Name -CsvPath $csvPath))
+        }
+    }
+}
 
 function Convert-CardRowForCompare {
     param([Parameter(Mandatory = $true)]$Row)
@@ -42,17 +69,20 @@ try {
         throw "Card audit did not produce cards.csv: $currentCsvPath"
     }
 
-    $baselineHash = (Get-FileHash -LiteralPath $baselineCsvPath -Algorithm SHA256).Hash
     $currentHash = (Get-FileHash -LiteralPath $currentCsvPath -Algorithm SHA256).Hash
-    $baselineRows = @(Import-Csv -LiteralPath $baselineCsvPath)
     $currentRows = @(Import-Csv -LiteralPath $currentCsvPath)
 
-    if ($baselineHash -eq $currentHash) {
-        Write-Host "Card audit matches committed baseline ($($currentRows.Count) cards)."
-        return
+    foreach ($baseline in $knownBaselines) {
+        $baselineHash = (Get-FileHash -LiteralPath $baseline.CsvPath -Algorithm SHA256).Hash
+        if ($baselineHash -eq $currentHash) {
+            Write-Host "Card audit matches known baseline '$($baseline.Label)' ($($currentRows.Count) cards)."
+            return
+        }
     }
 
     $hasDiff = $true
+    $baselineCsvPath = $primaryBaselineCsvPath
+    $baselineRows = @(Import-Csv -LiteralPath $baselineCsvPath)
     $baselineByClass = @{}
     foreach ($row in $baselineRows) {
         $baselineByClass[$row.class_name] = $row
@@ -72,7 +102,8 @@ try {
         (Convert-CardRowForCompare $currentByClass[$_]) -ne (Convert-CardRowForCompare $baselineByClass[$_])
     })
 
-    Write-Warning "Card audit differs from committed baseline."
+    $knownBaselineLabels = @($knownBaselines | ForEach-Object { $_.Label }) -join ", "
+    Write-Warning "Card audit differs from known baselines: $knownBaselineLabels."
     Write-Warning "Baseline cards: $($baselineRows.Count); current cards: $($currentRows.Count)."
     if ($addedClasses.Count -gt 0) {
         Write-Warning "Added cards: $((@($addedClasses | Select-Object -First 20)) -join ', ')"
@@ -87,10 +118,10 @@ try {
     }
 
     Write-Warning "Current audit output kept for review: $tempAuditDir"
-    Write-Warning "Review new/reworked cards before updating docs/card-audit/cards.csv."
+    Write-Warning "Review new/reworked cards before updating docs/card-audit/cards.csv or adding a versioned baseline."
 
     if ($FailOnDiff) {
-        throw "Card audit differs from committed baseline."
+        throw "Card audit differs from known baselines."
     }
 }
 finally {

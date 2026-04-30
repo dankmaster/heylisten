@@ -36,14 +36,13 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 
 [b]Latest Release[/b]
 
-[b]0.99.1[/b]
+[b]0.99.2[/b]
 
 [list]
-[*]Fixed compatibility with recent Slay the Spire 2 updates by removing the direct [code]CombatManager.IsPlayPhase[/code] dependency that could throw [code]MissingMethodException[/code] while wiring state listeners.
-[*]Bubbles now fall back to the live combat state when checking the player play phase, so the mod keeps working across the old and updated combat APIs.
+[*]Removed a Vortex override file used for dev deployment.
 [/list]
 
-Tested with Slay the Spire 2 v0.103.2.
+Tested with Slay the Spire 2 v0.104.0.
 
 [b]Documentation and Changelog[/b]
 
@@ -99,7 +98,7 @@ After installation, the mod should appear here:
 
 [b]Vortex Notes[/b]
 
-The zip includes Vortex override instructions so Vortex can deploy [code]mods/heylisten[/code] to the game root correctly. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to Slay The Spire II Nexus mod ID:
+The zip is packed relative to the game root and contains [code]mods/heylisten[/code], which matches the Slay the Spire 2 Vortex Extension's root-folder installer. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to Slay The Spire II Nexus mod ID:
 
 [code]697[/code]
 

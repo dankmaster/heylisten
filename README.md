@@ -40,7 +40,7 @@ Launch the game normally after installing.
 
 ### Vortex / Nexus Mods
 
-Upload the Nexus-style `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy as the main Nexus Mods file. It is byte-identical to `Hey-Listen-<version>.zip`, packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder, and named so Vortex can infer the Nexus source. The package also includes Vortex override instructions that explicitly copy `mods/heylisten` into the game root.
+Upload the Nexus-style `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy as the main Nexus Mods file. It is byte-identical to `Hey-Listen-<version>.zip`, packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder, and named so Vortex can infer the Nexus source.
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
@@ -178,7 +178,15 @@ There is also a GitHub-hosted Nexus workflow available if you want GitHub to per
 
 Both Nexus publish paths use the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
-Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and future Nexus file rows default to `Hey Listen <version>`.
+Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and `prepare-release.ps1` also refreshes the Nexus page's latest-release and documentation/changelog block. After the Nexus upload, run the page helper to preview or submit the tracked page text and matching Nexus documentation changelog.
+
+To update the Nexus page copy and documentation changelog without uploading a file, use the browser-profile helper:
+
+```powershell
+.\scripts\update-nexus-page.ps1
+```
+
+It opens a local browser profile, previews the pending public page/changelog update, fills the page editor from `docs/NEXUS_PAGE.md`, and stops before saving. Run it with `-Save` after reviewing the browser window; that submit path updates the Nexus page text and appends missing Nexus documentation changelog lines without uploading a file.
 
 Before preparing a release after a Slay the Spire 2 branch switch or game update, run:
 
@@ -186,7 +194,7 @@ Before preparing a release after a Slay the Spire 2 branch switch or game update
 .\scripts\check-card-audit.ps1
 ```
 
-This compares the live game card export with the committed audit and warns when cards were added, removed, or changed. It is developer-only tooling and never runs for players.
+This compares the live game card export with the committed public-build audit and any reviewed beta baselines under `docs/card-audit/baselines/`. It warns when cards were added, removed, or changed outside those known snapshots. It is developer-only tooling and never runs for players.
 
 ## Local Co-op Testing
 

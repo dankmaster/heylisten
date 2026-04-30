@@ -508,6 +508,16 @@ namespace HeyListen
         {
             "poison",
         };
+        private static readonly string[] InkyEnchantmentNames =
+        {
+            "inky",
+            "enchantmentinky",
+        };
+        private static readonly string[] InstinctEnchantmentNames =
+        {
+            "instinct",
+            "enchantmentinstinct",
+        };
         private static readonly string[] SupportCardNames =
         {
             "beaconofhope",
@@ -3153,11 +3163,8 @@ namespace HeyListen
             var targetsSelf =
                 targetType == TargetType.Self ||
                 targetType == TargetType.None;
-            var isSupportCard =
-                card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly ||
-                targetsAlly ||
-                MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames);
-            var hasGenericSupportCallout = MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames);
+            var hasGenericSupportCallout = IsGenericSupportCard(card, targetsAlly, effectText, normalizedCardNames);
+            var isSupportCard = hasGenericSupportCallout;
 
             if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Vulnerable) &&
                 (MatchesAnyExactNormalized(normalizedCardNames, VulnerableCardNames) ||
@@ -3168,7 +3175,8 @@ namespace HeyListen
 
             if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Weak) &&
                 (MatchesAnyExactNormalized(normalizedCardNames, WeakCardNames) ||
-                HasStatusApplication(effectText, WeakEffectNames)))
+                HasStatusApplication(effectText, WeakEffectNames) ||
+                HasWeakEnchantment(card, targetsEnemy)))
             {
                 AddCallout(results, ref resultCount, StatusCallout.Weak, upgradeLevel, sourceCardName: cardDisplayName);
             }
@@ -3191,6 +3199,7 @@ namespace HeyListen
             if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.DoubleDamage) &&
                 (MatchesAnyExactNormalized(normalizedCardNames, DoubleDamageCardNames) ||
                 isDamageMultiplierCard ||
+                HasDamageMultiplierEnchantment(card) ||
                 HasDoubleDamageEffect(effectText)))
             {
                 AddCallout(
@@ -3291,11 +3300,11 @@ namespace HeyListen
             var names = new string[3];
             var count = 0;
             AddNormalizedCardName(names, ref count, card.GetType().Name);
-            AddNormalizedCardName(names, ref count, card.Title);
+            AddNormalizedCardName(names, ref count, SafeCardTitle(card));
             AddNormalizedCardName(
                 names,
                 ref count,
-                card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty);
+                SafeLocEntryKey(card.TitleLocString));
 
             var final = new string[count];
             Array.Copy(names, final, count);
@@ -3307,9 +3316,9 @@ namespace HeyListen
             var parts = new string[5];
             var partCount = 0;
             AddText(parts, ref partCount, card.GetType().Name);
-            AddText(parts, ref partCount, card.Title);
-            AddText(parts, ref partCount, card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty);
-            AddText(parts, ref partCount, card.Description != null ? card.Description.LocEntryKey : string.Empty);
+            AddText(parts, ref partCount, SafeCardTitle(card));
+            AddText(parts, ref partCount, SafeLocEntryKey(card.TitleLocString));
+            AddText(parts, ref partCount, SafeLocEntryKey(card.Description));
             AddText(parts, ref partCount, SafeFormatLocString(card.Description));
 
             return string.Join(" ", parts, 0, partCount).ToLowerInvariant();
@@ -3322,7 +3331,185 @@ namespace HeyListen
                 return string.Empty;
             }
 
-            return SafeFormatLocString(card.Description);
+            var effectText = new StringBuilder();
+            AppendEffectText(effectText, SafeFormatLocString(card.Description));
+
+            var enchantment = GetCardEnchantment(card);
+            if (enchantment != null)
+            {
+                AppendLocStringMemberText(effectText, enchantment, "Description");
+                AppendLocStringMemberText(effectText, enchantment, "DynamicDescription");
+                AppendLocStringMemberText(effectText, enchantment, "ExtraCardText");
+                AppendLocStringMemberText(effectText, enchantment, "DynamicExtraCardText");
+            }
+
+            return effectText.ToString();
+        }
+
+        private static bool IsGenericSupportCard(
+            CardModel card,
+            bool targetsAlly,
+            string effectText,
+            string[] normalizedCardNames)
+        {
+            if (MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames) || targetsAlly)
+            {
+                return true;
+            }
+
+            try
+            {
+                if (card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return HasSupportText(effectText);
+        }
+
+        private static bool HasSupportText(string effectText)
+        {
+            if (string.IsNullOrWhiteSpace(effectText))
+            {
+                return false;
+            }
+
+            var plainText = StripEffectMarkup(effectText);
+            return Regex.IsMatch(
+                plainText,
+                "\\b(?:another|other)\\s+players?\\b|\\ball\\s+(?:players|allies)\\b|\\b(?:ally|allies|teammates?|support)\\b",
+                RegexOptions.IgnoreCase);
+        }
+
+        private static bool HasWeakEnchantment(CardModel card, bool targetsEnemy)
+        {
+            return targetsEnemy && HasCardEnchantmentName(card, InkyEnchantmentNames);
+        }
+
+        private static bool HasDamageMultiplierEnchantment(CardModel card)
+        {
+            return IsAttackCard(card) && HasCardEnchantmentName(card, InstinctEnchantmentNames);
+        }
+
+        private static bool IsAttackCard(CardModel card)
+        {
+            try
+            {
+                return card.Type == CardType.Attack;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static object GetCardEnchantment(CardModel card)
+        {
+            if (card == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var property = typeof(CardModel).GetProperty(
+                    "Enchantment",
+                    BindingFlags.Public | BindingFlags.Instance);
+                return property != null ? property.GetValue(card) : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool HasCardEnchantmentName(CardModel card, params string[] normalizedTokens)
+        {
+            var enchantment = GetCardEnchantment(card);
+            if (enchantment == null)
+            {
+                return false;
+            }
+
+            var names = new string[5];
+            var count = 0;
+            AddNormalizedCardName(names, ref count, enchantment.GetType().Name);
+            AddNormalizedCardName(names, ref count, GetMemberText(enchantment, "Id"));
+            AddNormalizedCardName(names, ref count, SafeFormatLocString(GetLocStringMember(enchantment, "Title")));
+
+            for (var i = 0; i < count; i++)
+            {
+                if (MatchesExactNormalized(names[i], normalizedTokens))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AppendLocStringMemberText(StringBuilder builder, object instance, string memberName)
+        {
+            AppendEffectText(builder, SafeFormatLocString(GetLocStringMember(instance, memberName)));
+        }
+
+        private static void AppendEffectText(StringBuilder builder, string text)
+        {
+            if (builder == null || string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append(' ');
+            }
+
+            builder.Append(text);
+        }
+
+        private static LocString GetLocStringMember(object instance, string memberName)
+        {
+            return GetMemberValue(instance, memberName) as LocString;
+        }
+
+        private static string GetMemberText(object instance, string memberName)
+        {
+            var value = GetMemberValue(instance, memberName);
+            return value != null ? value.ToString() : string.Empty;
+        }
+
+        private static object GetMemberValue(object instance, string memberName)
+        {
+            if (instance == null || string.IsNullOrWhiteSpace(memberName))
+            {
+                return null;
+            }
+
+            try
+            {
+                var type = instance.GetType();
+                var property = type.GetProperty(
+                    memberName,
+                    BindingFlags.Public | BindingFlags.Instance);
+                if (property != null)
+                {
+                    return property.GetValue(instance);
+                }
+
+                var field = type.GetField(
+                    memberName,
+                    BindingFlags.Public | BindingFlags.Instance);
+                return field != null ? field.GetValue(instance) : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static bool HasStatusApplication(string effectText, params string[] statusNames)
@@ -3400,7 +3587,8 @@ namespace HeyListen
                 }
 
                 if (Regex.IsMatch(clause, "\\bdouble\\s+damage\\b", RegexOptions.IgnoreCase) ||
-                    Regex.IsMatch(clause, "\\bdouble\\b.{0,80}\\bdamage\\b", RegexOptions.IgnoreCase))
+                    Regex.IsMatch(clause, "\\bdouble\\b.{0,80}\\bdamage\\b", RegexOptions.IgnoreCase) ||
+                    Regex.IsMatch(clause, "\\bdamage\\b.{0,80}\\b(?:is\\s+)?doubl(?:e|ed|es|ing)\\b", RegexOptions.IgnoreCase))
                 {
                     return true;
                 }
@@ -3501,8 +3689,8 @@ namespace HeyListen
             }
 
             return Math.Max(
-                GetUpgradeLevelFromText(card.Title),
-                GetUpgradeLevelFromText(card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty));
+                GetUpgradeLevelFromText(SafeCardTitle(card)),
+                GetUpgradeLevelFromText(SafeLocEntryKey(card.TitleLocString)));
         }
 
         private static int GetUpgradeLevelFromText(string text)
@@ -3674,7 +3862,7 @@ namespace HeyListen
             var title = SafeFormatLocString(card.TitleLocString);
             if (string.IsNullOrWhiteSpace(title))
             {
-                title = card.Title;
+                title = SafeCardTitle(card);
             }
 
             if (string.IsNullOrWhiteSpace(title))
@@ -3686,6 +3874,40 @@ namespace HeyListen
             return upgradeLevel > 0
                 ? title + GetUpgradeSuffix(upgradeLevel)
                 : title;
+        }
+
+        private static string SafeCardTitle(CardModel card)
+        {
+            if (card == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return card.Title ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string SafeLocEntryKey(LocString locString)
+        {
+            if (locString == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return locString.LocEntryKey ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static SupportOfferScope GetSupportOfferScope(CardModel card)

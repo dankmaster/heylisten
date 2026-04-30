@@ -1,8 +1,7 @@
-0.99.1
+0.99.2
 
-- Fixed compatibility with recent Slay the Spire 2 updates by removing the direct `CombatManager.IsPlayPhase` dependency that could throw `MissingMethodException` while wiring state listeners.
-- Bubbles now fall back to the live combat state when checking the player play phase, so the mod keeps working across the old and updated combat APIs.
+- Removed a Vortex override file used for dev deployment.
 
-Tested with Slay the Spire 2 v0.103.2.
+Tested with Slay the Spire 2 v0.104.0.
 
 Install with Vortex or extract into the Slay the Spire 2 folder.

@@ -538,3 +538,145 @@ function Resolve-HeyListenReleaseNotes {
 
     return $Default
 }
+
+function ConvertTo-HeyListenNexusInlineBbCode {
+    param(
+        [string]$Text
+    )
+
+    if ($null -eq $Text) {
+        return ""
+    }
+
+    $converted = $Text
+    $converted = [Regex]::Replace($converted, '\*\*([^*]+)\*\*', {
+            param($match)
+            return "[b]$($match.Groups[1].Value)[/b]"
+        })
+    $converted = [Regex]::Replace($converted, '`([^`]+)`', {
+            param($match)
+            return "[code]$($match.Groups[1].Value)[/code]"
+        })
+
+    return $converted
+}
+
+function ConvertTo-HeyListenNexusBbCode {
+    param(
+        [string]$Markdown
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Markdown)) {
+        return ""
+    }
+
+    $output = New-Object 'System.Collections.Generic.List[string]'
+    $inList = $false
+    $lines = $Markdown.Trim() -split "\r?\n"
+
+    foreach ($line in $lines) {
+        if ($line -match '^\s*-\s+(?<item>.+)$') {
+            if (!$inList) {
+                [void]$output.Add("[list]")
+                $inList = $true
+            }
+
+            $itemText = ConvertTo-HeyListenNexusInlineBbCode $Matches['item']
+            [void]$output.Add("[*]$itemText")
+            continue
+        }
+
+        if ($inList) {
+            [void]$output.Add("[/list]")
+            $inList = $false
+        }
+
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            [void]$output.Add("")
+        }
+        else {
+            [void]$output.Add((ConvertTo-HeyListenNexusInlineBbCode $line))
+        }
+    }
+
+    if ($inList) {
+        [void]$output.Add("[/list]")
+    }
+
+    return (($output -join "`r`n").Trim())
+}
+
+function Sync-HeyListenNexusPageReleaseSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [string]$PagePath,
+        [string]$TestedGameVersion,
+        [string]$RepositoryUrl = "https://github.com/dankmaster/heylisten"
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $body = Get-HeyListenChangelogBody -Version $Version
+    if ([string]::IsNullOrWhiteSpace($body)) {
+        throw "CHANGELOG.md is missing a '## $Version' section. Add it before syncing the Nexus page copy."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($PagePath)) {
+        $PagePath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_PAGE.md"
+    }
+
+    if (!(Test-Path -LiteralPath $PagePath)) {
+        throw "Nexus page copy was not found: $PagePath"
+    }
+
+    $repositoryUrl = $RepositoryUrl.TrimEnd("/")
+    $releaseNotes = ConvertTo-HeyListenNexusBbCode $body
+    $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+    $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+        ""
+    }
+    else {
+        "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+    }
+
+    $releaseBlock = @"
+[b]Latest Release[/b]
+
+[b]$Version[/b]
+
+$releaseNotes$testedLine
+
+[b]Documentation and Changelog[/b]
+
+[list]
+[*][url=$repositoryUrl/blob/main/CHANGELOG.md]Full changelog[/url]
+[*][url=$repositoryUrl#readme]Readme and install notes[/url]
+[*][url=$repositoryUrl/blob/main/docs/PUBLISHING.md]Release packaging notes[/url]
+[/list]
+"@.Trim()
+
+    $content = Get-Content -LiteralPath $PagePath -Raw
+    $lineEnding = if ($content.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $releaseBlock = [Regex]::Replace($releaseBlock, "\r?\n", $lineEnding)
+    $languageHeading = "[b]Languages[/b]"
+    $startHeading = "[b]Latest Release[/b]"
+    $releasePattern = "(?s)" + [Regex]::Escape($startHeading) + ".*?(?=" + [Regex]::Escape($languageHeading) + ")"
+    $releaseRegex = [Regex]::new($releasePattern)
+
+    if ($releaseRegex.IsMatch($content)) {
+        $updated = $releaseRegex.Replace(
+            $content,
+            { param($match) return $releaseBlock + $lineEnding + $lineEnding },
+            1)
+    }
+    else {
+        $languageIndex = $content.IndexOf($languageHeading, [System.StringComparison]::Ordinal)
+        if ($languageIndex -lt 0) {
+            throw "Could not find '$languageHeading' in $PagePath."
+        }
+
+        $updated = $content.Insert($languageIndex, $releaseBlock + $lineEnding + $lineEnding)
+    }
+
+    Set-Content -LiteralPath $PagePath -Value $updated -NoNewline
+    return $releaseBlock
+}

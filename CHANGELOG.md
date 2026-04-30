@@ -1,14 +1,23 @@
 # Changelog
 
+## 0.99.2
+
+- Removed a Vortex override file used for dev deployment.
+
 ## 0.99.1
 
 - Fixed compatibility with recent Slay the Spire 2 updates by removing the direct `CombatManager.IsPlayPhase` dependency that could throw `MissingMethodException` while wiring state listeners.
 - Bubbles now fall back to the live combat state when checking the player play phase, so the mod keeps working across the old and updated combat APIs.
+- Added public beta `v0.104.0` card audit support while keeping the current public-build audit as a valid baseline.
+- Broadened support-card and enchantment detection so future multiplayer cards, Inky cards, and Instinct attack cards can be called out without a new hardcoded card list.
+- Removed the Vortex override file from new packages so the Slay the Spire 2 Vortex extension can install the standard `mods/heylisten` game-root layout directly.
 
 ## 0.99
 
 - Added developer-only card audit checking so local Slay the Spire 2 card changes can be compared against the committed audit before release.
 - Added tested-game-version release notes, defaulting to the local Slay the Spire 2 `release_info.json` version when preparing a release.
+- Updated release preparation so the tracked Nexus mod page copy gets a latest-release, documentation, and changelog block during the normal Nexus release flow.
+- Added a page-only Nexus browser helper that previews/submits tracked mod page copy and append-only Nexus documentation changelog updates without uploading a file.
 - Suppressed conditional setup and engine cards such as `Rupture`, `Arsenal`, `Envenom`, and `Shadow Step` from immediate status bubbles.
 - Added damage-multiplier wording so upgraded `Knockdown` is called out as `Triple Damage`.
 - Added optional `Card Names` wording so the primary status callout can name its source card.

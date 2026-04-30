@@ -60,26 +60,6 @@ foreach ($path in $cleanupPaths) {
 New-Item -ItemType Directory -Force $gameRootPackageModsDir | Out-Null
 Copy-Item -LiteralPath $distModDir -Destination $gameRootPackageModsDir -Recurse -Force
 
-$vortexInstructions = New-Object System.Collections.Generic.List[object]
-$vortexInstructions.Add([ordered]@{
-    type = "setmodtype"
-    value = "dinput"
-}) | Out-Null
-
-Get-ChildItem -LiteralPath (Join-Path $gameRootPackageRoot "mods\heylisten") -File -Recurse |
-    ForEach-Object {
-        $relativePath = [System.IO.Path]::GetRelativePath($gameRootPackageRoot, $_.FullName).Replace("\", "/")
-        $vortexInstructions.Add([ordered]@{
-            type = "copy"
-            source = $relativePath
-            destination = $relativePath
-        }) | Out-Null
-    }
-
-$vortexInstructions |
-    ConvertTo-Json -Depth 4 |
-    Set-Content -LiteralPath (Join-Path $gameRootPackageRoot "vortex_override_instructions.json") -Encoding UTF8
-
 Compress-Archive -Path (Join-Path $gameRootPackageRoot "*") -DestinationPath $gameRootZipPath -Force
 
 & (Join-Path $PSScriptRoot "verify-package.ps1") -Version $Version -BuildRoot $BuildRoot
