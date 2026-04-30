@@ -27,6 +27,13 @@ $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $nexusPagePath = Join-Path $repoRoot "docs\NEXUS_PAGE.md"
 
 $Version = Resolve-HeyListenVersion $Version
+if ($SkipGitHub -and !$SkipNexus) {
+    throw "Nexus publishing requires the matching GitHub release to be published first. Remove -SkipGitHub or add -SkipNexus."
+}
+
+if ($Draft -and !$SkipNexus) {
+    throw "Nexus publishing requires a public GitHub release. Use -Draft only with -SkipNexus."
+}
 
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"

@@ -65,6 +65,52 @@ if ($DryRun) {
     return
 }
 
+$gh = Get-Command gh -ErrorAction SilentlyContinue
+if (!$gh) {
+    throw "Nexus upload blocked: GitHub release check requires the GitHub CLI. Run publish-github-release.ps1 first from an environment with gh available."
+}
+
+$tag = "v$Version"
+Push-Location $repoRoot
+try {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $releaseJson = & $gh.Source release view $tag --json assets,isDraft 2>$null
+    $releaseViewExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+
+    if ($releaseViewExitCode -ne 0) {
+        throw "Nexus upload blocked: GitHub release $tag does not exist. Run .\scripts\publish-github-release.ps1 -NoDraft first, or use .\scripts\publish-local-release.ps1."
+    }
+
+    $release = $releaseJson | ConvertFrom-Json
+    if ($release.isDraft) {
+        throw "Nexus upload blocked: GitHub release $tag is still a draft. Publish it before uploading to Nexus."
+    }
+
+    $zipHash = ((Get-FileHash -LiteralPath $ZipPath -Algorithm SHA256).Hash).ToLowerInvariant()
+    $matchingAssets = @($release.assets | Where-Object {
+        $digest = [string]$_.digest
+        $_.name.EndsWith(".zip") -and
+            ![string]::IsNullOrWhiteSpace($digest) -and
+            $digest.Replace("sha256:", "").ToLowerInvariant() -eq $zipHash
+    })
+
+    if ($matchingAssets.Count -eq 0) {
+        $assetNames = @($release.assets |
+            Where-Object { $_.name.EndsWith(".zip") } |
+            ForEach-Object { $_.name }) -join ", "
+        if ([string]::IsNullOrWhiteSpace($assetNames)) {
+            $assetNames = "none"
+        }
+
+        throw "Nexus upload blocked: no public GitHub $tag zip asset matches the local package hash. Existing GitHub zip assets: $assetNames. Run .\scripts\publish-github-release.ps1 -NoDraft before uploading to Nexus."
+    }
+}
+finally {
+    Pop-Location
+}
+
 if ([string]::IsNullOrWhiteSpace($NexusApiKey)) {
     $NexusApiKey = Resolve-NexusApiKey -Optional
 }

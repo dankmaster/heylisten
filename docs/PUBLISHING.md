@@ -129,13 +129,14 @@ This does all of the following:
 
 - Builds the mod against your local game files.
 - Creates or updates the GitHub release and uploads the release zips.
+- Blocks Nexus publishing if GitHub publishing is skipped or left as a draft, so GitHub cannot lag behind Nexus.
 - Uploads the Nexus-style source-hint zip to Nexus Mods from your machine, falling back to `Hey-Listen-<version>.zip` only if the source-hint copy is missing.
 - Sends the Nexus API `version`, `display_name`, and `description` fields from the prepared release data.
 - Prints the tracked Nexus page copy path so the public mod page and Nexus documentation changelog can be updated after the file upload.
 
 The Nexus file display name defaults to `Hey Listen <version>`, for example `Hey Listen 0.96`. This keeps archived Nexus rows readable.
 
-By default this creates a public GitHub release. Add `-Draft` if you want the GitHub release to stay in draft mode.
+By default this creates a public GitHub release. Add `-Draft -SkipNexus` if you want to prepare the GitHub release without uploading to Nexus yet.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
@@ -210,6 +211,8 @@ To upload directly from your local machine:
 ```powershell
 .\scripts\publish-nexus-local.ps1
 ```
+
+The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same SHA-256 hash as the local package. Use the full local publish command for normal releases so GitHub is created first.
 
 To configure the local API key once:
 

@@ -138,7 +138,7 @@ Use this from your own machine when you want to build against your local Slay th
 .\scripts\publish-local-release.ps1 -ArchiveExistingFile
 ```
 
-The script keeps game DLLs local. GitHub only receives the built release zip, and Nexus Mods receives that same zip.
+The script keeps game DLLs local. GitHub receives the built release zips first, and Nexus Mods receives a zip with the same package hash. Nexus publishing is blocked if GitHub publishing is skipped or left as a draft.
 
 The Nexus file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
 
@@ -170,13 +170,15 @@ After the GitHub release is ready and the Nexus mod page has a file group, you c
 .\scripts\publish-nexus-local.ps1
 ```
 
+The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash.
+
 There is also a GitHub-hosted Nexus workflow available if you want GitHub to perform only the final Nexus upload:
 
 ```powershell
 .\scripts\publish-nexus.ps1
 ```
 
-Both Nexus publish paths use the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
+See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the local Nexus uploader and the optional GitHub-hosted Nexus workflow.
 
 Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and `prepare-release.ps1` also refreshes the Nexus page's latest-release and documentation/changelog block. After the Nexus upload, run the page helper to preview or submit the tracked page text and matching Nexus documentation changelog.
 
