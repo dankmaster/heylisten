@@ -297,6 +297,50 @@ function Resolve-HeyListenReleaseDisplayName {
     return "Hey Listen $Version"
 }
 
+function Format-Sts2VersionLabel {
+    param([string]$Version)
+
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        return $null
+    }
+
+    $label = $Version.Trim()
+    if (!$label.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $label = "v$label"
+    }
+
+    return $label
+}
+
+function Get-Sts2ReleaseInfoVersion {
+    param(
+        [string]$GameRoot,
+        [switch]$Optional
+    )
+
+    try {
+        $resolvedGameRoot = Resolve-Sts2GameRoot $GameRoot
+        $releaseInfoPath = Join-Path $resolvedGameRoot "release_info.json"
+        if (!(Test-Path -LiteralPath $releaseInfoPath)) {
+            if ($Optional) {
+                return $null
+            }
+
+            throw "release_info.json was not found under: $resolvedGameRoot"
+        }
+
+        $releaseInfo = Get-Content -LiteralPath $releaseInfoPath -Raw | ConvertFrom-Json
+        return Format-Sts2VersionLabel $releaseInfo.version
+    }
+    catch {
+        if ($Optional) {
+            return $null
+        }
+
+        throw
+    }
+}
+
 function Get-HeyListenNexusStyleFileName {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
@@ -434,7 +478,8 @@ function Set-HeyListenChangelogBody {
 function Sync-HeyListenReleaseNotes {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
-        [string]$OutputPath
+        [string]$OutputPath,
+        [string]$TestedGameVersion
     )
 
     $Version = Resolve-HeyListenVersion $Version
@@ -447,7 +492,15 @@ function Sync-HeyListenReleaseNotes {
         $OutputPath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_FILE_DESCRIPTION.md"
     }
 
-    $notes = "$Version`r`n`r`n$body`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+    $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+    $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+        ""
+    }
+    else {
+        "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+    }
+
+    $notes = "$Version`r`n`r`n$body$testedLine`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
     Set-Content -LiteralPath $OutputPath -Value $notes -NoNewline
     return $notes
 }
@@ -457,22 +510,173 @@ function Resolve-HeyListenReleaseNotes {
         [string]$Version,
         [string]$Value,
         [string]$Path,
-        [string]$Default
+        [string]$Default,
+        [string]$TestedGameVersion
     )
 
     if (![string]::IsNullOrWhiteSpace($Value)) {
         return $Value.Trim()
     }
 
-    $changelogBody = Get-HeyListenChangelogBody -Version $Version
-    if (![string]::IsNullOrWhiteSpace($changelogBody)) {
-        $Version = Resolve-HeyListenVersion $Version
-        return "$Version`r`n`r`n$changelogBody`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
-    }
-
     if (![string]::IsNullOrWhiteSpace($Path) -and (Test-Path -LiteralPath $Path)) {
         return (Get-Content -LiteralPath $Path -Raw).Trim()
     }
 
+    $changelogBody = Get-HeyListenChangelogBody -Version $Version
+    if (![string]::IsNullOrWhiteSpace($changelogBody)) {
+        $Version = Resolve-HeyListenVersion $Version
+        $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+        $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+            ""
+        }
+        else {
+            "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+        }
+
+        return "$Version`r`n`r`n$changelogBody$testedLine`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+    }
+
     return $Default
+}
+
+function ConvertTo-HeyListenNexusInlineBbCode {
+    param(
+        [string]$Text
+    )
+
+    if ($null -eq $Text) {
+        return ""
+    }
+
+    $converted = $Text
+    $converted = [Regex]::Replace($converted, '\*\*([^*]+)\*\*', {
+            param($match)
+            return "[b]$($match.Groups[1].Value)[/b]"
+        })
+    $converted = [Regex]::Replace($converted, '`([^`]+)`', {
+            param($match)
+            return "[code]$($match.Groups[1].Value)[/code]"
+        })
+
+    return $converted
+}
+
+function ConvertTo-HeyListenNexusBbCode {
+    param(
+        [string]$Markdown
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Markdown)) {
+        return ""
+    }
+
+    $output = New-Object 'System.Collections.Generic.List[string]'
+    $inList = $false
+    $lines = $Markdown.Trim() -split "\r?\n"
+
+    foreach ($line in $lines) {
+        if ($line -match '^\s*-\s+(?<item>.+)$') {
+            if (!$inList) {
+                [void]$output.Add("[list]")
+                $inList = $true
+            }
+
+            $itemText = ConvertTo-HeyListenNexusInlineBbCode $Matches['item']
+            [void]$output.Add("[*]$itemText")
+            continue
+        }
+
+        if ($inList) {
+            [void]$output.Add("[/list]")
+            $inList = $false
+        }
+
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            [void]$output.Add("")
+        }
+        else {
+            [void]$output.Add((ConvertTo-HeyListenNexusInlineBbCode $line))
+        }
+    }
+
+    if ($inList) {
+        [void]$output.Add("[/list]")
+    }
+
+    return (($output -join "`r`n").Trim())
+}
+
+function Sync-HeyListenNexusPageReleaseSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [string]$PagePath,
+        [string]$TestedGameVersion,
+        [string]$RepositoryUrl = "https://github.com/dankmaster/heylisten"
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $body = Get-HeyListenChangelogBody -Version $Version
+    if ([string]::IsNullOrWhiteSpace($body)) {
+        throw "CHANGELOG.md is missing a '## $Version' section. Add it before syncing the Nexus page copy."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($PagePath)) {
+        $PagePath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_PAGE.md"
+    }
+
+    if (!(Test-Path -LiteralPath $PagePath)) {
+        throw "Nexus page copy was not found: $PagePath"
+    }
+
+    $repositoryUrl = $RepositoryUrl.TrimEnd("/")
+    $releaseNotes = ConvertTo-HeyListenNexusBbCode $body
+    $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+    $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+        ""
+    }
+    else {
+        "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+    }
+
+    $releaseBlock = @"
+[b]Latest Release[/b]
+
+[b]$Version[/b]
+
+$releaseNotes$testedLine
+
+[b]Documentation and Changelog[/b]
+
+[list]
+[*][url=$repositoryUrl/blob/main/CHANGELOG.md]Full changelog[/url]
+[*][url=$repositoryUrl#readme]Readme and install notes[/url]
+[*][url=$repositoryUrl/blob/main/docs/PUBLISHING.md]Release packaging notes[/url]
+[/list]
+"@.Trim()
+
+    $content = Get-Content -LiteralPath $PagePath -Raw
+    $lineEnding = if ($content.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $releaseBlock = [Regex]::Replace($releaseBlock, "\r?\n", $lineEnding)
+    $languageHeading = "[b]Languages[/b]"
+    $startHeading = "[b]Latest Release[/b]"
+    $releasePattern = "(?s)" + [Regex]::Escape($startHeading) + ".*?(?=" + [Regex]::Escape($languageHeading) + ")"
+    $releaseRegex = [Regex]::new($releasePattern)
+
+    if ($releaseRegex.IsMatch($content)) {
+        $updated = $releaseRegex.Replace(
+            $content,
+            { param($match) return $releaseBlock + $lineEnding + $lineEnding },
+            1)
+    }
+    else {
+        $languageIndex = $content.IndexOf($languageHeading, [System.StringComparison]::Ordinal)
+        if ($languageIndex -lt 0) {
+            throw "Could not find '$languageHeading' in $PagePath."
+        }
+
+        $updated = $content.Insert($languageIndex, $releaseBlock + $lineEnding + $lineEnding)
+    }
+
+    Set-Content -LiteralPath $PagePath -Value $updated -NoNewline
+    return $releaseBlock
 }

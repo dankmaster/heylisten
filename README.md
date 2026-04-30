@@ -13,6 +13,8 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Translation packs for the same language IDs exposed by the base game, with Auto following the game's language setting by default.
 - Customizable callout intro text, defaulting to the selected language's `Hey, listen!` equivalent.
 - Optional self bubbles so players can keep teammate reminders without showing their own hand reminders.
+- Optional card-name wording so callouts can name the source card for the primary status.
+- Per-status filters for players who want to hide noisier categories such as Poison, Focus, or Double Damage.
 - Click any callout bubble to acknowledge it.
 - Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
 - Optional filtering to only show cards the holder can currently afford and play.
@@ -38,7 +40,7 @@ Launch the game normally after installing.
 
 ### Vortex / Nexus Mods
 
-Upload the Nexus-style `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy as the main Nexus Mods file. It is byte-identical to `Hey-Listen-<version>.zip`, packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder, and named so Vortex can infer the Nexus source. The package also includes Vortex override instructions that explicitly copy `mods/heylisten` into the game root.
+Upload the Nexus-style `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy as the main Nexus Mods file. It is byte-identical to `Hey-Listen-<version>.zip`, packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder, and named so Vortex can infer the Nexus source.
 
 Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
@@ -53,7 +55,9 @@ The mod works without extra configuration. If ModConfig is installed, it adds:
 - `Callout Intro`
 - `Self Bubbles`
 - `Playable Now Only`
+- `Card Names`
 - `Include Support`
+- Individual callout toggles for Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage
 - `Bubble Timer`
 
 Settings are stored under:
@@ -69,6 +73,8 @@ You can also set `language` to a pack code such as `eng`, `deu`, `esp`, `fra`, `
 The `callout_intro` value defaults to an empty string, which uses the selected language's `bubble_intro` translation. Set it to custom text if you want the first bubble line to say something else.
 
 The `show_self_callouts` value defaults to `true`. Set it to `false` to hide bubbles above your own character while still seeing teammate bubbles.
+
+The `show_card_names` value defaults to `false`, preserving the original status-only wording. Set it to `true` to name the source card for the primary status callout, such as `I can play Bash for Vulnerable`.
 
 Translation packs are regular JSON files stored under:
 
@@ -172,7 +178,23 @@ There is also a GitHub-hosted Nexus workflow available if you want GitHub to per
 
 Both Nexus publish paths use the official Nexus Mods upload action. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
-Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and future Nexus file rows default to `Hey Listen <version>`.
+Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and `prepare-release.ps1` also refreshes the Nexus page's latest-release and documentation/changelog block. After the Nexus upload, run the page helper to preview or submit the tracked page text and matching Nexus documentation changelog.
+
+To update the Nexus page copy and documentation changelog without uploading a file, use the browser-profile helper:
+
+```powershell
+.\scripts\update-nexus-page.ps1
+```
+
+It opens a local browser profile, previews the pending public page/changelog update, fills the page editor from `docs/NEXUS_PAGE.md`, and stops before saving. Run it with `-Save` after reviewing the browser window; that submit path updates the Nexus page text and appends missing Nexus documentation changelog lines without uploading a file.
+
+Before preparing a release after a Slay the Spire 2 branch switch or game update, run:
+
+```powershell
+.\scripts\check-card-audit.ps1
+```
+
+This compares the live game card export with the committed public-build audit and any reviewed beta baselines under `docs/card-audit/baselines/`. It warns when cards were added, removed, or changed outside those known snapshots. It is developer-only tooling and never runs for players.
 
 ## Local Co-op Testing
 

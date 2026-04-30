@@ -67,6 +67,8 @@ namespace HeyListen
     {
         public StatusCallout Callout;
         public int UpgradeLevel;
+        public string PlainDisplayNameOverride;
+        public string SourceCardName;
         public string SupportCardName;
         public SupportOfferScope SupportScope;
     }
@@ -289,6 +291,14 @@ namespace HeyListen
         public bool ShowSelfCallouts { get; set; } = true;
         public bool OnlyShowPlayableNow { get; set; } = true;
         public bool ShowGenericSupport { get; set; } = true;
+        public bool ShowCardNames { get; set; } = false;
+        public bool ShowVulnerable { get; set; } = true;
+        public bool ShowWeak { get; set; } = true;
+        public bool ShowStrength { get; set; } = true;
+        public bool ShowVigor { get; set; } = true;
+        public bool ShowFocus { get; set; } = true;
+        public bool ShowPoison { get; set; } = true;
+        public bool ShowDoubleDamage { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
 
         public static HeyListenConfig Load()
@@ -312,10 +322,26 @@ namespace HeyListen
                 config.ShowSelfCallouts = ReadBool(raw, "show_self_callouts", config.ShowSelfCallouts);
                 config.OnlyShowPlayableNow = ReadBool(raw, "only_show_playable_now", config.OnlyShowPlayableNow);
                 config.ShowGenericSupport = ReadBool(raw, "show_generic_support", config.ShowGenericSupport);
+                config.ShowCardNames = ReadBool(raw, "show_card_names", config.ShowCardNames);
+                config.ShowVulnerable = ReadBool(raw, "show_vulnerable", config.ShowVulnerable);
+                config.ShowWeak = ReadBool(raw, "show_weak", config.ShowWeak);
+                config.ShowStrength = ReadBool(raw, "show_strength", config.ShowStrength);
+                config.ShowVigor = ReadBool(raw, "show_vigor", config.ShowVigor);
+                config.ShowFocus = ReadBool(raw, "show_focus", config.ShowFocus);
+                config.ShowPoison = ReadBool(raw, "show_poison", config.ShowPoison);
+                config.ShowDoubleDamage = ReadBool(raw, "show_double_damage", config.ShowDoubleDamage);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
                 if (!HasKey(raw, "language") ||
                     !HasKey(raw, "callout_intro") ||
-                    !HasKey(raw, "show_self_callouts"))
+                    !HasKey(raw, "show_self_callouts") ||
+                    !HasKey(raw, "show_card_names") ||
+                    !HasKey(raw, "show_vulnerable") ||
+                    !HasKey(raw, "show_weak") ||
+                    !HasKey(raw, "show_strength") ||
+                    !HasKey(raw, "show_vigor") ||
+                    !HasKey(raw, "show_focus") ||
+                    !HasKey(raw, "show_poison") ||
+                    !HasKey(raw, "show_double_damage"))
                 {
                     config.Save();
                 }
@@ -352,6 +378,14 @@ namespace HeyListen
             sb.AppendLine($"  \"show_self_callouts\": {ShowSelfCallouts.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"only_show_playable_now\": {OnlyShowPlayableNow.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_generic_support\": {ShowGenericSupport.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_card_names\": {ShowCardNames.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_vulnerable\": {ShowVulnerable.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_weak\": {ShowWeak.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_strength\": {ShowStrength.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_vigor\": {ShowVigor.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_focus\": {ShowFocus.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_poison\": {ShowPoison.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"show_double_damage\": {ShowDoubleDamage.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
             sb.AppendLine("}");
             return sb.ToString();
@@ -417,6 +451,14 @@ namespace HeyListen
         private const string ShowSelfCalloutsKey = "show_self_callouts";
         private const string OnlyShowPlayableNowKey = "only_show_playable_now";
         private const string ShowGenericSupportKey = "show_generic_support";
+        private const string ShowCardNamesKey = "show_card_names";
+        private const string ShowVulnerableKey = "show_vulnerable";
+        private const string ShowWeakKey = "show_weak";
+        private const string ShowStrengthKey = "show_strength";
+        private const string ShowVigorKey = "show_vigor";
+        private const string ShowFocusKey = "show_focus";
+        private const string ShowPoisonKey = "show_poison";
+        private const string ShowDoubleDamageKey = "show_double_damage";
         private const string DisplaySecondsKey = "display_seconds";
         private const int MaxCalloutIntroLength = 64;
         private const long DebouncedRefreshWindowMs = 45L;
@@ -465,6 +507,16 @@ namespace HeyListen
         private static readonly string[] PoisonEffectNames =
         {
             "poison",
+        };
+        private static readonly string[] InkyEnchantmentNames =
+        {
+            "inky",
+            "enchantmentinky",
+        };
+        private static readonly string[] InstinctEnchantmentNames =
+        {
+            "instinct",
+            "enchantmentinstinct",
         };
         private static readonly string[] SupportCardNames =
         {
@@ -521,7 +573,6 @@ namespace HeyListen
             "defy",
             "fallingstar",
             "gammablast",
-            "gofortheeyes",
             "knowthyplace",
             "legsweep",
             "madscience",
@@ -537,33 +588,30 @@ namespace HeyListen
         };
         private static readonly string[] StrengthCardNames =
         {
-            "arsenal",
             "brand",
             "bulkup",
             "coordinate",
-            "demonform",
-            "dominate",
             "feedingfrenzy",
             "fightme",
             "inflame",
-            "monologue",
             "prowess",
             "resonance",
-            "rupture",
             "setupstrike",
         };
         private static readonly string[] VigorCardNames =
         {
             "patter",
-            "preptime",
             "terraforming",
         };
         private static readonly string[] DoubleDamageCardNames =
         {
             "conqueror",
             "flanking",
-            "shadowstep",
             "tracking",
+        };
+        private static readonly string[] DamageMultiplierCardNames =
+        {
+            "knockdown",
         };
         private static readonly string[] FocusCardNames =
         {
@@ -571,19 +619,45 @@ namespace HeyListen
             "defragment",
             "focusedstrike",
             "hotfix",
-            "synchronize",
         };
         private static readonly string[] PoisonCardNames =
         {
             "bouncingflask",
-            "bubblebubble",
-            "corrosivewave",
             "deadlypoison",
-            "envenom",
             "haze",
-            "noxiousfumes",
             "poisonedstab",
             "snakebite",
+        };
+        private static readonly string[] SuppressedStrengthCardNames =
+        {
+            "arsenal",
+            "demonform",
+            "dominate",
+            "monologue",
+            "rupture",
+        };
+        private static readonly string[] SuppressedVigorCardNames =
+        {
+            "preptime",
+        };
+        private static readonly string[] SuppressedDoubleDamageCardNames =
+        {
+            "shadowstep",
+        };
+        private static readonly string[] SuppressedFocusCardNames =
+        {
+            "synchronize",
+        };
+        private static readonly string[] SuppressedPoisonCardNames =
+        {
+            "bubblebubble",
+            "corrosivewave",
+            "envenom",
+            "noxiousfumes",
+        };
+        private static readonly string[] SuppressedWeakCardNames =
+        {
+            "gofortheeyes",
         };
 
         private static long _lastRefreshAtUnixMs;
@@ -833,7 +907,8 @@ namespace HeyListen
 
             try
             {
-                var entries = Array.CreateInstance(entryType, 7);
+                var entries = Array.CreateInstance(entryType, 15);
+                var entryIndex = 0;
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -842,7 +917,7 @@ namespace HeyListen
                     "Master toggle for self and teammate speech bubbles in co-op combat.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.Enabled,
-                    new Action<object>(value => ApplyEnabledSetting(ConvertToBool(value, true), true))), 0);
+                    new Action<object>(value => ApplyEnabledSetting(ConvertToBool(value, true), true))), entryIndex++);
                 var languageEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -853,7 +928,7 @@ namespace HeyListen
                     GetLanguageOptionLabel(Config.Language),
                     new Action<object>(value => ApplyLanguageSetting(ConvertToString(value, Config.Language), true)));
                 ConfigureDropdownEntry(entryType, languageEntry, BuildLanguageOptions());
-                entries.SetValue(languageEntry, 1);
+                entries.SetValue(languageEntry, entryIndex++);
                 var calloutIntroEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -864,7 +939,7 @@ namespace HeyListen
                     Config.CalloutIntro,
                     new Action<object>(value => ApplyCalloutIntroSetting(ConvertToStringAllowEmpty(value, Config.CalloutIntro), true)));
                 ConfigureTextInputEntry(entryType, calloutIntroEntry, MaxCalloutIntroLength, Translate("bubble_intro"));
-                entries.SetValue(calloutIntroEntry, 2);
+                entries.SetValue(calloutIntroEntry, entryIndex++);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -873,7 +948,7 @@ namespace HeyListen
                     "Show callout bubbles above your own character when you hold useful cards.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.ShowSelfCallouts,
-                    new Action<object>(value => ApplyShowSelfCalloutsSetting(ConvertToBool(value, true), true))), 3);
+                    new Action<object>(value => ApplyShowSelfCalloutsSetting(ConvertToBool(value, true), true))), entryIndex++);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -882,7 +957,16 @@ namespace HeyListen
                     "Only show bubbles for cards the holder can currently afford and play this turn.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.OnlyShowPlayableNow,
-                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), 4);
+                    new Action<object>(value => ApplyOnlyShowPlayableNowSetting(ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowCardNamesKey,
+                    "Card Names",
+                    "Name the source card for the primary status callout, such as playing Bash for Vulnerable.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowCardNames,
+                    new Action<object>(value => ApplyShowCardNamesSetting(ConvertToBool(value, false), true))), entryIndex++);
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -891,7 +975,70 @@ namespace HeyListen
                     "Show a generic Support bubble for ally-helping cards even when no named status keyword was matched.",
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.ShowGenericSupport,
-                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), 5);
+                    new Action<object>(value => ApplyShowGenericSupportSetting(ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowVulnerableKey,
+                    "Vulnerable",
+                    "Show callouts for cards that apply Vulnerable.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowVulnerable,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowVulnerableKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowWeakKey,
+                    "Weak",
+                    "Show callouts for cards that apply Weak.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowWeak,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowWeakKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowStrengthKey,
+                    "Strength",
+                    "Show callouts for cards that grant Strength.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowStrength,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowStrengthKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowVigorKey,
+                    "Vigor",
+                    "Show callouts for cards that grant Vigor.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowVigor,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowVigorKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowFocusKey,
+                    "Focus",
+                    "Show callouts for cards that grant Focus.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowFocus,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowFocusKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowPoisonKey,
+                    "Poison",
+                    "Show callouts for cards that apply Poison.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowPoison,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowPoisonKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    ShowDoubleDamageKey,
+                    "Double Damage",
+                    "Show callouts for cards that set up Double Damage.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.ShowDoubleDamage,
+                    new Action<object>(value => ApplyCalloutFilterSetting(ShowDoubleDamageKey, ConvertToBool(value, true), true))), entryIndex++);
                 var displaySecondsEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -908,7 +1055,7 @@ namespace HeyListen
                     MaxBubbleDisplaySeconds,
                     1f,
                     "{0}s");
-                entries.SetValue(displaySecondsEntry, 6);
+                entries.SetValue(displaySecondsEntry, entryIndex++);
 
                 var registerMethod = apiType.GetMethod(
                     "Register",
@@ -938,8 +1085,39 @@ namespace HeyListen
                 ApplyOnlyShowPlayableNowSetting(
                     ReadModConfigBool(apiType, OnlyShowPlayableNowKey, Config.OnlyShowPlayableNow),
                     false);
+                ApplyShowCardNamesSetting(
+                    ReadModConfigBool(apiType, ShowCardNamesKey, Config.ShowCardNames),
+                    false);
                 ApplyShowGenericSupportSetting(
                     ReadModConfigBool(apiType, ShowGenericSupportKey, Config.ShowGenericSupport),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowVulnerableKey,
+                    ReadModConfigBool(apiType, ShowVulnerableKey, Config.ShowVulnerable),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowWeakKey,
+                    ReadModConfigBool(apiType, ShowWeakKey, Config.ShowWeak),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowStrengthKey,
+                    ReadModConfigBool(apiType, ShowStrengthKey, Config.ShowStrength),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowVigorKey,
+                    ReadModConfigBool(apiType, ShowVigorKey, Config.ShowVigor),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowFocusKey,
+                    ReadModConfigBool(apiType, ShowFocusKey, Config.ShowFocus),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowPoisonKey,
+                    ReadModConfigBool(apiType, ShowPoisonKey, Config.ShowPoison),
+                    false);
+                ApplyCalloutFilterSetting(
+                    ShowDoubleDamageKey,
+                    ReadModConfigBool(apiType, ShowDoubleDamageKey, Config.ShowDoubleDamage),
                     false);
                 ApplyDisplaySecondsSetting(
                     ReadModConfigFloat(apiType, DisplaySecondsKey, Config.DisplaySeconds),
@@ -1249,9 +1427,58 @@ namespace HeyListen
             ForceRefresh();
         }
 
+        private static void ApplyShowCardNamesSetting(bool showCardNames, bool save)
+        {
+            Config.ShowCardNames = showCardNames;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ClearAcknowledgements();
+            ForceRefresh();
+        }
+
         private static void ApplyShowGenericSupportSetting(bool showGenericSupport, bool save)
         {
             Config.ShowGenericSupport = showGenericSupport;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            ForceRefresh();
+        }
+
+        private static void ApplyCalloutFilterSetting(string key, bool enabled, bool save)
+        {
+            switch (key)
+            {
+                case ShowVulnerableKey:
+                    Config.ShowVulnerable = enabled;
+                    break;
+                case ShowWeakKey:
+                    Config.ShowWeak = enabled;
+                    break;
+                case ShowStrengthKey:
+                    Config.ShowStrength = enabled;
+                    break;
+                case ShowVigorKey:
+                    Config.ShowVigor = enabled;
+                    break;
+                case ShowFocusKey:
+                    Config.ShowFocus = enabled;
+                    break;
+                case ShowPoisonKey:
+                    Config.ShowPoison = enabled;
+                    break;
+                case ShowDoubleDamageKey:
+                    Config.ShowDoubleDamage = enabled;
+                    break;
+                default:
+                    return;
+            }
+
             if (save)
             {
                 Config.Save();
@@ -1365,18 +1592,24 @@ namespace HeyListen
             pack.Name = "English";
             SetTranslation(pack, "bubble_intro", "Hey, listen!");
             SetTranslation(pack, "message.single", "I have {0}");
+            SetTranslation(pack, "message.card_single", "I can play {0} for {1}");
+            SetTranslation(pack, "message.card_two", "I can play {0} for {1} and have {2}");
+            SetTranslation(pack, "message.card_many", "I can play {0} for {1} +{2} more");
             SetTranslation(pack, "message.support", "I have a {0}");
             SetTranslation(pack, "message.support_upgraded", "I have an {0}");
             SetTranslation(pack, "message.support_action", "I can use {0} {1}");
             SetTranslation(pack, "message.two", "I have {0} and {1}");
+            SetTranslation(pack, "message.card_two_with_support_action", "I can play {0} for {1} and can use {2} {3}");
             SetTranslation(pack, "message.two_with_support_action", "I have {0} and can use {1} {2}");
             SetTranslation(pack, "message.many", "I have {0} +{1} more");
+            SetTranslation(pack, "message.card_many_with_support_action", "I can play {0} for {1} +{2} more and can use {3} {4}");
             SetTranslation(pack, "message.many_with_support_action", "I have {0} +{1} more and can use {2} {3}");
             SetTranslation(pack, "support_scope.direct", "for you");
             SetTranslation(pack, "support_scope.team", "for us");
             SetTranslation(pack, "support_scope.general", "to help");
             SetTranslation(pack, "status.vulnerable", "Vulnerable");
             SetTranslation(pack, "status.double_damage", "Double Damage");
+            SetTranslation(pack, "status.triple_damage", "Triple Damage");
             SetTranslation(pack, "status.strength", "Strength");
             SetTranslation(pack, "status.vigor", "Vigor");
             SetTranslation(pack, "status.focus", "Focus");
@@ -2442,12 +2675,12 @@ namespace HeyListen
             }
 
             var combatManager = CombatManager.Instance;
-            if (combatManager == null || !combatManager.IsInProgress || !combatManager.IsPlayPhase)
+            if (!IsCombatInPlayerPlayPhase(combatManager))
             {
                 return false;
             }
 
-            var stateFromCombat = combatManager.DebugOnlyGetState();
+            var stateFromCombat = GetCombatState(combatManager);
             if (stateFromCombat == null)
             {
                 return false;
@@ -2570,6 +2803,177 @@ namespace HeyListen
             return null;
         }
 
+        private static CombatState GetCombatState(CombatManager combatManager)
+        {
+            if (combatManager == null)
+            {
+                return null;
+            }
+
+            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            try
+            {
+                var method = combatManager.GetType().GetMethod("DebugOnlyGetState", flags, null, Type.EmptyTypes, null);
+                if (method != null)
+                {
+                    return method.Invoke(combatManager, null) as CombatState;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var property = combatManager.GetType().GetProperty("State", flags);
+                if (property != null)
+                {
+                    return property.GetValue(combatManager) as CombatState;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var field = combatManager.GetType().GetField("_state", flags);
+                if (field != null)
+                {
+                    return field.GetValue(combatManager) as CombatState;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
+        private static bool IsCombatInPlayerPlayPhase(CombatManager combatManager)
+        {
+            if (combatManager == null)
+            {
+                return false;
+            }
+
+            bool isInProgress;
+            if (TryGetBooleanMember(combatManager, "IsInProgress", out isInProgress) && !isInProgress)
+            {
+                return false;
+            }
+
+            bool isPlayPhase;
+            if (TryGetBooleanMember(combatManager, "IsPlayPhase", out isPlayPhase))
+            {
+                return isPlayPhase;
+            }
+
+            var combatState = GetCombatState(combatManager);
+            if (combatState == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (combatState.CurrentSide != CombatSide.Player)
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            bool flag;
+            if (TryGetBooleanMember(combatManager, "PlayerActionsDisabled", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "_playerActionsDisabled", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "IsEnemyTurnStarted", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "EndingPlayerTurnPhaseOne", out flag) && flag)
+            {
+                return false;
+            }
+
+            if (TryGetBooleanMember(combatManager, "EndingPlayerTurnPhaseTwo", out flag) && flag)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryGetBooleanMember(object instance, string memberName, out bool value)
+        {
+            value = false;
+            if (instance == null || string.IsNullOrWhiteSpace(memberName))
+            {
+                return false;
+            }
+
+            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var type = instance.GetType();
+
+            try
+            {
+                var property = type.GetProperty(memberName, flags);
+                if (property != null && property.PropertyType == typeof(bool) && property.CanRead)
+                {
+                    value = (bool)property.GetValue(instance);
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            if (TryGetBooleanField(instance, memberName, out value))
+            {
+                return true;
+            }
+
+            return TryGetBooleanField(instance, "<" + memberName + ">k__BackingField", out value);
+        }
+
+        private static bool TryGetBooleanField(object instance, string fieldName, out bool value)
+        {
+            value = false;
+            if (instance == null || string.IsNullOrWhiteSpace(fieldName))
+            {
+                return false;
+            }
+
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                var field = instance.GetType().GetField(fieldName, flags);
+                if (field != null && field.FieldType == typeof(bool))
+                {
+                    value = (bool)field.GetValue(instance);
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
         private static bool IsObservedCombatState(PlayerCombatState combatState)
         {
             if (combatState == null)
@@ -2596,7 +3000,7 @@ namespace HeyListen
             }
 
             var combatManager = CombatManager.Instance;
-            if (combatManager == null || !combatManager.IsInProgress || !combatManager.IsPlayPhase)
+            if (!IsCombatInPlayerPlayPhase(combatManager))
             {
                 return false;
             }
@@ -2634,6 +3038,8 @@ namespace HeyListen
 
             var seen = new bool[CalloutPriority.Length];
             var upgradeLevels = new int[CalloutPriority.Length];
+            var plainDisplayNameOverrides = new string[CalloutPriority.Length];
+            var sourceCardNames = new string[CalloutPriority.Length];
             var supportCardNames = new string[CalloutPriority.Length];
             var supportScopes = new SupportOfferScope[CalloutPriority.Length];
             var hand = player.PlayerCombatState != null ? player.PlayerCombatState.Hand : null;
@@ -2665,12 +3071,28 @@ namespace HeyListen
                     if (callout.UpgradeLevel > upgradeLevels[calloutIndex])
                     {
                         upgradeLevels[calloutIndex] = callout.UpgradeLevel;
+                        plainDisplayNameOverrides[calloutIndex] = callout.PlainDisplayNameOverride;
+                        sourceCardNames[calloutIndex] = callout.SourceCardName;
                         if (callout.Callout == StatusCallout.Support &&
                             !string.IsNullOrWhiteSpace(callout.SupportCardName))
                         {
                             supportCardNames[calloutIndex] = callout.SupportCardName;
                             supportScopes[calloutIndex] = callout.SupportScope;
                         }
+                    }
+                    else if (string.IsNullOrWhiteSpace(plainDisplayNameOverrides[calloutIndex]) &&
+                        !string.IsNullOrWhiteSpace(callout.PlainDisplayNameOverride))
+                    {
+                        plainDisplayNameOverrides[calloutIndex] = callout.PlainDisplayNameOverride;
+                        if (!string.IsNullOrWhiteSpace(callout.SourceCardName))
+                        {
+                            sourceCardNames[calloutIndex] = callout.SourceCardName;
+                        }
+                    }
+                    else if (string.IsNullOrWhiteSpace(sourceCardNames[calloutIndex]) &&
+                        !string.IsNullOrWhiteSpace(callout.SourceCardName))
+                    {
+                        sourceCardNames[calloutIndex] = callout.SourceCardName;
                     }
                     else if (callout.Callout == StatusCallout.Support &&
                         ShouldReplaceSupportOffer(
@@ -2704,6 +3126,8 @@ namespace HeyListen
                     ordered[index] = new CalloutInfo();
                     ordered[index].Callout = callout;
                     ordered[index].UpgradeLevel = upgradeLevels[(int)callout];
+                    ordered[index].PlainDisplayNameOverride = plainDisplayNameOverrides[(int)callout] ?? string.Empty;
+                    ordered[index].SourceCardName = sourceCardNames[(int)callout] ?? string.Empty;
                     ordered[index].SupportCardName = supportCardNames[(int)callout] ?? string.Empty;
                     ordered[index].SupportScope = supportScopes[(int)callout];
                     index++;
@@ -2726,6 +3150,7 @@ namespace HeyListen
             var effectText = BuildCardEffectText(card);
             var normalizedCardNames = BuildNormalizedCardNames(card);
             var upgradeLevel = GetCardUpgradeLevel(card);
+            var cardDisplayName = GetCardDisplayName(card, upgradeLevel);
             var targetType = card.TargetType;
             var targetsEnemy =
                 targetType == TargetType.AnyEnemy ||
@@ -2738,52 +3163,66 @@ namespace HeyListen
             var targetsSelf =
                 targetType == TargetType.Self ||
                 targetType == TargetType.None;
-            var isSupportCard =
-                card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly ||
-                targetsAlly ||
-                MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames);
-            var hasGenericSupportCallout = MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames);
+            var hasGenericSupportCallout = IsGenericSupportCard(card, targetsAlly, effectText, normalizedCardNames);
+            var isSupportCard = hasGenericSupportCallout;
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, VulnerableCardNames) ||
-                HasStatusApplication(effectText, VulnerableEffectNames))
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Vulnerable) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, VulnerableCardNames) ||
+                HasStatusApplication(effectText, VulnerableEffectNames)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Vulnerable, upgradeLevel);
+                AddCallout(results, ref resultCount, StatusCallout.Vulnerable, upgradeLevel, sourceCardName: cardDisplayName);
             }
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, WeakCardNames) ||
-                HasStatusApplication(effectText, WeakEffectNames))
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Weak) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, WeakCardNames) ||
+                HasStatusApplication(effectText, WeakEffectNames) ||
+                HasWeakEnchantment(card, targetsEnemy)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Weak, upgradeLevel);
+                AddCallout(results, ref resultCount, StatusCallout.Weak, upgradeLevel, sourceCardName: cardDisplayName);
             }
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, StrengthCardNames) ||
-                ((targetsSelf || targetsAlly || isSupportCard) && HasStatusGain(effectText, StrengthEffectNames)))
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Strength) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, StrengthCardNames) ||
+                ((targetsSelf || targetsAlly || isSupportCard) && HasStatusGain(effectText, StrengthEffectNames))))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Strength, upgradeLevel);
+                AddCallout(results, ref resultCount, StatusCallout.Strength, upgradeLevel, sourceCardName: cardDisplayName);
             }
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, VigorCardNames) ||
-                ((targetsSelf || targetsAlly || isSupportCard) && HasStatusGain(effectText, VigorEffectNames)))
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Vigor) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, VigorCardNames) ||
+                ((targetsSelf || targetsAlly || isSupportCard) && HasStatusGain(effectText, VigorEffectNames))))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Vigor, upgradeLevel);
+                AddCallout(results, ref resultCount, StatusCallout.Vigor, upgradeLevel, sourceCardName: cardDisplayName);
             }
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, DoubleDamageCardNames) ||
-                HasDoubleDamageEffect(effectText))
+            var isDamageMultiplierCard = MatchesAnyExactNormalized(normalizedCardNames, DamageMultiplierCardNames);
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.DoubleDamage) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, DoubleDamageCardNames) ||
+                isDamageMultiplierCard ||
+                HasDamageMultiplierEnchantment(card) ||
+                HasDoubleDamageEffect(effectText)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.DoubleDamage, upgradeLevel);
+                AddCallout(
+                    results,
+                    ref resultCount,
+                    StatusCallout.DoubleDamage,
+                    upgradeLevel,
+                    sourceCardName: cardDisplayName,
+                    plainDisplayNameOverride: GetDamageMultiplierDisplayNameOverride(normalizedCardNames, upgradeLevel));
             }
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, FocusCardNames) ||
-                ((targetsSelf || targetsAlly) && HasStatusGain(effectText, FocusEffectNames)))
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Focus) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, FocusCardNames) ||
+                ((targetsSelf || targetsAlly) && HasStatusGain(effectText, FocusEffectNames))))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Focus, upgradeLevel);
+                AddCallout(results, ref resultCount, StatusCallout.Focus, upgradeLevel, sourceCardName: cardDisplayName);
             }
 
-            if (MatchesAnyExactNormalized(normalizedCardNames, PoisonCardNames) ||
-                HasStatusApplication(effectText, PoisonEffectNames))
+            if (!IsStatusCalloutSuppressedForCard(normalizedCardNames, StatusCallout.Poison) &&
+                (MatchesAnyExactNormalized(normalizedCardNames, PoisonCardNames) ||
+                HasStatusApplication(effectText, PoisonEffectNames)))
             {
-                AddCallout(results, ref resultCount, StatusCallout.Poison, upgradeLevel);
+                AddCallout(results, ref resultCount, StatusCallout.Poison, upgradeLevel, sourceCardName: cardDisplayName);
             }
 
             if (hasGenericSupportCallout && Config.ShowGenericSupport)
@@ -2793,7 +3232,7 @@ namespace HeyListen
                     ref resultCount,
                     StatusCallout.Support,
                     upgradeLevel,
-                    GetSupportCardDisplayName(card, upgradeLevel),
+                    GetCardDisplayName(card, upgradeLevel),
                     GetSupportOfferScope(card));
             }
 
@@ -2802,16 +3241,70 @@ namespace HeyListen
             return final;
         }
 
+        private static bool IsStatusCalloutSuppressedForCard(string[] normalizedCardNames, StatusCallout callout)
+        {
+            switch (callout)
+            {
+                case StatusCallout.Strength:
+                    return MatchesAnyExactNormalized(normalizedCardNames, SuppressedStrengthCardNames);
+                case StatusCallout.Vigor:
+                    return MatchesAnyExactNormalized(normalizedCardNames, SuppressedVigorCardNames);
+                case StatusCallout.DoubleDamage:
+                    return MatchesAnyExactNormalized(normalizedCardNames, SuppressedDoubleDamageCardNames);
+                case StatusCallout.Focus:
+                    return MatchesAnyExactNormalized(normalizedCardNames, SuppressedFocusCardNames);
+                case StatusCallout.Poison:
+                    return MatchesAnyExactNormalized(normalizedCardNames, SuppressedPoisonCardNames);
+                case StatusCallout.Weak:
+                    return MatchesAnyExactNormalized(normalizedCardNames, SuppressedWeakCardNames);
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsCalloutEnabled(StatusCallout callout)
+        {
+            switch (callout)
+            {
+                case StatusCallout.Vulnerable:
+                    return Config.ShowVulnerable;
+                case StatusCallout.DoubleDamage:
+                    return Config.ShowDoubleDamage;
+                case StatusCallout.Strength:
+                    return Config.ShowStrength;
+                case StatusCallout.Vigor:
+                    return Config.ShowVigor;
+                case StatusCallout.Focus:
+                    return Config.ShowFocus;
+                case StatusCallout.Poison:
+                    return Config.ShowPoison;
+                case StatusCallout.Weak:
+                    return Config.ShowWeak;
+                default:
+                    return Config.ShowGenericSupport;
+            }
+        }
+
+        private static string GetDamageMultiplierDisplayNameOverride(string[] normalizedCardNames, int upgradeLevel)
+        {
+            if (MatchesAnyExactNormalized(normalizedCardNames, "knockdown") && upgradeLevel > 0)
+            {
+                return Translate("status.triple_damage");
+            }
+
+            return string.Empty;
+        }
+
         private static string[] BuildNormalizedCardNames(CardModel card)
         {
             var names = new string[3];
             var count = 0;
             AddNormalizedCardName(names, ref count, card.GetType().Name);
-            AddNormalizedCardName(names, ref count, card.Title);
+            AddNormalizedCardName(names, ref count, SafeCardTitle(card));
             AddNormalizedCardName(
                 names,
                 ref count,
-                card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty);
+                SafeLocEntryKey(card.TitleLocString));
 
             var final = new string[count];
             Array.Copy(names, final, count);
@@ -2823,9 +3316,9 @@ namespace HeyListen
             var parts = new string[5];
             var partCount = 0;
             AddText(parts, ref partCount, card.GetType().Name);
-            AddText(parts, ref partCount, card.Title);
-            AddText(parts, ref partCount, card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty);
-            AddText(parts, ref partCount, card.Description != null ? card.Description.LocEntryKey : string.Empty);
+            AddText(parts, ref partCount, SafeCardTitle(card));
+            AddText(parts, ref partCount, SafeLocEntryKey(card.TitleLocString));
+            AddText(parts, ref partCount, SafeLocEntryKey(card.Description));
             AddText(parts, ref partCount, SafeFormatLocString(card.Description));
 
             return string.Join(" ", parts, 0, partCount).ToLowerInvariant();
@@ -2838,7 +3331,185 @@ namespace HeyListen
                 return string.Empty;
             }
 
-            return SafeFormatLocString(card.Description);
+            var effectText = new StringBuilder();
+            AppendEffectText(effectText, SafeFormatLocString(card.Description));
+
+            var enchantment = GetCardEnchantment(card);
+            if (enchantment != null)
+            {
+                AppendLocStringMemberText(effectText, enchantment, "Description");
+                AppendLocStringMemberText(effectText, enchantment, "DynamicDescription");
+                AppendLocStringMemberText(effectText, enchantment, "ExtraCardText");
+                AppendLocStringMemberText(effectText, enchantment, "DynamicExtraCardText");
+            }
+
+            return effectText.ToString();
+        }
+
+        private static bool IsGenericSupportCard(
+            CardModel card,
+            bool targetsAlly,
+            string effectText,
+            string[] normalizedCardNames)
+        {
+            if (MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames) || targetsAlly)
+            {
+                return true;
+            }
+
+            try
+            {
+                if (card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return HasSupportText(effectText);
+        }
+
+        private static bool HasSupportText(string effectText)
+        {
+            if (string.IsNullOrWhiteSpace(effectText))
+            {
+                return false;
+            }
+
+            var plainText = StripEffectMarkup(effectText);
+            return Regex.IsMatch(
+                plainText,
+                "\\b(?:another|other)\\s+players?\\b|\\ball\\s+(?:players|allies)\\b|\\b(?:ally|allies|teammates?|support)\\b",
+                RegexOptions.IgnoreCase);
+        }
+
+        private static bool HasWeakEnchantment(CardModel card, bool targetsEnemy)
+        {
+            return targetsEnemy && HasCardEnchantmentName(card, InkyEnchantmentNames);
+        }
+
+        private static bool HasDamageMultiplierEnchantment(CardModel card)
+        {
+            return IsAttackCard(card) && HasCardEnchantmentName(card, InstinctEnchantmentNames);
+        }
+
+        private static bool IsAttackCard(CardModel card)
+        {
+            try
+            {
+                return card.Type == CardType.Attack;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static object GetCardEnchantment(CardModel card)
+        {
+            if (card == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var property = typeof(CardModel).GetProperty(
+                    "Enchantment",
+                    BindingFlags.Public | BindingFlags.Instance);
+                return property != null ? property.GetValue(card) : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool HasCardEnchantmentName(CardModel card, params string[] normalizedTokens)
+        {
+            var enchantment = GetCardEnchantment(card);
+            if (enchantment == null)
+            {
+                return false;
+            }
+
+            var names = new string[5];
+            var count = 0;
+            AddNormalizedCardName(names, ref count, enchantment.GetType().Name);
+            AddNormalizedCardName(names, ref count, GetMemberText(enchantment, "Id"));
+            AddNormalizedCardName(names, ref count, SafeFormatLocString(GetLocStringMember(enchantment, "Title")));
+
+            for (var i = 0; i < count; i++)
+            {
+                if (MatchesExactNormalized(names[i], normalizedTokens))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AppendLocStringMemberText(StringBuilder builder, object instance, string memberName)
+        {
+            AppendEffectText(builder, SafeFormatLocString(GetLocStringMember(instance, memberName)));
+        }
+
+        private static void AppendEffectText(StringBuilder builder, string text)
+        {
+            if (builder == null || string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append(' ');
+            }
+
+            builder.Append(text);
+        }
+
+        private static LocString GetLocStringMember(object instance, string memberName)
+        {
+            return GetMemberValue(instance, memberName) as LocString;
+        }
+
+        private static string GetMemberText(object instance, string memberName)
+        {
+            var value = GetMemberValue(instance, memberName);
+            return value != null ? value.ToString() : string.Empty;
+        }
+
+        private static object GetMemberValue(object instance, string memberName)
+        {
+            if (instance == null || string.IsNullOrWhiteSpace(memberName))
+            {
+                return null;
+            }
+
+            try
+            {
+                var type = instance.GetType();
+                var property = type.GetProperty(
+                    memberName,
+                    BindingFlags.Public | BindingFlags.Instance);
+                if (property != null)
+                {
+                    return property.GetValue(instance);
+                }
+
+                var field = type.GetField(
+                    memberName,
+                    BindingFlags.Public | BindingFlags.Instance);
+                return field != null ? field.GetValue(instance) : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static bool HasStatusApplication(string effectText, params string[] statusNames)
@@ -2916,7 +3587,8 @@ namespace HeyListen
                 }
 
                 if (Regex.IsMatch(clause, "\\bdouble\\s+damage\\b", RegexOptions.IgnoreCase) ||
-                    Regex.IsMatch(clause, "\\bdouble\\b.{0,80}\\bdamage\\b", RegexOptions.IgnoreCase))
+                    Regex.IsMatch(clause, "\\bdouble\\b.{0,80}\\bdamage\\b", RegexOptions.IgnoreCase) ||
+                    Regex.IsMatch(clause, "\\bdamage\\b.{0,80}\\b(?:is\\s+)?doubl(?:e|ed|es|ing)\\b", RegexOptions.IgnoreCase))
                 {
                     return true;
                 }
@@ -3017,8 +3689,8 @@ namespace HeyListen
             }
 
             return Math.Max(
-                GetUpgradeLevelFromText(card.Title),
-                GetUpgradeLevelFromText(card.TitleLocString != null ? card.TitleLocString.LocEntryKey : string.Empty));
+                GetUpgradeLevelFromText(SafeCardTitle(card)),
+                GetUpgradeLevelFromText(SafeLocEntryKey(card.TitleLocString)));
         }
 
         private static int GetUpgradeLevelFromText(string text)
@@ -3059,8 +3731,15 @@ namespace HeyListen
             StatusCallout callout,
             int upgradeLevel,
             string supportCardName = null,
-            SupportOfferScope supportScope = SupportOfferScope.None)
+            SupportOfferScope supportScope = SupportOfferScope.None,
+            string sourceCardName = null,
+            string plainDisplayNameOverride = null)
         {
+            if (!IsCalloutEnabled(callout))
+            {
+                return;
+            }
+
             for (var i = 0; i < count; i++)
             {
                 if (results[i].Callout == callout)
@@ -3068,6 +3747,12 @@ namespace HeyListen
                     if (upgradeLevel > results[i].UpgradeLevel)
                     {
                         results[i].UpgradeLevel = upgradeLevel;
+                        results[i].PlainDisplayNameOverride = plainDisplayNameOverride ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(sourceCardName))
+                        {
+                            results[i].SourceCardName = sourceCardName;
+                        }
+
                         if (callout == StatusCallout.Support && !string.IsNullOrWhiteSpace(supportCardName))
                         {
                             results[i].SupportCardName = supportCardName;
@@ -3081,6 +3766,20 @@ namespace HeyListen
                         results[i].SupportCardName = supportCardName;
                         results[i].SupportScope = supportScope;
                     }
+                    else if (string.IsNullOrWhiteSpace(results[i].PlainDisplayNameOverride) &&
+                        !string.IsNullOrWhiteSpace(plainDisplayNameOverride))
+                    {
+                        results[i].PlainDisplayNameOverride = plainDisplayNameOverride;
+                        if (!string.IsNullOrWhiteSpace(sourceCardName))
+                        {
+                            results[i].SourceCardName = sourceCardName;
+                        }
+                    }
+                    else if (string.IsNullOrWhiteSpace(results[i].SourceCardName) &&
+                        !string.IsNullOrWhiteSpace(sourceCardName))
+                    {
+                        results[i].SourceCardName = sourceCardName;
+                    }
 
                     return;
                 }
@@ -3089,6 +3788,8 @@ namespace HeyListen
             results[count] = new CalloutInfo();
             results[count].Callout = callout;
             results[count].UpgradeLevel = upgradeLevel;
+            results[count].PlainDisplayNameOverride = plainDisplayNameOverride ?? string.Empty;
+            results[count].SourceCardName = sourceCardName ?? string.Empty;
             results[count].SupportCardName = supportCardName ?? string.Empty;
             results[count].SupportScope = supportScope;
             count++;
@@ -3156,12 +3857,12 @@ namespace HeyListen
             return string.Empty;
         }
 
-        private static string GetSupportCardDisplayName(CardModel card, int upgradeLevel)
+        private static string GetCardDisplayName(CardModel card, int upgradeLevel)
         {
             var title = SafeFormatLocString(card.TitleLocString);
             if (string.IsNullOrWhiteSpace(title))
             {
-                title = card.Title;
+                title = SafeCardTitle(card);
             }
 
             if (string.IsNullOrWhiteSpace(title))
@@ -3173,6 +3874,40 @@ namespace HeyListen
             return upgradeLevel > 0
                 ? title + GetUpgradeSuffix(upgradeLevel)
                 : title;
+        }
+
+        private static string SafeCardTitle(CardModel card)
+        {
+            if (card == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return card.Title ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string SafeLocEntryKey(LocString locString)
+        {
+            if (locString == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return locString.LocEntryKey ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static SupportOfferScope GetSupportOfferScope(CardModel card)
@@ -3224,6 +3959,27 @@ namespace HeyListen
                 if (firstStatusIndex >= 0)
                 {
                     var statusCount = callouts.Length - 1;
+                    if (Config.ShowCardNames && HasSourceCardName(callouts[firstStatusIndex]))
+                    {
+                        if (statusCount == 1)
+                        {
+                            return intro + FormatTranslation(
+                                "message.card_two_with_support_action",
+                                callouts[firstStatusIndex].SourceCardName,
+                                GetDisplayName(callouts[firstStatusIndex]),
+                                supportCardName,
+                                supportScope);
+                        }
+
+                        return intro + FormatTranslation(
+                            "message.card_many_with_support_action",
+                            callouts[firstStatusIndex].SourceCardName,
+                            GetDisplayName(callouts[firstStatusIndex]),
+                            statusCount - 1,
+                            supportCardName,
+                            supportScope);
+                    }
+
                     if (statusCount == 1)
                     {
                         return intro + FormatTranslation(
@@ -3252,15 +4008,47 @@ namespace HeyListen
                     return intro + FormatTranslation(key, GetDisplayName(callouts[0]));
                 }
 
+                if (Config.ShowCardNames && HasSourceCardName(callouts[0]))
+                {
+                    return intro + FormatTranslation(
+                        "message.card_single",
+                        callouts[0].SourceCardName,
+                        GetDisplayName(callouts[0]));
+                }
+
                 return intro + FormatTranslation("message.single", GetDisplayName(callouts[0]));
             }
 
             if (callouts.Length == 2)
             {
+                if (Config.ShowCardNames && HasSourceCardName(callouts[0]))
+                {
+                    return intro + FormatTranslation(
+                        "message.card_two",
+                        callouts[0].SourceCardName,
+                        GetDisplayName(callouts[0]),
+                        GetDisplayName(callouts[1]));
+                }
+
                 return intro + FormatTranslation("message.two", GetDisplayName(callouts[0]), GetDisplayName(callouts[1]));
             }
 
+            if (Config.ShowCardNames && HasSourceCardName(callouts[0]))
+            {
+                return intro + FormatTranslation(
+                    "message.card_many",
+                    callouts[0].SourceCardName,
+                    GetDisplayName(callouts[0]),
+                    callouts.Length - 1);
+            }
+
             return intro + FormatTranslation("message.many", GetDisplayName(callouts[0]), callouts.Length - 1);
+        }
+
+        private static bool HasSourceCardName(CalloutInfo callout)
+        {
+            return callout.Callout != StatusCallout.Support &&
+                !string.IsNullOrWhiteSpace(callout.SourceCardName);
         }
 
         private static int FindSupportOfferIndex(CalloutInfo[] callouts)
@@ -3319,8 +4107,11 @@ namespace HeyListen
 
         private static string GetDisplayName(CalloutInfo callout)
         {
-            var displayName = GetPlainDisplayName(callout.Callout);
-            if (callout.UpgradeLevel > 0)
+            var hasOverride = !string.IsNullOrWhiteSpace(callout.PlainDisplayNameOverride);
+            var displayName = hasOverride
+                ? callout.PlainDisplayNameOverride
+                : GetPlainDisplayName(callout.Callout);
+            if (callout.UpgradeLevel > 0 && !hasOverride)
             {
                 displayName = callout.Callout == StatusCallout.Support
                     ? Translate("status.support_upgraded")

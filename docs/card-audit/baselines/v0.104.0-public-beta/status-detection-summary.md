@@ -52,11 +52,3 @@ False-positive examples:
 
 - If the enemy is Vulnerable, hits twice should not produce Vulnerable.
 - for each Vulnerable on the enemy should not produce Vulnerable unless the same card also applies it.
-
-## Upgrade-Sensitive Callout Review
-
-Checked audited cards whose upgrade text changes visible callout-relevant wording through `IfUpgraded` or double/triple damage phrasing.
-
-- Knockdown: normal card offers Double Damage; upgraded card offers Triple Damage.
-- Malaise: upgraded card increases the Weak amount, which is already represented by the normal upgraded-status suffix.
-- Largesse: upgraded card improves generated-card quality, but remains a Support offer rather than a separate status callout.

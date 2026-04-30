@@ -24,6 +24,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
+$nexusPagePath = Join-Path $repoRoot "docs\NEXUS_PAGE.md"
 
 $Version = Resolve-HeyListenVersion $Version
 
@@ -112,6 +113,12 @@ try {
         }
 
         & (Join-Path $PSScriptRoot "publish-nexus-local.ps1") @nexusArgs
+
+        if (Test-Path -LiteralPath $nexusPagePath) {
+            Write-Host ""
+            Write-Host "Nexus page copy: $nexusPagePath"
+            Write-Host "Run .\scripts\update-nexus-page.ps1 -Version $Version to preview or submit page/changelog updates without uploading another file."
+        }
     }
 }
 finally {

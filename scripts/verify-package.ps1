@@ -12,6 +12,8 @@ $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $translationsSourceDir = Join-Path $repoRoot "mod\heylisten\translations"
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 
+& (Join-Path $PSScriptRoot "verify-translations.ps1") -TranslationsDir $translationsSourceDir
+
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     $Version = $manifest.version
@@ -28,7 +30,6 @@ if (!(Test-Path -LiteralPath $zipPath)) {
 }
 
 $expectedEntries = @(
-    "vortex_override_instructions.json",
     "mods/heylisten/heylisten.dll",
     "mods/heylisten/heylisten.json"
 )
@@ -61,31 +62,9 @@ try {
         throw "Package layout verification failed: $zipPath"
     }
 
-    $vortexEntry = $archive.GetEntry("vortex_override_instructions.json")
-    if ($vortexEntry -eq $null) {
-        throw "Package is missing Vortex override instructions."
-    }
-
-    $vortexReader = [System.IO.StreamReader]::new($vortexEntry.Open())
-    try {
-        $vortexInstructions = $vortexReader.ReadToEnd() | ConvertFrom-Json
-    }
-    finally {
-        $vortexReader.Dispose()
-    }
-
-    $setModTypeInstruction = @($vortexInstructions | Where-Object {
-        $_.type -eq "setmodtype" -and $_.value -eq "dinput"
-    })
-    if ($setModTypeInstruction.Count -eq 0) {
-        throw "Vortex override instructions must set the package mod type to dinput."
-    }
-
-    $copyDestinations = @($vortexInstructions | Where-Object { $_.type -eq "copy" } | ForEach-Object { $_.destination })
-    $expectedCopiedEntries = @($expectedEntries | Where-Object { $_ -ne "vortex_override_instructions.json" })
-    $missingCopyDestinations = @($expectedCopiedEntries | Where-Object { $_ -notin $copyDestinations })
-    if ($missingCopyDestinations.Count -gt 0) {
-        throw "Vortex override instructions are missing copy destinations: $($missingCopyDestinations -join ', ')"
+    $unexpectedVortexOverride = $archive.GetEntry("vortex_override_instructions.json")
+    if ($unexpectedVortexOverride -ne $null) {
+        throw "Package should not include vortex_override_instructions.json; the Slay the Spire 2 Vortex extension installs game-root archives containing the mods folder directly."
     }
 }
 finally {
