@@ -2,6 +2,7 @@ import { open, stat } from "node:fs/promises";
 import path from "node:path";
 
 const apiBase = (process.env.NEXUSMODS_API_BASE || "https://api.nexusmods.com/v3").trim();
+const legacyApiBase = (process.env.NEXUSMODS_LEGACY_API_BASE || apiBase.replace(/\/v3\/?$/, "/v1")).trim();
 
 function readEnv(name, required = true) {
   const value = (process.env[name] || "").trim();
@@ -108,6 +109,37 @@ async function waitForUpload(apiKey, uploadId) {
   throw new Error(`Upload processing timed out: ${uploadId}`);
 }
 
+async function verifyModManagerDownload(apiKey, gameDomain, modId, fileId) {
+  if (!gameDomain || !modId || !fileId) {
+    throw new Error("Cannot verify mod-manager download without NEXUS_GAME_DOMAIN, NEXUS_MOD_ID, and the uploaded file ID.");
+  }
+
+  const route = `/games/${encodeURIComponent(gameDomain)}/mods/${encodeURIComponent(modId)}/files/${encodeURIComponent(fileId)}/download_link.json`;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const response = await fetch(`${legacyApiBase}${route}`, {
+      method: "GET",
+      headers: {
+        apikey: apiKey,
+        "User-Agent": "HeyListen release uploader",
+      },
+    });
+
+    if (response.ok) {
+      const links = await response.json();
+      if (Array.isArray(links) && links.length > 0) {
+        console.log(`Verified mod-manager download link for file ${fileId}`);
+        return;
+      }
+    }
+
+    if (attempt < 11) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
+
+  throw new Error(`Nexus did not expose a mod-manager download link for file ${fileId}. Check allow_mod_manager_download on the file.`);
+}
+
 async function main() {
   const apiKey = readEnv("NEXUSMODS_API_KEY");
   const fileGroupId = readEnv("NEXUS_FILE_GROUP_ID");
@@ -120,6 +152,9 @@ async function main() {
   const primaryModManagerDownload = readBool("NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD", true);
   const allowModManagerDownload = readBool("NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD", true);
   const showRequirementsPopUp = readBool("NEXUS_SHOW_REQUIREMENTS_POP_UP", false);
+  const verifyModManagerDownloadLink = readBool("NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD", allowModManagerDownload);
+  const gameDomain = readEnv("NEXUS_GAME_DOMAIN", false) || "slaythespire2";
+  const modId = readEnv("NEXUS_MOD_ID", false);
 
   const { size } = await stat(filename);
   console.log(`Requesting Nexus upload for ${path.basename(filename)} (${size} bytes)`);
@@ -177,8 +212,14 @@ async function main() {
     }),
   });
   const update = await updateResponse.json();
+  const fileId = update?.data?.game_scoped_id;
 
   console.log(`File updated successfully: ${update.data.id}`);
+  console.log(`Mod-manager downloads enabled: ${allowModManagerDownload}`);
+  if (verifyModManagerDownloadLink) {
+    await verifyModManagerDownload(apiKey, gameDomain, modId, fileId);
+  }
+
   console.log(`file_uid=${update.data.id}`);
 }
 

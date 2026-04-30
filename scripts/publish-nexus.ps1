@@ -101,6 +101,7 @@ try {
         "-f", "display_name=$DisplayName",
         "-f", "description=$Description",
         "-f", "file_category=$FileCategory",
+        "-f", "mod_id=$NexusModId",
         "-f", "archive_existing_file=$archiveExisting",
         "-f", "primary_mod_manager_download=$primaryModManagerDownload"
     )

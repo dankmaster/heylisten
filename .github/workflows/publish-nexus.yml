@@ -27,6 +27,10 @@ on:
         description: Nexus file category
         required: false
         default: "main"
+      mod_id:
+        description: Nexus Mods page mod ID, used to verify the mod-manager download link
+        required: false
+        default: "697"
       archive_existing_file:
         description: Archive the existing file in this group
         required: false
@@ -76,4 +80,7 @@ jobs:
           NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD: ${{ inputs.primary_mod_manager_download }}
           NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD: "true"
           NEXUS_SHOW_REQUIREMENTS_POP_UP: "false"
+          NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD: "true"
+          NEXUS_GAME_DOMAIN: "slaythespire2"
+          NEXUS_MOD_ID: "${{ inputs.mod_id }}"
         run: node scripts/upload-nexus-file.mjs

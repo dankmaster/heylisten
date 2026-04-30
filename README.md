@@ -170,7 +170,7 @@ After the GitHub release is ready and the Nexus mod page has a file group, you c
 .\scripts\publish-nexus-local.ps1
 ```
 
-The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash.
+The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash. After uploading, it also checks that Nexus exposes a mod-manager download link for the new file.
 
 There is also a GitHub-hosted Nexus workflow available if you want GitHub to perform only the final Nexus upload:
 

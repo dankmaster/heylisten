@@ -25,9 +25,9 @@ $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $Version = Resolve-HeyListenVersion $Version
 
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
+$NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
 
 if ([string]::IsNullOrWhiteSpace($ZipPath)) {
-    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
     $ZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
     if ([string]::IsNullOrWhiteSpace($ZipPath)) {
         $ZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
@@ -62,6 +62,8 @@ if ($DryRun) {
     Write-Host "  Category: $FileCategory"
     Write-Host "  Archive existing file: $archiveExisting"
     Write-Host "  Default mod-manager download: $defaultModManagerDownload"
+    Write-Host "  Allow mod-manager download: true"
+    Write-Host "  Verify mod-manager download link: true"
     return
 }
 
@@ -158,7 +160,10 @@ $envNames = @(
     "NEXUS_ARCHIVE_EXISTING_FILE",
     "NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD",
     "NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD",
-    "NEXUS_SHOW_REQUIREMENTS_POP_UP"
+    "NEXUS_SHOW_REQUIREMENTS_POP_UP",
+    "NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD",
+    "NEXUS_GAME_DOMAIN",
+    "NEXUS_MOD_ID"
 )
 
 $previousEnv = @{}
@@ -178,6 +183,9 @@ try {
     $env:NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD = $defaultModManagerDownload
     $env:NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD = "true"
     $env:NEXUS_SHOW_REQUIREMENTS_POP_UP = "false"
+    $env:NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD = "true"
+    $env:NEXUS_GAME_DOMAIN = "slaythespire2"
+    $env:NEXUS_MOD_ID = $NexusModId
 
     $actionOutput = & $node.Source $uploaderPath 2>&1
     $actionExitCode = $LASTEXITCODE
