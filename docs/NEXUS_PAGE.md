@@ -42,7 +42,7 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [*]Removed a Vortex override file used for dev deployment.
 [/list]
 
-Tested with Slay the Spire 2 v0.104.0.
+Tested with Slay the Spire 2 stable and public beta releases, including v0.104.0.
 
 [b]Documentation and Changelog[/b]
 
@@ -107,6 +107,8 @@ If Vortex does not recognize Slay the Spire 2 yet, install the Slay the Spire 2 
 [b]Compatibility[/b]
 
 Hey, listen! is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
+
+This release has been tested on both the stable and public beta Slay the Spire 2 branches.
 
 Current release notes include the Slay the Spire 2 version used for local testing. If Slay the Spire 2 has updated since that version, check the latest Hey, listen! release notes or GitHub build before assuming every new/reworked card has been audited.
 
