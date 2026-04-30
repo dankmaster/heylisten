@@ -1,7 +1,7 @@
-0.99.2
+0.99.3
 
-- Removed a Vortex override file used for dev deployment.
+- Fixed Mimic being incorrectly announced as a Support card. Mimic copies another player's Block but gives the Block to you, so it no longer triggers support callouts.
 
-Tested with Slay the Spire 2 stable and public beta releases, including v0.104.0.
+Tested with Slay the Spire 2 v0.103.2. Card audit coverage includes the v0.104.0 public beta baseline.
 
 Install with Vortex or extract into the Slay the Spire 2 folder.

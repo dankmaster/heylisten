@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.99.3
+
+- Fixed Mimic being incorrectly announced as a Support card. Mimic copies another player's Block but gives the Block to you, so it no longer triggers support callouts.
+
 ## 0.99.2
 
 - Removed a Vortex override file used for dev deployment.
