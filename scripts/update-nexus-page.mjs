@@ -645,11 +645,14 @@ function normalizeText(value) {
 }
 
 function normalizeNexusDescription(value) {
-  return normalizeText(value)
+  return String(value || "")
+    .replace(/\r\n/g, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/\[\/\*\]/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join("\n");
 }
 
 function splitChangelogLines(value) {
