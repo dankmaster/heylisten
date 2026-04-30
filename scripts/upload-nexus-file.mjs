@@ -41,9 +41,9 @@ function quoteCurlConfigValue(value) {
     .replaceAll("\n", "\\n")}"`;
 }
 
-async function runCurlWithConfig(configText) {
+async function runCurlWithConfig(configText, extraArgs = []) {
   return await new Promise((resolve, reject) => {
-    const child = spawn("curl", ["--config", "-"], {
+    const child = spawn("curl", ["--config", "-", ...extraArgs], {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -87,14 +87,15 @@ async function apiFetch(apiKey, route, options = {}) {
   }
 
   let bodyPath;
+  let extraArgs = [];
   try {
     if (options.body !== undefined) {
       bodyPath = path.join(os.tmpdir(), `heylisten-nexus-${randomUUID()}.json`);
       await writeFile(bodyPath, options.body);
-      configLines.push(`data-binary = ${quoteCurlConfigValue(`@${bodyPath}`)}`);
+      extraArgs = ["--data-binary", `@${bodyPath}`];
     }
 
-    const { code, stdout, stderr } = await runCurlWithConfig(configLines.join("\n"));
+    const { code, stdout, stderr } = await runCurlWithConfig(configLines.join("\n"), extraArgs);
     if (code !== 0) {
       throw new Error(`${route} curl failed: ${code} ${stderr.trim()}`);
     }
