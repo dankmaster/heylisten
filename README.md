@@ -201,3 +201,7 @@ This compares the live game card export with the committed public-build audit an
 ## Local Co-op Testing
 
 Use `scripts/install-lan-multiplayer.ps1` and `scripts/launch-local-coop-test.ps1` to launch multiple playable local game clients for multiplayer UI testing. See [docs/LOCAL_COOP_TESTING.md](docs/LOCAL_COOP_TESTING.md).
+
+## License
+
+Hey, listen! is released under the [MIT License](LICENSE).
