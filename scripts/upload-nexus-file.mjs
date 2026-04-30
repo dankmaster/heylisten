@@ -162,7 +162,7 @@ async function main() {
     method: "POST",
     body: JSON.stringify({
       filename: path.basename(filename),
-      size_bytes: String(size),
+      size_bytes: size,
     }),
   });
   const multipart = await multipartResponse.json();
