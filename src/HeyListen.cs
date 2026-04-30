@@ -536,7 +536,6 @@ namespace HeyListen
             "largesse",
             "legionofbone",
             "lift",
-            "mimic",
             "rally",
             "sneaky",
             "tagteam",
@@ -658,6 +657,10 @@ namespace HeyListen
         private static readonly string[] SuppressedWeakCardNames =
         {
             "gofortheeyes",
+        };
+        private static readonly string[] SuppressedSupportCardNames =
+        {
+            "mimic",
         };
 
         private static long _lastRefreshAtUnixMs;
@@ -3352,6 +3355,11 @@ namespace HeyListen
             string effectText,
             string[] normalizedCardNames)
         {
+            if (MatchesAnyExactNormalized(normalizedCardNames, SuppressedSupportCardNames))
+            {
+                return false;
+            }
+
             if (MatchesAnyExactNormalized(normalizedCardNames, SupportCardNames) || targetsAlly)
             {
                 return true;

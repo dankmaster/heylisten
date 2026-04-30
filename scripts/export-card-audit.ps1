@@ -235,6 +235,7 @@ $cardTypes = $sts2Assembly.GetTypes() |
     Sort-Object Name
 
 $rows = New-Object "System.Collections.Generic.List[object]"
+$suppressedSupportClassNames = @("Mimic")
 foreach ($type in $cardTypes) {
     try {
         $card = [Activator]::CreateInstance($type)
@@ -270,13 +271,13 @@ foreach ($type in $cardTypes) {
     $multiplayerConstraint = Get-PropertyValueText $card "MultiplayerConstraint"
     $cardType = Get-PropertyValueText $card "Type"
     $rarity = Get-PropertyValueText $card "Rarity"
-    $supportSignal =
+    $supportSignal = ($suppressedSupportClassNames -notcontains $type.Name) -and (
         $targetType -in @("AnyPlayer", "AnyAlly", "AllAllies") -or
-        $multiplayerConstraint -eq "MultiplayerOnly" -or
-        [regex]::IsMatch(
-            $plainDescription,
-            "\b(?:another|other)\s+players?\b|\ball\s+(?:players|allies)\b|\b(?:ally|allies|teammates?|support)\b",
-            "IgnoreCase")
+            $multiplayerConstraint -eq "MultiplayerOnly" -or
+            [regex]::IsMatch(
+                $plainDescription,
+                "\b(?:another|other)\s+players?\b|\ball\s+(?:players|allies)\b|\b(?:ally|allies|teammates?|support)\b",
+                "IgnoreCase"))
 
     $strictCallouts = New-Object "System.Collections.Generic.List[string]"
     if (Test-EnemyStatusApplication $clauses "Vulnerable") { [void]$strictCallouts.Add("Vulnerable") }
