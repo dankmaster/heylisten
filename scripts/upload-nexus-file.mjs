@@ -1,4 +1,7 @@
-import { open, stat } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { open, rm, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 const apiBase = (process.env.NEXUSMODS_API_BASE || "https://api.nexusmods.com/v3").trim();
@@ -30,22 +33,98 @@ function readBool(name, defaultValue) {
   throw new Error(`${name} must be true or false.`);
 }
 
-async function apiFetch(apiKey, route, options = {}) {
-  const response = await fetch(`${apiBase}${route}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      apikey: apiKey,
-      "User-Agent": "HeyListen release uploader",
-      ...(options.headers || {}),
-    },
-  });
+function quoteCurlConfigValue(value) {
+  return `"${String(value)
+    .replaceAll("\\", "\\\\")
+    .replaceAll("\"", "\\\"")
+    .replaceAll("\r", "\\r")
+    .replaceAll("\n", "\\n")}"`;
+}
 
-  if (!response.ok) {
-    throw new Error(`${route} failed: ${response.status} ${await response.text()}`);
+async function runCurlWithConfig(configText) {
+  return await new Promise((resolve, reject) => {
+    const child = spawn("curl", ["--config", "-"], {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.once("error", reject);
+    child.once("close", (code) => {
+      resolve({ code, stdout, stderr });
+    });
+    child.stdin.end(configText);
+  });
+}
+
+async function apiFetch(apiKey, route, options = {}) {
+  const method = options.method || "GET";
+  const headers = {
+    "Content-Type": "application/json",
+    apikey: apiKey,
+    "User-Agent": "HeyListen release uploader",
+    ...(options.headers || {}),
+  };
+
+  const configLines = [
+    "silent",
+    "show-error",
+    `request = ${quoteCurlConfigValue(method)}`,
+    `url = ${quoteCurlConfigValue(`${apiBase}${route}`)}`,
+    `write-out = ${quoteCurlConfigValue("\n__HEYLISTEN_CURL_STATUS__:%{http_code}")}`,
+  ];
+
+  for (const [name, value] of Object.entries(headers)) {
+    configLines.push(`header = ${quoteCurlConfigValue(`${name}: ${value}`)}`);
   }
 
-  return response;
+  let bodyPath;
+  try {
+    if (options.body !== undefined) {
+      bodyPath = path.join(os.tmpdir(), `heylisten-nexus-${randomUUID()}.json`);
+      await writeFile(bodyPath, options.body);
+      configLines.push(`data-binary = ${quoteCurlConfigValue(`@${bodyPath}`)}`);
+    }
+
+    const { code, stdout, stderr } = await runCurlWithConfig(configLines.join("\n"));
+    if (code !== 0) {
+      throw new Error(`${route} curl failed: ${code} ${stderr.trim()}`);
+    }
+
+    const marker = "\n__HEYLISTEN_CURL_STATUS__:";
+    const markerIndex = stdout.lastIndexOf(marker);
+    if (markerIndex < 0) {
+      throw new Error(`${route} curl response did not include a status code.`);
+    }
+
+    const text = stdout.slice(0, markerIndex);
+    const status = Number(stdout.slice(markerIndex + marker.length).trim());
+    const response = {
+      ok: status >= 200 && status < 300,
+      status,
+      text: async () => text,
+      json: async () => JSON.parse(text),
+    };
+
+    if (!response.ok) {
+      throw new Error(`${route} failed: ${response.status} ${await response.text()}`);
+    }
+
+    return response;
+  }
+  finally {
+    if (bodyPath) {
+      await rm(bodyPath, { force: true });
+    }
+  }
 }
 
 function buildCompleteMultipartXml(parts) {
