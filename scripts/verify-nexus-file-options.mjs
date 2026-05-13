@@ -45,18 +45,20 @@ try {
 
   const files = await fetchModFiles(client);
   const file = findReleaseFile(files);
-  const modManagerDownloadAllowed = Number(file.manager) === 0;
+  const managerFlag = Number(file.manager);
+  const publicModManagerDownload = await verifyPublicModManagerDownload(client, file.fileId);
   const defaultModManagerDownload = Number(file.primary) === 1;
 
   console.log("Nexus file editor options:");
   console.log(`- File: ${file.name} ${file.version ? `(${file.version})` : ""}`.trim());
   console.log(`- File ID: ${file.fileId}`);
   console.log(`- Category: ${categoryName(file.categoryId)}`);
-  console.log(`- Mod-manager download: ${modManagerDownloadAllowed ? "enabled" : "disabled"}`);
+  console.log(`- Nexus editor manager flag: ${managerFlag}`);
+  console.log(`- Public mod-manager download button: ${publicModManagerDownload ? "enabled" : "disabled"}`);
   console.log(`- Default mod-manager download: ${defaultModManagerDownload ? "enabled" : "disabled"}`);
 
-  if (!modManagerDownloadAllowed) {
-    throw new Error(`Nexus file ${file.fileId} is not allowed for mod-manager download in the file editor.`);
+  if (!publicModManagerDownload) {
+    throw new Error(`Nexus file ${file.fileId} does not expose a public mod-manager download button.`);
   }
 
   if (expectDefaultModManagerDownload && !defaultModManagerDownload) {
@@ -289,6 +291,48 @@ async function fetchModFiles(client) {
 
     return json.data.modFiles;
   })()`);
+}
+
+async function verifyPublicModManagerDownload(client, fileId) {
+  const publicFilesUrl = `https://www.nexusmods.com/${gameDomain}/mods/${modId}?tab=files`;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    await cdp(client, "Page.navigate", { url: publicFilesUrl });
+    await waitForPageReady(client);
+    await delay(2000);
+
+    const state = await evaluate(client, `(() => {
+      const expectedFileId = ${JSON.stringify(String(fileId))};
+      const links = Array.from(document.querySelectorAll('a[href*="DownloadPopUp"]'))
+        .map(link => {
+          const url = new URL(link.href, location.href);
+          return {
+            text: link.textContent.replace(/\\s+/g, " ").trim(),
+            href: link.href,
+            fileId: url.searchParams.get("id"),
+            nmm: url.searchParams.get("nmm"),
+          };
+        })
+        .filter(link => link.fileId === expectedFileId);
+
+      return {
+        url: location.href,
+        title: document.title,
+        hasModManagerDownload: links.some(link => link.nmm === "1"),
+        links,
+      };
+    })()`);
+
+    if (state.hasModManagerDownload) {
+      return true;
+    }
+
+    if (attempt < 11) {
+      await delay(5000);
+    }
+  }
+
+  return false;
 }
 
 function findReleaseFile(files) {
