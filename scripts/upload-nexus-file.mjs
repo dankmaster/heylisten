@@ -228,7 +228,9 @@ async function main() {
   const fileCategory = readEnv("NEXUS_UPLOAD_FILE_CATEGORY", false) || "main";
   const archiveExistingFile = readBool("NEXUS_ARCHIVE_EXISTING_FILE", false);
   const primaryModManagerDownload = readBool("NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD", true);
-  const allowModManagerDownload = readBool("NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD", true);
+  // Nexus v3 names this allow_mod_manager_download, but the public Files tab
+  // exposes the Vortex button when the editor's manager flag reads 0.
+  const allowModManagerDownload = readBool("NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD", false);
   const showRequirementsPopUp = readBool("NEXUS_SHOW_REQUIREMENTS_POP_UP", false);
   const verifyModManagerDownloadLink = readBool("NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD", allowModManagerDownload);
   const gameDomain = readEnv("NEXUS_GAME_DOMAIN", false) || "slaythespire2";

@@ -178,13 +178,13 @@ The Nexus upload flow sends:
 - `version`: the manifest/release version, shown in the Nexus Version column.
 - `display_name`: `Party Signals <version>`, shown in current and archived file rows.
 - `description`: generated from the matching `CHANGELOG.md` section.
-- `allow_mod_manager_download`: `true`, so Nexus exposes the file through Vortex/mod-manager download.
+- `allow_mod_manager_download`: `false`. Despite the API name, Nexus' current public Files tab exposes the Vortex/mod-manager button when the file editor reports `manager = 0`.
 - `primary_mod_manager_download`: `true` by default, so the newly uploaded file becomes the Vortex/mod-manager default. Pass `-NoDefaultModManagerDownload` only for special cases.
 - `archive_existing_file`: archives the previous file in the group when requested.
 
 After uploading, the helper verifies that Nexus returns a mod-manager download link for the new file. If that verification fails, the release command fails instead of silently leaving Nexus manual-download-only.
 
-The local publish flow also opens the logged-in Nexus file editor profile and verifies Nexus' own file flags for the uploaded file. The expected state is `manager = 1` and `primary = 1`, which corresponds to "Allow mod manager download" enabled and "Set as default file for mod manager download" enabled. Pass `-SkipNexusFileUiVerification` only if Nexus' editor is temporarily unavailable and you will check those boxes manually before announcing the release.
+The local publish flow also opens the logged-in Nexus file editor profile and verifies Nexus' own file flags for the uploaded file. The expected state is `manager = 0` and `primary = 1`, which corresponds to public Vortex/mod-manager download enabled and the uploaded file being the default mod-manager file. Pass `-SkipNexusFileUiVerification` only if Nexus' editor is temporarily unavailable and you will check the public Files tab manually before announcing the release.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so page automation uses a logged-in local browser profile and Nexus' own page-edit endpoints instead of the file-upload API.
 

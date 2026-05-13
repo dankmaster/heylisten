@@ -220,31 +220,58 @@ async function postFlamework(client, endpoint, body, errorMessage) {
   const result = await evaluate(client, `(async () => {
     const endpoint = ${JSON.stringify(endpoint)};
     const body = ${JSON.stringify(body)};
-    const baseUrl = window.__RUNTIME_CONFIG__?.NEXT_PUBLIC_SITE_URL || "https://next.nexusmods.com";
-    const response = await fetch(baseUrl + endpoint, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    const text = await response.text();
-    let json = null;
-    try {
-      json = JSON.parse(text);
-    }
-    catch {
-      json = null;
+    const runtime = window.__RUNTIME_CONFIG__ || {};
+    const baseUrls = [
+      runtime.NEXT_PUBLIC_FLAMEWORK_URI,
+      runtime.NEXT_PUBLIC_SITE_URL,
+      "https://www.nexusmods.com",
+    ].filter(Boolean);
+    const urls = [...new Set(baseUrls.map(baseUrl => baseUrl + endpoint).concat(endpoint))];
+    let lastResult = null;
+
+    for (const url of urls) {
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        const text = await response.text();
+        let json = null;
+        try {
+          json = JSON.parse(text);
+        }
+        catch {
+          json = null;
+        }
+
+        const result = {
+          ok: response.ok,
+          status: response.status,
+          json,
+          text,
+        };
+        if (response.ok) {
+          return result;
+        }
+
+        lastResult = result;
+      }
+      catch (error) {
+        lastResult = {
+          ok: false,
+          status: 0,
+          json: null,
+          text: String(error && error.message ? error.message : error),
+        };
+      }
     }
 
-    return {
-      ok: response.ok,
-      status: response.status,
-      json,
-      text,
-    };
+    return lastResult || { ok: false, status: 0, json: null, text: "No Nexus endpoint was attempted." };
   })()`);
 
   if (!result.ok || !result.json || result.json.success !== true) {
