@@ -117,6 +117,7 @@ try {
             Version = $Version
             BuildRoot = $BuildRoot
             FileGroupId = $FileGroupId
+            NexusModId = $NexusModId
             ZipPath = $nexusZipPath
             DisplayName = $DisplayName
             Description = $Description
