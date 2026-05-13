@@ -1,6 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$BuildRoot = $(if ($env:PARTYSIGNALS_BUILD_ROOT) { $env:PARTYSIGNALS_BUILD_ROOT } else { $env:HEYLISTEN_BUILD_ROOT }),
     [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [string]$Version,
     [switch]$NoDraft,
@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
 $releaseNotesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $Version = Resolve-HeyListenVersion $Version
 

@@ -1,6 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$BuildRoot = $(if ($env:PARTYSIGNALS_BUILD_ROOT) { $env:PARTYSIGNALS_BUILD_ROOT } else { $env:HEYLISTEN_BUILD_ROOT }),
     [switch]$Install
 )
 
@@ -36,11 +36,11 @@ $GameRoot = Resolve-Sts2GameRoot $GameRoot
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 $dataDir = Join-Path $GameRoot "data_sts2_windows_x86_64"
-$sourcePath = Join-Path $repoRoot "src\HeyListen.cs"
-$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
-$translationsSourceDir = Join-Path $repoRoot "mod\heylisten\translations"
-$distModDir = Join-Path $BuildRoot "heylisten"
-$outputPath = Join-Path $distModDir "heylisten.dll"
+$sourcePath = Join-Path $repoRoot "src\PartySignals.cs"
+$manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
+$translationsSourceDir = Join-Path $repoRoot "mod\partysignals\translations"
+$distModDir = Join-Path $BuildRoot "partysignals"
+$outputPath = Join-Path $distModDir "partysignals.dll"
 $runtimeDir = Split-Path -Parent ([System.Text.RegularExpressions.Regex].Assembly.Location)
 
 if (!(Test-Path -LiteralPath $GameRoot)) {
@@ -144,7 +144,7 @@ if (Test-Path -LiteralPath $distModDir) {
 }
 
 New-Item -ItemType Directory -Force $distModDir | Out-Null
-Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "heylisten.json") -Force
+Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $distModDir "partysignals.json") -Force
 if (Test-Path -LiteralPath $translationsSourceDir) {
     Copy-Item -LiteralPath $translationsSourceDir -Destination $distModDir -Recurse -Force
 }
@@ -161,21 +161,35 @@ if (-not (Invoke-RoslynCompile -SourcePath $sourcePath -OutputAssemblyPath $outp
 Write-Host "Built $outputPath"
 
 if ($Install) {
-    $targetModDir = Join-Path $GameRoot "mods\heylisten"
-    $legacyTargetModDir = Join-Path $GameRoot ("mods\" + "Coop" + "Callouts")
-    if (Test-Path -LiteralPath $legacyTargetModDir) {
-        Remove-Item -LiteralPath $legacyTargetModDir -Recurse -Force
-        Write-Host "Removed legacy install $legacyTargetModDir"
+    $targetModsDir = Join-Path $GameRoot "mods"
+    $targetModDir = Join-Path $targetModsDir "partysignals"
+    $legacyTargetModDirs = @(
+        (Join-Path $targetModsDir "heylisten"),
+        (Join-Path $targetModsDir ("Coop" + "Callouts"))
+    )
+    $resolvedTargetModsDir = [System.IO.Path]::GetFullPath($targetModsDir)
+    foreach ($legacyTargetModDir in $legacyTargetModDirs) {
+        if (Test-Path -LiteralPath $legacyTargetModDir) {
+            $resolvedLegacyTargetModDir = [System.IO.Path]::GetFullPath($legacyTargetModDir)
+            if (!$resolvedLegacyTargetModDir.StartsWith($resolvedTargetModsDir + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "Refusing to remove unexpected legacy mod path: $legacyTargetModDir"
+            }
+
+            Remove-Item -LiteralPath $legacyTargetModDir -Recurse -Force
+            Write-Host "Removed legacy install $legacyTargetModDir"
+        }
     }
 
     New-Item -ItemType Directory -Force $targetModDir | Out-Null
-    Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.json") -Destination (Join-Path $targetModDir "heylisten.json") -Force
-    $renamedDllPath = Join-Path $targetModDir "partysignals.dll"
-    if (Test-Path -LiteralPath $renamedDllPath) {
-        Remove-Item -LiteralPath $renamedDllPath -Force
+    foreach ($staleFileName in @("heylisten.json", "heylisten.dll")) {
+        $stalePath = Join-Path $targetModDir $staleFileName
+        if (Test-Path -LiteralPath $stalePath) {
+            Remove-Item -LiteralPath $stalePath -Force
+        }
     }
 
-    Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.dll") -Destination (Join-Path $targetModDir "heylisten.dll") -Force
+    Copy-Item -LiteralPath (Join-Path $distModDir "partysignals.json") -Destination (Join-Path $targetModDir "partysignals.json") -Force
+    Copy-Item -LiteralPath (Join-Path $distModDir "partysignals.dll") -Destination (Join-Path $targetModDir "partysignals.dll") -Force
     $distTranslationsDir = Join-Path $distModDir "translations"
     if (Test-Path -LiteralPath $distTranslationsDir) {
         $targetTranslationsDir = Join-Path $targetModDir "translations"

@@ -1,6 +1,6 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$BuildRoot = $(if ($env:PARTYSIGNALS_BUILD_ROOT) { $env:PARTYSIGNALS_BUILD_ROOT } else { $env:HEYLISTEN_BUILD_ROOT }),
     [switch]$SkipBuild,
     [switch]$RemoveLanNames
 )

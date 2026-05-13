@@ -41,9 +41,10 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 [list]
 [*]We are confident enough in the current feature set, card detection, packaging, translations, and release flow to call this the [code]1.0[/code] release.
 [*]Reviewed the Slay the Spire 2 [code]v0.105.1[/code] public beta card audit. It adds [code]Wither[/code] and changes card text/metadata for several cards, but the audited callout classifications are unchanged.
-[*]Renamed the visible mod label from [code]Hey, listen![/code] to [code]Party Signals - Automatic Card Callouts[/code], a more self-explanatory title that should make the mod easier to understand and find.
-[*]Kept the runtime mod ID, DLL filename, install folder, saved settings path, and canonical release zip on the existing [code]heylisten[/code] / [code]Hey-Listen[/code] names so upgrades keep replacing the same files and user settings stay in place.
-[*]Considering a future public rename, but because Nexus Mods and Vortex metadata are tied to mod pages and archive identity, the cleaner path may be to host the renamed version as a new Nexus mod later instead of renaming this file lineage in place.
+[*]Fully renamed the mod identity to [code]Party Signals - Automatic Card Callouts[/code], including the runtime mod ID [code]partysignals[/code], install folder [code]mods/partysignals[/code], DLL and manifest filenames, settings folder, and canonical release zip [code]Party-Signals-1.0.zip[/code].
+[*]Added migration from the old [code]%APPDATA%/SlayTheSpire2/heylisten/config.json[/code] settings file to [code]%APPDATA%/SlayTheSpire2/partysignals/config.json[/code].
+[*]Added a legacy Hey Listen cleanup check. If [code]mods/heylisten[/code] is still present beside the new [code]mods/partysignals[/code] install, Party Signals disables the old [code]heylisten.json[/code] manifest and removes old Harmony patches where possible so future launches show/use only Party Signals.
+[*]Updating users should remove the old [code]mods/heylisten[/code] folder, or uninstall the old Hey Listen package and install Party Signals fresh. If both folders were present on first launch, restart the game after Party Signals disables the old manifest.
 [/list]
 
 Tested with Slay the Spire 2 v0.105.1.
@@ -70,7 +71,9 @@ If ModConfig is installed, Party Signals can be configured in-game through the m
 
 Without ModConfig, the same settings can be adjusted in the user config file created after first launch:
 
-[code]%APPDATA%/SlayTheSpire2/heylisten/config.json[/code]
+[code]%APPDATA%/SlayTheSpire2/partysignals/config.json[/code]
+
+Existing Hey Listen settings are copied from [code]%APPDATA%/SlayTheSpire2/heylisten/config.json[/code] the first time Party Signals creates its new config file.
 
 Available settings:
 
@@ -88,7 +91,7 @@ Available settings:
 
 Translation packs are JSON files in:
 
-[code]mods/heylisten/translations/[/code]
+[code]mods/partysignals/translations/[/code]
 
 Players can copy an included file to adjust wording, then select it in ModConfig or set its code in the config file.
 
@@ -98,13 +101,13 @@ Install with Vortex, or manually extract the archive into your Slay the Spire 2 
 
 After installation, the mod should appear here:
 
-[code]mods/heylisten/[/code]
+[code]mods/partysignals/[/code]
 
 [b]Vortex Notes[/b]
 
-The zip is packed relative to the game root and contains [code]mods/heylisten[/code], which matches the Slay the Spire 2 Vortex Extension's root-folder installer. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button from the final Party Signals page. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to the new Party Signals Nexus page ID.
+The zip is packed relative to the game root and contains [code]mods/partysignals[/code], which matches the Slay the Spire 2 Vortex Extension's root-folder installer. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button from this page. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to the Party Signals Nexus page ID.
 
-The 1.0 archive intentionally keeps the [code]mods/heylisten[/code] install folder, manifest/runtime ID, DLL filename, config folder, and canonical zip filename on the existing Hey Listen names so upgrades keep replacing the same files. The Nexus page/display rename can happen later as metadata only.
+If you are updating from Hey Listen, remove the old [code]mods/heylisten[/code] folder or uninstall the old Vortex package and install Party Signals fresh. If both folders are present, Party Signals disables the old [code]heylisten.json[/code] manifest on startup; restart the game afterward so only Party Signals is shown.
 
 If Vortex does not recognize Slay the Spire 2 yet, install the Slay the Spire 2 Vortex Extension from Nexus Mods.
 

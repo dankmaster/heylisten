@@ -13,7 +13,7 @@ if (!(Test-Path -LiteralPath $primaryBaselineCsvPath)) {
     throw "Baseline card audit missing: $primaryBaselineCsvPath"
 }
 
-$tempAuditDir = Join-Path ([System.IO.Path]::GetTempPath()) ("heylisten-card-audit-" + [Guid]::NewGuid().ToString("N"))
+$tempAuditDir = Join-Path ([System.IO.Path]::GetTempPath()) ("partysignals-card-audit-" + [Guid]::NewGuid().ToString("N"))
 $hasDiff = $false
 
 function New-CardAuditBaseline {

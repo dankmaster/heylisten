@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 $Version = Resolve-HeyListenVersion $Version
@@ -82,13 +82,13 @@ try {
     $assetsJson = gh release view $tag --json assets
     $assets = ($assetsJson | ConvertFrom-Json).assets
     if ([string]::IsNullOrWhiteSpace($ReleaseAssetName)) {
-        $sourceHintPattern = "^Hey[ .]Listen[ .]$([Regex]::Escape($Version))-$([Regex]::Escape($NexusModId))-.*\.zip$"
+        $sourceHintPattern = "^Party[ .]Signals[ .]$([Regex]::Escape($Version))-$([Regex]::Escape($NexusModId))-.*\.zip$"
         $sourceHintAsset = @($assets | Where-Object { $_.name -match $sourceHintPattern } | Select-Object -First 1)
         if ($sourceHintAsset.Count -gt 0) {
             $ReleaseAssetName = $sourceHintAsset[0].name
         }
         else {
-            $ReleaseAssetName = "Hey-Listen-$Version.zip"
+            $ReleaseAssetName = "Party-Signals-$Version.zip"
         }
     }
 

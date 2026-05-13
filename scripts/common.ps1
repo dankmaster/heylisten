@@ -221,6 +221,10 @@ function Resolve-HeyListenBuildRoot {
     )
 
     if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
+        $BuildRoot = $env:PARTYSIGNALS_BUILD_ROOT
+    }
+
+    if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
         $BuildRoot = $env:HEYLISTEN_BUILD_ROOT
     }
 
@@ -275,7 +279,7 @@ function Resolve-HeyListenVersion {
         return $Version.Trim().TrimStart("v")
     }
 
-    $manifestPath = Join-Path (Get-HeyListenRepoRoot) "mod\heylisten\heylisten.json"
+    $manifestPath = Join-Path (Get-HeyListenRepoRoot) "mod\partysignals\partysignals.json"
     if (!(Test-Path -LiteralPath $manifestPath)) {
         throw "Manifest file missing: $manifestPath"
     }
@@ -359,7 +363,7 @@ function Get-HeyListenNexusStyleFileName {
         throw "Could not turn version into a Nexus-style filename token: $Version"
     }
 
-    return "Hey Listen $Version-$ModId-$versionToken-$Timestamp.zip"
+    return "Party Signals $Version-$ModId-$versionToken-$Timestamp.zip"
 }
 
 function Resolve-HeyListenNexusStyleZipPath {
@@ -382,7 +386,7 @@ function Resolve-HeyListenNexusStyleZipPath {
         throw "Build root was not found: $BuildRoot"
     }
 
-    $matches = @(Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Hey Listen $Version-$NexusModId-*.zip" |
+    $matches = @(Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Party Signals $Version-$NexusModId-*.zip" |
         Sort-Object LastWriteTimeUtc -Descending)
 
     if ($matches.Count -gt 0) {
@@ -393,7 +397,7 @@ function Resolve-HeyListenNexusStyleZipPath {
         return $null
     }
 
-    throw "Could not find a Nexus-style Vortex source-hint zip for Hey Listen $Version in $BuildRoot."
+    throw "Could not find a Nexus-style Vortex source-hint zip for Party Signals $Version in $BuildRoot."
 }
 
 function Set-HeyListenManifestVersion {
@@ -402,7 +406,7 @@ function Set-HeyListenManifestVersion {
     )
 
     $Version = Resolve-HeyListenVersion $Version
-    $manifestPath = Join-Path (Get-HeyListenRepoRoot) "mod\heylisten\heylisten.json"
+    $manifestPath = Join-Path (Get-HeyListenRepoRoot) "mod\partysignals\partysignals.json"
     if (!(Test-Path -LiteralPath $manifestPath)) {
         throw "Manifest file missing: $manifestPath"
     }

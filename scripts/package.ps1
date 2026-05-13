@@ -1,7 +1,7 @@
 param(
     [string]$GameRoot = $env:STS2_GAME_ROOT,
     [string]$Version,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$BuildRoot = $(if ($env:PARTYSIGNALS_BUILD_ROOT) { $env:PARTYSIGNALS_BUILD_ROOT } else { $env:HEYLISTEN_BUILD_ROOT }),
     [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [switch]$SkipVortexSourceCopy
 )
@@ -11,9 +11,9 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
-$distModDir = Join-Path $BuildRoot "heylisten"
+$distModDir = Join-Path $BuildRoot "partysignals"
 $gameRootPackageRoot = Join-Path $BuildRoot "package-game-root"
 $gameRootPackageModsDir = Join-Path $gameRootPackageRoot "mods"
 
@@ -49,11 +49,11 @@ if ($createVortexSourceCopy) {
     }
 }
 
-$gameRootZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+$gameRootZipPath = Join-Path $BuildRoot "Party-Signals-$Version.zip"
 $legacyModFolderPackageRoot = Join-Path $BuildRoot "package-mod-folder"
-$legacyModFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
-$renamedGameRootZipPath = Join-Path $BuildRoot "Party-Signals-$Version.zip"
-$renamedLegacyModFolderZipPath = Join-Path $BuildRoot "Party-Signals-$Version-mod-folder.zip"
+$oldHeyListenGameRootZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+$oldHeyListenModFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
+$oldPartySignalsModFolderZipPath = Join-Path $BuildRoot "Party-Signals-$Version-mod-folder.zip"
 $oldVortexSourceZipPaths = @()
 if (Test-Path -LiteralPath $BuildRoot) {
     $oldVortexSourceZipPaths = @(
@@ -68,9 +68,9 @@ $cleanupPaths = @(
     $gameRootPackageRoot,
     $legacyModFolderPackageRoot,
     $gameRootZipPath,
-    $legacyModFolderZipPath,
-    $renamedGameRootZipPath,
-    $renamedLegacyModFolderZipPath
+    $oldHeyListenGameRootZipPath,
+    $oldHeyListenModFolderZipPath,
+    $oldPartySignalsModFolderZipPath
 ) + $oldVortexSourceZipPaths
 foreach ($path in $cleanupPaths) {
     Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $path

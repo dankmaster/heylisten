@@ -1,6 +1,6 @@
 param(
     [string]$Version,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT
+    [string]$BuildRoot = $(if ($env:PARTYSIGNALS_BUILD_ROOT) { $env:PARTYSIGNALS_BUILD_ROOT } else { $env:HEYLISTEN_BUILD_ROOT })
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,8 +8,8 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
-$translationsSourceDir = Join-Path $repoRoot "mod\heylisten\translations"
+$manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
+$translationsSourceDir = Join-Path $repoRoot "mod\partysignals\translations"
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
 
 & (Join-Path $PSScriptRoot "verify-translations.ps1") -TranslationsDir $translationsSourceDir
@@ -23,20 +23,20 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine package version."
 }
 
-$packageName = "Hey-Listen-$Version.zip"
+$packageName = "Party-Signals-$Version.zip"
 $zipPath = Join-Path $BuildRoot $packageName
 if (!(Test-Path -LiteralPath $zipPath)) {
     throw "Package not found: $zipPath"
 }
 
 $expectedEntries = @(
-    "mods/heylisten/heylisten.dll",
-    "mods/heylisten/heylisten.json"
+    "mods/partysignals/partysignals.dll",
+    "mods/partysignals/partysignals.json"
 )
 
 if (Test-Path -LiteralPath $translationsSourceDir) {
     $expectedEntries += Get-ChildItem -LiteralPath $translationsSourceDir -File |
-        ForEach-Object { "mods/heylisten/translations/$($_.Name)" }
+        ForEach-Object { "mods/partysignals/translations/$($_.Name)" }
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem

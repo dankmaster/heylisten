@@ -1,6 +1,6 @@
 {
   "GameRoot": "C:\\Path\\To\\Slay the Spire 2",
-  "NexusModId": "<new-nexus-mod-id>",
+  "NexusModId": "<nexus-mod-id>",
   "NexusFileGroupId": "<nexus-file-group-id>",
   "SteamAppId": "<steam-app-id>",
   "NexusBrowserPath": "C:\\Path\\To\\chrome.exe",

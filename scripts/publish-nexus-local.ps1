@@ -1,6 +1,6 @@
 param(
     [string]$Version,
-    [string]$BuildRoot = $env:HEYLISTEN_BUILD_ROOT,
+    [string]$BuildRoot = $(if ($env:PARTYSIGNALS_BUILD_ROOT) { $env:PARTYSIGNALS_BUILD_ROOT } else { $env:HEYLISTEN_BUILD_ROOT }),
     [string]$FileGroupId = $env:NEXUSMODS_FILE_GROUP_ID,
     [string]$NexusModId = $env:NEXUSMODS_MOD_ID,
     [string]$ZipPath,
@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
+$manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 $Version = Resolve-HeyListenVersion $Version
@@ -31,7 +31,7 @@ $NexusModId = Resolve-NexusModId -ModId $NexusModId
 if ([string]::IsNullOrWhiteSpace($ZipPath)) {
     $ZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
     if ([string]::IsNullOrWhiteSpace($ZipPath)) {
-        $ZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
+        $ZipPath = Join-Path $BuildRoot "Party-Signals-$Version.zip"
     }
 }
 
@@ -64,7 +64,7 @@ if ($DryRun) {
     Write-Host "  Archive existing file: $archiveExisting"
     Write-Host "  Default mod-manager download: $defaultModManagerDownload"
     Write-Host "  Nexus API manager flag: false (public Vortex button enabled)"
-    Write-Host "  Verify mod-manager download link: true"
+    Write-Host "  Verify API download link: true"
     Write-Host "  Verify Nexus file editor options: $(!$SkipNexusFileUiVerification)"
     return
 }

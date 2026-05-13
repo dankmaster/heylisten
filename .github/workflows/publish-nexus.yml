@@ -14,7 +14,7 @@ on:
       release_asset_name:
         description: GitHub release asset to publish
         required: true
-        default: "Hey-Listen-1.0.zip"
+        default: "Party-Signals-1.0.zip"
       display_name:
         description: Nexus file display name. Include the version, for example Party Signals 1.0.
         required: false
@@ -28,7 +28,7 @@ on:
         required: false
         default: "main"
       mod_id:
-        description: Nexus Mods page mod ID, required once the new Party Signals page exists
+        description: Nexus Mods page mod ID
         required: true
         default: ""
       archive_existing_file:
@@ -93,7 +93,7 @@ jobs:
           NEXUS_UPLOAD_FILE_CATEGORY: "${{ inputs.file_category }}"
           NEXUS_ARCHIVE_EXISTING_FILE: ${{ inputs.archive_existing_file }}
           NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD: ${{ inputs.primary_mod_manager_download }}
-          NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD: "true"
+          NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD: "false"
           NEXUS_SHOW_REQUIREMENTS_POP_UP: "false"
           NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD: "true"
           NEXUS_GAME_DOMAIN: "slaythespire2"

@@ -21,30 +21,30 @@ Party Signals watches co-op combat hands and uses the game's own speech bubble V
 
 ## Install
 
-Download `Hey-Listen-<version>.zip` and extract it into your Slay the Spire 2 install folder.
+Download `Party-Signals-<version>.zip` and extract it into your Slay the Spire 2 install folder.
 
 The zip already includes the `mods` folder, so the final layout should be:
 
 ```text
 Slay the Spire 2/
   mods/
-    heylisten/
-      heylisten.dll
-      heylisten.json
+    partysignals/
+      partysignals.dll
+      partysignals.json
       translations/
 ```
 
 Launch the game normally after installing.
 
-The 1.0 package intentionally keeps the install folder, runtime mod ID, DLL name, saved settings path, and canonical zip filename on the existing Hey Listen names so upgrades replace the same files instead of creating a second callout mod.
+If you are updating from Hey Listen, remove the old `mods/heylisten` folder first, or uninstall the old package in Vortex and install Party Signals fresh. If both folders are present, Party Signals disables the old Hey Listen manifest on startup and you should restart the game so only Party Signals is shown.
 
 ### Vortex / Nexus Mods
 
-For now, Party Signals releases are GitHub-first. Nexus publishing is paused while the renamed mod page is decided, so do not upload this release to the old Hey Listen Nexus page by default.
+Use the Nexus Mods `Mod Manager Download` button when installing from Nexus. Manual installs should extract the archive into the Slay the Spire 2 game folder.
 
 Users can still install the GitHub zip manually with Vortex. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
-When a new Nexus page exists, set `NEXUSMODS_MOD_ID` to that page ID before packaging or publishing to create a matching Nexus-style source-hint zip.
+If Vortex still shows an older Hey Listen install after updating, remove that old install and reinstall Party Signals from the current Nexus file.
 
 ## Settings
 
@@ -63,8 +63,10 @@ The mod works without extra configuration. If ModConfig is installed, it adds:
 Settings are stored under:
 
 ```text
-%APPDATA%/SlayTheSpire2/heylisten/config.json
+%APPDATA%/SlayTheSpire2/partysignals/config.json
 ```
+
+Party Signals migrates existing Hey Listen settings from `%APPDATA%/SlayTheSpire2/heylisten/config.json` when the new config file does not exist yet.
 
 The `language` value defaults to `auto`, which follows the game's language setting when a matching pack is installed. If the game language is unavailable during startup, Auto falls back to the system locale and then English.
 
@@ -79,7 +81,7 @@ The `show_card_names` value defaults to `false`, preserving the original status-
 Translation packs are regular JSON files stored under:
 
 ```text
-Slay the Spire 2/mods/heylisten/translations/
+Slay the Spire 2/mods/partysignals/translations/
 ```
 
 Copy an existing file, change its `code`, `name`, and strings, then select that language in ModConfig or put its code in `config.json`.
@@ -100,7 +102,7 @@ To build and install into that local game folder:
 
 The scripts auto-detect the game folder when this repo lives under the local game workspace. You can also set `STS2_GAME_ROOT` or pass `-GameRoot` explicitly.
 
-Build outputs default to `dist/`. To use another local build folder, set `HEYLISTEN_BUILD_ROOT` or pass `-BuildRoot`.
+Build outputs default to `dist/`. To use another local build folder, set `PARTYSIGNALS_BUILD_ROOT` or pass `-BuildRoot`. The old `HEYLISTEN_BUILD_ROOT` variable is still accepted as a fallback for existing local shells.
 
 Local machine values such as the Nexus file group ID and Steam app ID can live in ignored `local.settings.json`. Local secrets such as the Nexus API key can live in ignored `.env`.
 
@@ -113,10 +115,10 @@ Local machine values such as the Nexus file group ID and Steam app ID can live i
 By default, the package is written to:
 
 ```text
-dist/Hey-Listen-<version>.zip
+dist/Party-Signals-<version>.zip
 ```
 
-The zip is packed relative to the game root and includes `mods/heylisten`, so it works for Vortex and manual drag-and-drop into the Slay the Spire 2 folder.
+The zip is packed relative to the game root and includes `mods/partysignals`, so it works for Vortex and manual drag-and-drop into the Slay the Spire 2 folder.
 
 ## GitHub Release
 
@@ -132,7 +134,7 @@ If you intentionally need to refresh an existing tag for the same version, pass 
 
 ## Local Full Publish
 
-Use this from your own machine when you want to build against your local Slay the Spire 2 install and publish the GitHub release. Add `-SkipNexus` while Nexus publishing is paused:
+Use this from your own machine when you want to build against your local Slay the Spire 2 install and publish the GitHub release. Add `-SkipNexus` when you only want to publish GitHub:
 
 ```powershell
 .\scripts\publish-local-release.ps1 -SkipNexus
@@ -140,7 +142,7 @@ Use this from your own machine when you want to build against your local Slay th
 
 The script keeps game DLLs local. GitHub receives the built release zip first. Nexus publishing is blocked if GitHub publishing is skipped or left as a draft.
 
-When Nexus publishing resumes, the Nexus mod ID and file group ID are read from `-NexusModId` / `-FileGroupId`, `NEXUSMODS_MOD_ID` / `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
+The Nexus mod ID and file group ID are read from `-NexusModId` / `-FileGroupId`, `NEXUSMODS_MOD_ID` / `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
@@ -164,13 +166,13 @@ Prepare the version and release notes first:
 .\scripts\prepare-release.ps1 -Version <version>
 ```
 
-After the GitHub release is ready and the new Nexus mod page has a file group, you can upload the local package directly:
+After the GitHub release is ready and Nexus has a file group, you can upload the local package directly:
 
 ```powershell
-.\scripts\publish-nexus-local.ps1 -NexusModId <new-page-id>
+.\scripts\publish-nexus-local.ps1 -NexusModId <page-id>
 ```
 
-The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash. After uploading, it checks that Nexus exposes a mod-manager download link and verifies the Nexus file editor marks the new file as mod-manager downloadable/default.
+The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash. After uploading, it checks that Nexus exposes an API download link and that the public Files tab shows the Mod Manager Download button for the uploaded file.
 
 Keep Nexus publishing local for this project so Nexus API keys and browser sessions stay on this PC. See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full local release flow.
 

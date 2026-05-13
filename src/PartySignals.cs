@@ -25,7 +25,7 @@ using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 
-namespace HeyListen
+namespace PartySignals
 {
     internal enum StatusCallout
     {
@@ -283,12 +283,12 @@ namespace HeyListen
         }
     }
 
-    internal sealed class HeyListenConfig
+    internal sealed class PartySignalsConfig
     {
-        private const string CurrentConfigDirectoryName = "heylisten";
+        private const string CurrentConfigDirectoryName = "partysignals";
         private const string LegacyConfigDirectoryName = "heylisten";
         private const string ConfigFileName = "config.json";
-        private const string LogPrefix = "[heylisten]";
+        private const string LogPrefix = "[partysignals]";
 
         public bool Enabled { get; set; } = true;
         public string Language { get; set; } = "auto";
@@ -306,9 +306,9 @@ namespace HeyListen
         public bool ShowDoubleDamage { get; set; } = true;
         public float DisplaySeconds { get; set; } = 12f;
 
-        public static HeyListenConfig Load()
+        public static PartySignalsConfig Load()
         {
-            var config = new HeyListenConfig();
+            var config = new PartySignalsConfig();
             var path = GetConfigPath();
 
             try
@@ -480,8 +480,17 @@ namespace HeyListen
     [ModInitializer("Initialize")]
     public static class ModEntry
     {
-        private const string ModId = "heylisten";
+        private const string ModId = "partysignals";
+        private const string LegacyModId = "heylisten";
         private const string ModDisplayName = "Party Signals - Automatic Card Callouts";
+        private const string CurrentModFolderName = "partysignals";
+        private const string LegacyModFolderName = "heylisten";
+        private const string LegacyManifestFileName = "heylisten.json";
+        private const string DisabledLegacyManifestFileName = "heylisten.json.disabled-by-party-signals";
+        private const string ActiveInstanceDataKey = "PartySignals.ActiveAssemblyPath";
+        private const string HarmonyId = "partysignals.patch";
+        private const string LegacyHarmonyId = "heylisten.patch";
+        private const string LogPrefix = "[partysignals]";
         private const string AutoLanguageCode = "auto";
         private const string DefaultLanguageCode = "eng";
         private const string TranslationsDirectoryName = "translations";
@@ -507,7 +516,7 @@ namespace HeyListen
         private const float MaxBubbleDisplaySeconds = 60f;
         private const double ManualBubbleLifetimeSeconds = 600d;
 
-        private static readonly Harmony Harmony = new Harmony("heylisten.patch");
+        private static readonly Harmony Harmony = new Harmony(HarmonyId);
         private static readonly Hashtable BubblesByPlayerKey = new Hashtable();
         private static readonly Hashtable AcknowledgedMessagesByPlayerKey = new Hashtable();
         private static readonly Hashtable LastMessagesByPlayerKey = new Hashtable();
@@ -706,7 +715,7 @@ namespace HeyListen
         private static long _lastRefreshAtUnixMs;
         private static RunManager _observedRunManager;
         private static CombatManager _observedCombatManager;
-        private static HeyListenConfig Config = new HeyListenConfig();
+        private static PartySignalsConfig Config = new PartySignalsConfig();
         private static readonly TranslationPack EnglishFallbackPack = CreateEnglishTranslationPack();
         private static TranslationPack[] TranslationPacks = new TranslationPack[0];
         private static TranslationPack ActiveTranslationPack = EnglishFallbackPack;
@@ -718,7 +727,14 @@ namespace HeyListen
         {
             try
             {
-                Config = HeyListenConfig.Load();
+                TryDisableLegacyHeyListenInstall();
+                TryUnpatchLegacyHeyListen();
+                if (!TryClaimActiveInstance())
+                {
+                    return;
+                }
+
+                Config = PartySignalsConfig.Load();
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 LoadTranslationPacks();
                 var loadedLanguage = Config.Language;
@@ -737,11 +753,94 @@ namespace HeyListen
                 Harmony.PatchAll(Assembly.GetExecutingAssembly());
                 TryWireManagerEvents();
                 TryRegisterModConfigUi();
-                Log.Info("[heylisten] Initialized.");
+                Log.Info($"{LogPrefix} Initialized.");
             }
             catch (Exception ex)
             {
-                Log.Error("[heylisten] Failed to apply Harmony patches: " + ex);
+                Log.Error($"{LogPrefix} Failed to apply Harmony patches: " + ex);
+            }
+        }
+
+        private static bool TryClaimActiveInstance()
+        {
+            try
+            {
+                var assemblyPath = Assembly.GetExecutingAssembly().Location ?? string.Empty;
+                var activePath = AppDomain.CurrentDomain.GetData(ActiveInstanceDataKey) as string;
+                if (!string.IsNullOrWhiteSpace(activePath) &&
+                    !string.Equals(Path.GetFullPath(activePath), Path.GetFullPath(assemblyPath), StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.Info($"{LogPrefix} Another Party Signals copy is already active from {activePath}. Skipping this duplicate copy from {assemblyPath}.");
+                    return false;
+                }
+
+                AppDomain.CurrentDomain.SetData(ActiveInstanceDataKey, assemblyPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to check duplicate mod instances: {ex.Message}");
+            }
+
+            return true;
+        }
+
+        private static void TryDisableLegacyHeyListenInstall()
+        {
+            try
+            {
+                var assemblyPath = Assembly.GetExecutingAssembly().Location;
+                var currentDir = !string.IsNullOrWhiteSpace(assemblyPath)
+                    ? Path.GetDirectoryName(assemblyPath)
+                    : null;
+                if (string.IsNullOrWhiteSpace(currentDir) ||
+                    !string.Equals(Path.GetFileName(currentDir), CurrentModFolderName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var modsDir = Directory.GetParent(currentDir)?.FullName;
+                if (string.IsNullOrWhiteSpace(modsDir))
+                {
+                    return;
+                }
+
+                var legacyDir = Path.Combine(modsDir, LegacyModFolderName);
+                var legacyManifestPath = Path.Combine(legacyDir, LegacyManifestFileName);
+                if (!File.Exists(legacyManifestPath))
+                {
+                    return;
+                }
+
+                var manifest = File.ReadAllText(legacyManifestPath);
+                if (!Regex.IsMatch(manifest, "\"id\"\\s*:\\s*\"" + Regex.Escape(LegacyModId) + "\"", RegexOptions.IgnoreCase))
+                {
+                    return;
+                }
+
+                var disabledManifestPath = Path.Combine(legacyDir, DisabledLegacyManifestFileName);
+                if (File.Exists(disabledManifestPath))
+                {
+                    File.Delete(disabledManifestPath);
+                }
+
+                File.Move(legacyManifestPath, disabledManifestPath);
+                Log.Info($"{LogPrefix} Disabled legacy Hey Listen install at {legacyDir}. Restart the game if Hey Listen was already loaded this session.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to disable legacy Hey Listen install: {ex.Message}");
+            }
+        }
+
+        private static void TryUnpatchLegacyHeyListen()
+        {
+            try
+            {
+                new Harmony(LegacyHarmonyId).UnpatchAll(LegacyHarmonyId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to unpatch legacy Hey Listen hooks: {ex.Message}");
             }
         }
 
@@ -1108,7 +1207,7 @@ namespace HeyListen
                     null);
                 if (registerMethod == null)
                 {
-                    Log.Error("[heylisten] Could not find ModConfigApi.Register.");
+                    Log.Error($"{LogPrefix} Could not find ModConfigApi.Register.");
                     return;
                 }
 
@@ -1167,11 +1266,11 @@ namespace HeyListen
                     false);
                 Config.Save();
 
-                Log.Info("[heylisten] Registered settings with ModConfig.");
+                Log.Info($"{LogPrefix} Registered settings with ModConfig.");
             }
             catch (Exception ex)
             {
-                Log.Error($"[heylisten] Failed to register ModConfig UI: {ex.Message}");
+                Log.Error($"{LogPrefix} Failed to register ModConfig UI: {ex.Message}");
             }
         }
 
@@ -1566,7 +1665,7 @@ namespace HeyListen
             }
             catch (Exception ex)
             {
-                Log.Error("[heylisten] Failed to load translation packs: " + ex.Message);
+                Log.Error($"{LogPrefix} Failed to load translation packs: " + ex.Message);
             }
 
             TranslationPacks = new TranslationPack[packs.Count];
@@ -1623,7 +1722,7 @@ namespace HeyListen
             }
             catch (Exception ex)
             {
-                Log.Error("[heylisten] Failed to load translation pack '" + path + "': " + ex.Message);
+                Log.Error($"{LogPrefix} Failed to load translation pack '" + path + "': " + ex.Message);
                 return null;
             }
         }
@@ -2278,7 +2377,7 @@ namespace HeyListen
             }
             catch (Exception ex)
             {
-                Log.Error("[heylisten] Failed to wire state listeners: " + ex.Message);
+                Log.Error($"{LogPrefix} Failed to wire state listeners: " + ex.Message);
             }
         }
 
@@ -4466,7 +4565,7 @@ namespace HeyListen
             }
             catch (Exception ex)
             {
-                Log.Error("[heylisten] Failed to attach game speech bubble: " + ex.Message);
+                Log.Error($"{LogPrefix} Failed to attach game speech bubble: " + ex.Message);
                 try
                 {
                     speechBubble.QueueFree();
@@ -4530,7 +4629,7 @@ namespace HeyListen
             }
             catch (Exception ex)
             {
-                Log.Error("[heylisten] Failed to create game speech bubble: " + ex.Message);
+                Log.Error($"{LogPrefix} Failed to create game speech bubble: " + ex.Message);
                 return null;
             }
         }

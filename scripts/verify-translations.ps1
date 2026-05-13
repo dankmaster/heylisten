@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Get-HeyListenRepoRoot
 if ([string]::IsNullOrWhiteSpace($TranslationsDir)) {
-    $TranslationsDir = Join-Path $repoRoot "mod\heylisten\translations"
+    $TranslationsDir = Join-Path $repoRoot "mod\partysignals\translations"
 }
 elseif (![System.IO.Path]::IsPathRooted($TranslationsDir)) {
     $TranslationsDir = Join-Path $repoRoot $TranslationsDir

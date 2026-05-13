@@ -39,7 +39,7 @@ async function runCurl(extraArgs = []) {
       "--silent",
       "--show-error",
       "--write-out",
-      "\n__HEYLISTEN_CURL_STATUS__:%{http_code}",
+      "\n__PARTYSIGNALS_CURL_STATUS__:%{http_code}",
       ...extraArgs,
     ], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -66,14 +66,14 @@ async function apiFetch(apiKey, route, options = {}) {
   const method = options.method || "GET";
   const headers = {
     "Content-Type": "application/json",
-    "User-Agent": "HeyListen release uploader",
+    "User-Agent": "PartySignals release uploader",
     ...(options.headers || {}),
   };
 
   let bodyPath;
   let keyHeaderPath;
   try {
-    keyHeaderPath = path.join(os.tmpdir(), `heylisten-nexus-key-${randomUUID()}.txt`);
+    keyHeaderPath = path.join(os.tmpdir(), `partysignals-nexus-key-${randomUUID()}.txt`);
     await writeFile(keyHeaderPath, `apikey: ${apiKey}`);
 
     let extraArgs = ["--request", method, "--header", `@${keyHeaderPath}`];
@@ -84,7 +84,7 @@ async function apiFetch(apiKey, route, options = {}) {
     extraArgs = [...extraArgs, `${apiBase}${route}`];
 
     if (options.body !== undefined) {
-      bodyPath = path.join(os.tmpdir(), `heylisten-nexus-${randomUUID()}.json`);
+      bodyPath = path.join(os.tmpdir(), `partysignals-nexus-${randomUUID()}.json`);
       await writeFile(bodyPath, options.body);
       extraArgs = [...extraArgs, "--data-binary", `@${bodyPath}`];
     }
@@ -94,7 +94,7 @@ async function apiFetch(apiKey, route, options = {}) {
       throw new Error(`${route} curl failed: ${code} ${stderr.trim()}`);
     }
 
-    const marker = "\n__HEYLISTEN_CURL_STATUS__:";
+    const marker = "\n__PARTYSIGNALS_CURL_STATUS__:";
     const markerIndex = stdout.lastIndexOf(marker);
     if (markerIndex < 0) {
       throw new Error(`${route} curl response did not include a status code.`);
@@ -198,7 +198,7 @@ async function verifyModManagerDownload(apiKey, gameDomain, modId, fileId) {
       method: "GET",
       headers: {
         apikey: apiKey,
-        "User-Agent": "HeyListen release uploader",
+        "User-Agent": "PartySignals release uploader",
       },
     });
 
