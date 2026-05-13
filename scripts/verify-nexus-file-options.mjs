@@ -45,7 +45,7 @@ try {
 
   const files = await fetchModFiles(client);
   const file = findReleaseFile(files);
-  const modManagerDownloadAllowed = Number(file.manager) !== 1;
+  const modManagerDownloadAllowed = Number(file.manager) === 1;
   const defaultModManagerDownload = Number(file.primary) === 1;
 
   console.log("Nexus file editor options:");
