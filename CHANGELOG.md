@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Renamed shipped translation packs from `*.json` to `*.loc` so Slay the Spire 2 no longer tries to read them as mod manifests during recursive mod discovery.
+- Added startup cleanup for stale `*.json` translation packs left behind by manual overwrite installs.
+
 ## 1.0
 
 - We are confident enough in the current feature set, card detection, packaging, translations, and release flow to call this the `1.0` release.

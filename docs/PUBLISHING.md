@@ -69,7 +69,7 @@ or pass `-BuildRoot` to the build, package, and publish scripts.
 
 Local machine values can live in ignored `local.settings.json`. Local secrets such as the Nexus API key can live in ignored `.env`.
 
-Package verification also checks that every translation pack has the same string keys as `eng.json`:
+Package verification also checks that every translation pack has the same string keys as `eng.loc`:
 
 ```powershell
 .\scripts\verify-translations.ps1

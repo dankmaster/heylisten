@@ -78,13 +78,13 @@ The `show_self_callouts` value defaults to `true`. Set it to `false` to hide bub
 
 The `show_card_names` value defaults to `false`, preserving the original status-only wording. Set it to `true` to name the source card for the primary status callout, such as `I can play Bash for Vulnerable`.
 
-Translation packs are regular JSON files stored under:
+Translation packs are JSON-formatted `.loc` files stored under:
 
 ```text
 Slay the Spire 2/mods/partysignals/translations/
 ```
 
-Copy an existing file, change its `code`, `name`, and strings, then select that language in ModConfig or put its code in `config.json`.
+Copy an existing `.loc` file, change its `code`, `name`, and strings, then select that language in ModConfig or put its code in `config.json`. Avoid `*.json` filenames in the mod folder because the game scans those as mod manifests.
 
 ## Build
 

@@ -15,7 +15,7 @@ elseif (![System.IO.Path]::IsPathRooted($TranslationsDir)) {
 }
 
 $TranslationsDir = [System.IO.Path]::GetFullPath($TranslationsDir)
-$englishPath = Join-Path $TranslationsDir "eng.json"
+$englishPath = Join-Path $TranslationsDir "eng.loc"
 if (!(Test-Path -LiteralPath $englishPath)) {
     throw "English translation pack missing: $englishPath"
 }
@@ -33,7 +33,7 @@ function Get-TranslationKeys {
 
 $expectedKeys = @(Get-TranslationKeys -Path $englishPath)
 $errors = New-Object "System.Collections.Generic.List[string]"
-$translationFiles = @(Get-ChildItem -LiteralPath $TranslationsDir -File -Filter "*.json" | Sort-Object Name)
+$translationFiles = @(Get-ChildItem -LiteralPath $TranslationsDir -File -Filter "*.loc" | Sort-Object Name)
 
 foreach ($file in $translationFiles) {
     $actualKeys = @(Get-TranslationKeys -Path $file.FullName)

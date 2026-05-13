@@ -494,6 +494,10 @@ namespace PartySignals
         private const string AutoLanguageCode = "auto";
         private const string DefaultLanguageCode = "eng";
         private const string TranslationsDirectoryName = "translations";
+        private const string TranslationPackExtension = ".loc";
+        private const string TranslationPackSearchPattern = "*.loc";
+        private const string LegacyTranslationPackSearchPattern = "*.json";
+        private const string DisabledLegacyTranslationPackSuffix = ".disabled-by-party-signals";
         private const string EnabledKey = "enabled";
         private const string LanguageKey = "language";
         private const string CalloutIntroKey = "callout_intro";
@@ -736,6 +740,7 @@ namespace PartySignals
 
                 Config = PartySignalsConfig.Load();
                 Config.DisplaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
+                TryDisableLegacyJsonTranslationPacks();
                 LoadTranslationPacks();
                 var loadedLanguage = Config.Language;
                 var loadedCalloutIntro = Config.CalloutIntro;
@@ -1651,7 +1656,7 @@ namespace PartySignals
                 var directory = GetTranslationsDirectory();
                 if (Directory.Exists(directory))
                 {
-                    var files = Directory.GetFiles(directory, "*.json");
+                    var files = Directory.GetFiles(directory, TranslationPackSearchPattern);
                     Array.Sort(files, StringComparer.OrdinalIgnoreCase);
                     for (var i = 0; i < files.Length; i++)
                     {
@@ -1685,6 +1690,46 @@ namespace PartySignals
             }
 
             return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, TranslationsDirectoryName);
+        }
+
+        private static void TryDisableLegacyJsonTranslationPacks()
+        {
+            try
+            {
+                var directory = GetTranslationsDirectory();
+                if (!Directory.Exists(directory))
+                {
+                    return;
+                }
+
+                var files = Directory.GetFiles(directory, LegacyTranslationPackSearchPattern);
+                for (var i = 0; i < files.Length; i++)
+                {
+                    var legacyPath = files[i];
+                    var locPath = Path.ChangeExtension(legacyPath, TranslationPackExtension);
+                    if (!File.Exists(locPath))
+                    {
+                        File.Move(legacyPath, locPath);
+                        Log.Info($"{LogPrefix} Renamed legacy translation pack {Path.GetFileName(legacyPath)} to {Path.GetFileName(locPath)}.");
+                        continue;
+                    }
+
+                    var disabledPath = legacyPath + DisabledLegacyTranslationPackSuffix;
+                    var suffix = 2;
+                    while (File.Exists(disabledPath))
+                    {
+                        disabledPath = legacyPath + "." + suffix.ToString(CultureInfo.InvariantCulture) + DisabledLegacyTranslationPackSuffix;
+                        suffix++;
+                    }
+
+                    File.Move(legacyPath, disabledPath);
+                    Log.Info($"{LogPrefix} Disabled legacy translation pack {Path.GetFileName(legacyPath)} because {Path.GetFileName(locPath)} already exists.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to disable legacy JSON translation packs: {ex.Message}");
+            }
         }
 
         private static TranslationPack TryLoadTranslationPack(string path)

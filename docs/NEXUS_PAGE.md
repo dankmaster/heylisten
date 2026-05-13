@@ -36,15 +36,11 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 
 [b]Latest Release[/b]
 
-[b]1.0[/b]
+[b]1.0.1[/b]
 
 [list]
-[*]We are confident enough in the current feature set, card detection, packaging, translations, and release flow to call this the [code]1.0[/code] release.
-[*]Reviewed the Slay the Spire 2 [code]v0.105.1[/code] public beta card audit. It adds [code]Wither[/code] and changes card text/metadata for several cards, but the audited callout classifications are unchanged.
-[*]Fully renamed the mod identity to [code]Party Signals - Automatic Card Callouts[/code], including the runtime mod ID [code]partysignals[/code], install folder [code]mods/partysignals[/code], DLL and manifest filenames, settings folder, and canonical release zip [code]Party-Signals-1.0.zip[/code].
-[*]Added migration from the old [code]%APPDATA%/SlayTheSpire2/heylisten/config.json[/code] settings file to [code]%APPDATA%/SlayTheSpire2/partysignals/config.json[/code].
-[*]Added a legacy Hey Listen cleanup check. If [code]mods/heylisten[/code] is still present beside the new [code]mods/partysignals[/code] install, Party Signals disables the old [code]heylisten.json[/code] manifest and removes old Harmony patches where possible so future launches show/use only Party Signals.
-[*]Updating users should remove the old [code]mods/heylisten[/code] folder, or uninstall the old Hey Listen package and install Party Signals fresh. If both folders were present on first launch, restart the game after Party Signals disables the old manifest.
+[*]Renamed shipped translation packs from [code]*.json[/code] to [code]*.loc[/code] so Slay the Spire 2 no longer tries to read them as mod manifests during recursive mod discovery.
+[*]Added startup cleanup for stale [code]*.json[/code] translation packs left behind by manual overwrite installs.
 [/list]
 
 Tested with Slay the Spire 2 v0.105.1.
@@ -63,7 +59,7 @@ Included translation pack codes:
 
 [code]eng, deu, esp, fra, ita, jpn, kor, pol, ptb, rus, spa, tha, tur, zhs[/code]
 
-The status names are copied from the base game where possible. Bubble phrasing lives in normal JSON files, so players can adjust wording or add their own pack.
+The status names are copied from the base game where possible. Bubble phrasing lives in JSON-formatted [code].loc[/code] files, so players can adjust wording or add their own pack without the game mistaking those files for mod manifests.
 
 [b]Settings[/b]
 
@@ -89,11 +85,11 @@ Available settings:
 [*][b]Bubble Timer[/b] - Controls how long bubbles stay visible. Set it to 0 to keep bubbles up until clicked.
 [/list]
 
-Translation packs are JSON files in:
+Translation packs are JSON-formatted [code].loc[/code] files in:
 
 [code]mods/partysignals/translations/[/code]
 
-Players can copy an included file to adjust wording, then select it in ModConfig or set its code in the config file.
+Players can copy an included [code].loc[/code] file to adjust wording, then select it in ModConfig or set its code in the config file.
 
 [b]Installation[/b]
 
