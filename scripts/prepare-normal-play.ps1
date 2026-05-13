@@ -60,4 +60,4 @@ if ($RemoveLanNames) {
 
 & (Join-Path $PSScriptRoot "remove-lan-multiplayer.ps1") @removeLanArgs
 
-Write-Host "Normal play ready: Hey, listen! is installed and LAN multiplayer debugging mods are removed."
+Write-Host "Normal play ready: Party Signals is installed and LAN multiplayer debugging mods are removed."

@@ -12,7 +12,7 @@ const chromePath = readEnv("NEXUS_BROWSER_PATH");
 const browserProfile = readEnv("NEXUS_BROWSER_PROFILE");
 const gameDomain = readEnv("NEXUS_GAME_DOMAIN", false) || "slaythespire2";
 const gameId = Number(readEnv("NEXUS_GAME_ID", false) || "8916");
-const modId = Number(readEnv("NEXUS_MOD_ID", false) || "697");
+const modId = Number(readEnv("NEXUS_MOD_ID"));
 const releaseVersion = readEnv("NEXUS_RELEASE_VERSION", false);
 const remoteDebuggingPort = Number(readEnv("NEXUS_REMOTE_DEBUGGING_PORT", false) || "9222");
 const loginOnly = readBool("NEXUS_PAGE_LOGIN_ONLY", false);
@@ -214,21 +214,6 @@ function cdp(client, method, params = {}) {
 
 async function getRuntimeConfigValue(client, key, fallback = "") {
   return evaluate(client, `(window.__RUNTIME_CONFIG__ && window.__RUNTIME_CONFIG__[${JSON.stringify(key)}]) || ${JSON.stringify(fallback)}`);
-}
-
-function cookieMatchesHost(cookieDomain, host) {
-  const normalizedDomain = String(cookieDomain || "").toLowerCase().replace(/^\./, "");
-  return host === normalizedDomain || host.endsWith(`.${normalizedDomain}`);
-}
-
-async function getCookieHeader(client, targetUrl) {
-  await cdp(client, "Network.enable").catch(() => {});
-  const { cookies = [] } = await cdp(client, "Network.getAllCookies");
-  const host = new URL(targetUrl).hostname.toLowerCase();
-  return cookies
-    .filter(cookie => cookieMatchesHost(cookie.domain, host) || String(cookie.domain || "").toLowerCase().replace(/^\./, "").endsWith("nexusmods.com"))
-    .map(cookie => `${cookie.name}=${cookie.value}`)
-    .join("; ");
 }
 
 async function postFlamework(client, endpoint, body, errorMessage) {

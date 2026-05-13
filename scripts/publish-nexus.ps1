@@ -10,6 +10,7 @@ param(
     [switch]$NoDefaultModManagerDownload,
     [switch]$ConfigureApiKey,
     [switch]$ConfigureFileGroupId,
+    [switch]$AllowGitHubHostedNexus,
     [switch]$Watch
 )
 
@@ -22,7 +23,11 @@ $manifestPath = Join-Path $repoRoot "mod\heylisten\heylisten.json"
 $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 
 $Version = Resolve-HeyListenVersion $Version
-$NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+$NexusModId = Resolve-NexusModId -ModId $NexusModId
+
+if (!$AllowGitHubHostedNexus) {
+    throw "GitHub-hosted Nexus publishing is disabled for Party Signals. Use .\scripts\publish-local-release.ps1 or .\scripts\publish-nexus-local.ps1 so Nexus API keys stay on this PC. Pass -AllowGitHubHostedNexus only if you intentionally change that release policy."
+}
 
 $FileGroupId = Resolve-NexusFileGroupId -FileGroupId $FileGroupId -Optional
 $DisplayName = Resolve-HeyListenReleaseDisplayName `
@@ -32,7 +37,7 @@ $Description = Resolve-HeyListenReleaseNotes `
     -Version $Version `
     -Value $Description `
     -Path $fileDescriptionPath `
-    -Default "Vortex-ready Hey, listen! release."
+    -Default "Vortex-ready Party Signals release."
 
 Push-Location $repoRoot
 try {
@@ -103,7 +108,8 @@ try {
         "-f", "file_category=$FileCategory",
         "-f", "mod_id=$NexusModId",
         "-f", "archive_existing_file=$archiveExisting",
-        "-f", "primary_mod_manager_download=$primaryModManagerDownload"
+        "-f", "primary_mod_manager_download=$primaryModManagerDownload",
+        "-f", "allow_github_hosted_nexus=true"
     )
     if (![string]::IsNullOrWhiteSpace($FileGroupId)) {
         $workflowArgs += @("-f", "file_group_id=$FileGroupId")

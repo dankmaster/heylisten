@@ -11,6 +11,7 @@ param(
     [switch]$ArchiveExistingFile,
     [switch]$NoDefaultModManagerDownload,
     [switch]$ConfigureApiKey,
+    [switch]$SkipNexusFileUiVerification,
     [switch]$DryRun
 )
 
@@ -25,7 +26,7 @@ $fileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $Version = Resolve-HeyListenVersion $Version
 
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
-$NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+$NexusModId = Resolve-NexusModId -ModId $NexusModId
 
 if ([string]::IsNullOrWhiteSpace($ZipPath)) {
     $ZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
@@ -42,7 +43,7 @@ $Description = Resolve-HeyListenReleaseNotes `
     -Version $Version `
     -Value $Description `
     -Path $fileDescriptionPath `
-    -Default "Vortex-ready Hey, listen! release."
+    -Default "Vortex-ready Party Signals release."
 
 if (!(Test-Path -LiteralPath $ZipPath)) {
     throw "Release zip was not found: $ZipPath"
@@ -64,6 +65,7 @@ if ($DryRun) {
     Write-Host "  Default mod-manager download: $defaultModManagerDownload"
     Write-Host "  Allow mod-manager download: true"
     Write-Host "  Verify mod-manager download link: true"
+    Write-Host "  Verify Nexus file editor options: $(!$SkipNexusFileUiVerification)"
     return
 }
 
@@ -189,10 +191,15 @@ try {
 
     $actionOutput = & $node.Source $uploaderPath 2>&1
     $actionExitCode = $LASTEXITCODE
+    $uploadedFileId = $null
     foreach ($entry in $actionOutput) {
         $line = $entry.ToString()
         if ($line.StartsWith("::debug::")) {
             continue
+        }
+
+        if ($line -match '^file_id=(\d+)$') {
+            $uploadedFileId = $Matches[1]
         }
 
         $line = $line.Replace($NexusApiKey, "***")
@@ -202,6 +209,26 @@ try {
 
     if ($actionExitCode -ne 0) {
         throw "Nexus Mods upload failed."
+    }
+
+    if (!$SkipNexusFileUiVerification) {
+        if ([string]::IsNullOrWhiteSpace($uploadedFileId)) {
+            throw "Nexus file editor verification blocked: the upload helper did not report a Nexus file ID."
+        }
+
+        $verifyArgs = @{
+            Version = $Version
+            FileId = $uploadedFileId
+            DisplayName = $DisplayName
+            GameDomain = "slaythespire2"
+            NexusModId = $NexusModId
+        }
+
+        if ($NoDefaultModManagerDownload) {
+            $verifyArgs.NoDefaultModManagerDownload = $true
+        }
+
+        & (Join-Path $PSScriptRoot "verify-nexus-file-options.ps1") @verifyArgs
     }
 }
 finally {

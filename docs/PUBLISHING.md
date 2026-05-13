@@ -4,10 +4,10 @@
 
 Each release should have one version and one changelog source:
 
-- `mod/heylisten/heylisten.json` stores the mod version.
+- `mod/heylisten/heylisten.json` stores the mod version and the stable `heylisten` runtime mod ID.
 - `CHANGELOG.md` stores the version history.
-- `docs/NEXUS_FILE_DESCRIPTION.md` is generated from the matching changelog section and is used as the GitHub release notes and Nexus file description.
-- `docs/NEXUS_PAGE.md` stores the Nexus mod page short and full descriptions. The prepare step refreshes its latest-release block from `CHANGELOG.md` and the tested game version, but the page-facing feature, settings, language, compatibility, and documentation wording still needs review when those areas change.
+- `docs/NEXUS_FILE_DESCRIPTION.md` is generated from the matching changelog section and is used as the GitHub release notes and, later, the Nexus file description.
+- `docs/NEXUS_PAGE.md` stores draft Nexus mod page short and full descriptions. The prepare step refreshes its latest-release block from `CHANGELOG.md` and the tested game version, but the page-facing feature, settings, language, compatibility, and documentation wording still needs review when those areas change.
 
 Prepare a release before building or publishing:
 
@@ -27,7 +27,7 @@ Release notes include a `Tested with Slay the Spire 2 v...` line. By default, th
 .\scripts\prepare-release.ps1 -Version 0.96 -TestedGameVersion v0.103.2
 ```
 
-The generated Nexus/GitHub notes are written to:
+The generated GitHub/Nexus notes are written to:
 
 ```text
 docs/NEXUS_FILE_DESCRIPTION.md
@@ -81,13 +81,13 @@ By default, it creates and verifies the canonical public archive:
 dist/Hey-Listen-<version>.zip
 ```
 
-It also creates an identical Nexus-style source-hint copy for manual Vortex installs:
+If `NEXUSMODS_MOD_ID` is configured or `-NexusModId` is passed, it also creates an identical Nexus-style source-hint copy for manual Vortex installs:
 
 ```text
-dist/Hey Listen <version>-697-<version-token>-<timestamp>.zip
+dist/Hey Listen <version>-<nexus-mod-id>-<version-token>-<timestamp>.zip
 ```
 
-Both archives are byte-identical and packed relative to the game root:
+The archive is packed relative to the game root:
 
 ```text
 mods/
@@ -97,9 +97,9 @@ mods/
     translations/
 ```
 
-Users can extract or drag either archive into the Slay the Spire 2 folder. For GitHub downloads, local builds, and Nexus uploads, prefer the Nexus-style source-hint filename so Vortex can infer the Slay The Spire II Nexus mod ID.
+Users can extract or drag the archive into the Slay the Spire 2 folder. The 1.0 package intentionally keeps the `mods/heylisten` install folder, manifest/runtime ID, DLL filename, config folder, and canonical package name stable so upgrades keep replacing the same user-facing files. For a future Nexus upload, configure the new Nexus page ID before packaging so the optional source-hint filename points at the right page.
 
-GitHub may display spaces in release asset names as dots, for example `Hey.Listen.<version>-697-...zip`; the Nexus source-hint tokens are still preserved.
+GitHub may display spaces in release asset names as dots; the Nexus source-hint tokens are still preserved when that optional copy is created.
 
 ## GitHub
 
@@ -122,21 +122,22 @@ If the same version tag already exists and you intentionally want to refresh it:
 The preferred release flow runs from your own machine so the build can reference your local Slay the Spire 2 install without uploading game DLLs anywhere.
 
 ```powershell
-.\scripts\publish-local-release.ps1 -ArchiveExistingFile
+.\scripts\publish-local-release.ps1 -SkipNexus
 ```
 
 This does all of the following:
 
 - Builds the mod against your local game files.
-- Creates or updates the GitHub release and uploads the release zips.
+- Creates or updates the GitHub release and uploads the release zip.
 - Blocks Nexus publishing if GitHub publishing is skipped or left as a draft, so GitHub cannot lag behind Nexus.
-- Uploads the Nexus-style source-hint zip to Nexus Mods from your machine, falling back to `Hey-Listen-<version>.zip` only if the source-hint copy is missing.
+- When Nexus publishing is enabled, uploads the Nexus-style source-hint zip to Nexus Mods from your machine, falling back to `Hey-Listen-<version>.zip` only if the source-hint copy is missing.
 - Sends the Nexus API `version`, `display_name`, and `description` fields from the prepared release data.
+- Verifies the Nexus file editor marks the new file as mod-manager downloadable and, by default, the mod-manager default.
 - Prints the tracked Nexus page copy path so the public mod page and Nexus documentation changelog can be updated after the file upload.
 
-The Nexus file display name defaults to `Hey Listen <version>`, for example `Hey Listen 0.96`. This keeps archived Nexus rows readable.
+The Nexus file display name defaults to `Party Signals <version>`, for example `Party Signals 1.0`. This keeps archived Nexus rows readable.
 
-By default this creates a public GitHub release. Add `-Draft -SkipNexus` if you want to prepare the GitHub release without uploading to Nexus yet.
+By default this creates a public GitHub release. Keep `-SkipNexus` while Party Signals is GitHub-only; add `-Draft -SkipNexus` if you want to prepare the GitHub release without making it public yet.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
@@ -154,7 +155,7 @@ or let the script prompt for it for the current publish run:
 
 ## Nexus Mods / Vortex
 
-Upload the generated `Hey-Listen-<version>.zip` as the main file on the Slay The Spire II Nexus Mods page and keep `Mod Manager Download` enabled.
+Nexus publishing is paused until the renamed Party Signals page is chosen. Do not upload the 1.0 rename to the old Hey Listen page by accident. Once the new page exists, set `NEXUSMODS_MOD_ID` to that page ID and upload the generated `Hey-Listen-<version>.zip` as the main file with `Mod Manager Download` enabled.
 
 Vortex support depends on Vortex recognizing Slay the Spire 2. If the user's Vortex install does not recognize it yet, point them to the Slay the Spire 2 Vortex Extension:
 
@@ -162,26 +163,28 @@ Vortex support depends on Vortex recognizing Slay the Spire 2. If the user's Vor
 https://www.nexusmods.com/site/mods/1727
 ```
 
-The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this mod at `Slay the Spire 2/mods/heylisten`. Do not include `vortex_override_instructions.json`; the Slay the Spire 2 Vortex extension's normal root-folder installer should handle this layout directly.
+The package layout follows the extension's expected game-root behavior: archives containing a `mods` folder are installed to the game root, which places this 1.0 bridge package at `Slay the Spire 2/mods/heylisten`. Do not include `vortex_override_instructions.json`; the Slay the Spire 2 Vortex extension's normal root-folder installer should handle this layout directly.
 
-Nexus/Vortex metadata is normally supplied by Nexus when users install with `Mod Manager Download`. Manual zip installs still use the same correct package layout. The package script creates an identical Nexus-style filename copy because Vortex can use that name to infer Slay The Spire II mod ID `697`; if Vortex still shows the mod as local/unknown, use `Guess IDs` or set the source to Nexus Mods with mod ID `697`. Keep the GitHub and Nexus release zip bytes identical when possible so hash-based metadata matching has the best chance to work.
+Nexus/Vortex metadata is normally supplied by Nexus when users install with `Mod Manager Download`. Manual zip installs still use the same correct package layout. The package script creates an identical Nexus-style filename copy only when a Nexus mod ID is configured; if Vortex still shows the mod as local/unknown, use `Guess IDs` or set the source to Nexus Mods with the new Party Signals page ID. Keep the GitHub and Nexus release zip bytes identical when possible so hash-based metadata matching has the best chance to work. The Nexus page/display name can move to Party Signals later without changing the installed `heylisten` files.
 
 The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexus upload uses [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md) as the default file description. The public page should be checked during each release for short description, full description, latest release, documentation, and changelog accuracy.
 
 ## Nexus Upload Workflow
 
-Nexus Mods' upload API can update an existing mod file group. The file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, ignored `local.settings.json`, or the GitHub `NEXUSMODS_FILE_GROUP_ID` secret.
+Nexus Mods' upload API can update an existing mod file group. The file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
 
 The Nexus upload flow sends:
 
 - `version`: the manifest/release version, shown in the Nexus Version column.
-- `display_name`: `Hey Listen <version>`, shown in current and archived file rows.
+- `display_name`: `Party Signals <version>`, shown in current and archived file rows.
 - `description`: generated from the matching `CHANGELOG.md` section.
 - `allow_mod_manager_download`: `true`, so Nexus exposes the file through Vortex/mod-manager download.
 - `primary_mod_manager_download`: `true` by default, so the newly uploaded file becomes the Vortex/mod-manager default. Pass `-NoDefaultModManagerDownload` only for special cases.
 - `archive_existing_file`: archives the previous file in the group when requested.
 
 After uploading, the helper verifies that Nexus returns a mod-manager download link for the new file. If that verification fails, the release command fails instead of silently leaving Nexus manual-download-only.
+
+The local publish flow also opens the logged-in Nexus file editor profile and verifies Nexus' own file flags for the uploaded file. The expected state is `manager = 0` and `primary = 1`, which corresponds to "Allow mod manager download" enabled and "Set as default file for mod manager download" enabled. Pass `-SkipNexusFileUiVerification` only if Nexus' editor is temporarily unavailable and you will check those boxes manually before announcing the release.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so page automation uses a logged-in local browser profile and Nexus' own page-edit endpoints instead of the file-upload API.
 
@@ -212,10 +215,10 @@ The `-Save` path requires typing an exact confirmation phrase before it calls th
 To upload directly from your local machine:
 
 ```powershell
-.\scripts\publish-nexus-local.ps1
+.\scripts\publish-nexus-local.ps1 -NexusModId <new-page-id>
 ```
 
-The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same SHA-256 hash as the local package. Use the full local publish command for normal releases so GitHub is created first.
+You can also configure `NEXUSMODS_MOD_ID` before running the uploader. The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same SHA-256 hash as the local package. Use the full local publish command for normal releases so GitHub is created first.
 
 To configure the local API key once:
 
@@ -223,24 +226,4 @@ To configure the local API key once:
 NEXUSMODS_API_KEY=your-api-key
 ```
 
-The repo also keeps a GitHub-hosted Nexus workflow as an optional fallback. Configure the GitHub secrets once:
-
-```powershell
-.\scripts\publish-nexus.ps1 -ConfigureApiKey
-.\scripts\publish-nexus.ps1 -ConfigureFileGroupId
-```
-
-For later remote uploads:
-
-```powershell
-.\scripts\publish-nexus.ps1 -Watch
-```
-
-You can also set the file group ID in the shell:
-
-```powershell
-$env:NEXUSMODS_FILE_GROUP_ID = "<nexus-file-group-id>"
-.\scripts\publish-nexus.ps1 -Watch
-```
-
-The remote helper script triggers `.github/workflows/publish-nexus.yml`. That workflow downloads `Hey-Listen-<version>.zip` from the matching GitHub release and uploads it with the same checked-in Nexus upload helper used by local publishing.
+Do not configure Nexus API keys as GitHub secrets for the normal Party Signals release flow. The legacy GitHub-hosted workflow remains in the repo for emergency/manual recovery only, and both the workflow and `publish-nexus.ps1` refuse to run unless you pass an explicit override.

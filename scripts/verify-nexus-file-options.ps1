@@ -1,41 +1,20 @@
 param(
     [string]$Version,
-    [string]$PagePath,
-    [string]$ChangelogPath,
-    [string]$ModUrl,
-    [string]$EditUrl,
+    [string]$FileId,
+    [string]$DisplayName,
+    [string]$EditFilesUrl,
     [string]$GameDomain = "slaythespire2",
     [int]$GameId = 8916,
     [string]$NexusModId,
     [string]$ChromePath = $env:NEXUS_BROWSER_PATH,
     [string]$BrowserProfile = $env:NEXUS_BROWSER_PROFILE,
     [int]$RemoteDebuggingPort = 9222,
-    [switch]$LoginOnly,
-    [switch]$SkipChangelog,
-    [switch]$Save
+    [switch]$NoDefaultModManagerDownload
 )
 
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "common.ps1")
-
-$repoRoot = Get-HeyListenRepoRoot
-
-if ([string]::IsNullOrWhiteSpace($PagePath)) {
-    $PagePath = Join-Path $repoRoot "docs\NEXUS_PAGE.md"
-}
-
-if ([string]::IsNullOrWhiteSpace($ChangelogPath)) {
-    $ChangelogPath = Join-Path $repoRoot "CHANGELOG.md"
-}
-
-if (!(Test-Path -LiteralPath $PagePath)) {
-    throw "Nexus page copy was not found: $PagePath"
-}
-
-if (!$SkipChangelog -and !$LoginOnly -and !(Test-Path -LiteralPath $ChangelogPath)) {
-    throw "Changelog was not found: $ChangelogPath"
-}
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Resolve-HeyListenVersion $null
@@ -45,13 +24,12 @@ else {
 }
 
 $NexusModId = Resolve-NexusModId -ModId $NexusModId
+$DisplayName = Resolve-HeyListenReleaseDisplayName `
+    -Version $Version `
+    -DisplayName $DisplayName
 
-if ([string]::IsNullOrWhiteSpace($ModUrl)) {
-    $ModUrl = "https://www.nexusmods.com/$GameDomain/mods/$NexusModId" + "?tab=description"
-}
-
-if ([string]::IsNullOrWhiteSpace($EditUrl)) {
-    $EditUrl = "https://www.nexusmods.com/games/$GameDomain/mods/$NexusModId/edit/general"
+if ([string]::IsNullOrWhiteSpace($EditFilesUrl)) {
+    $EditFilesUrl = "https://www.nexusmods.com/games/$GameDomain/mods/$NexusModId/edit/files"
 }
 
 if ([string]::IsNullOrWhiteSpace($ChromePath)) {
@@ -126,39 +104,28 @@ if ([string]::IsNullOrWhiteSpace($ChromePath) -or !(Test-Path -LiteralPath $Chro
     throw "Could not find Chrome or Chromium. Pass -ChromePath or set NEXUS_BROWSER_PATH."
 }
 
-if ($Save) {
-    Write-Warning "This will save public Nexus Mods page text and the Nexus documentation changelog for Party Signals. It does not upload or replace mod files."
-    $confirmation = Read-Host "Type UPDATE NEXUS PAGE to continue"
-    if ($confirmation -ne "UPDATE NEXUS PAGE") {
-        throw "Nexus page update was cancelled."
-    }
-}
-
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (!$node) {
-    throw "Node.js 20 or newer is required for Nexus page browser automation."
+    throw "Node.js 20 or newer is required for Nexus file editor verification."
 }
 
-$helperPath = Join-Path $PSScriptRoot "update-nexus-page.mjs"
+$helperPath = Join-Path $PSScriptRoot "verify-nexus-file-options.mjs"
 if (!(Test-Path -LiteralPath $helperPath)) {
-    throw "Nexus page helper missing: $helperPath"
+    throw "Nexus file option verifier missing: $helperPath"
 }
 
 $envNames = @(
-    "NEXUS_PAGE_COPY_PATH",
-    "NEXUS_CHANGELOG_PATH",
-    "NEXUS_MOD_URL",
-    "NEXUS_EDIT_URL",
     "NEXUS_BROWSER_PATH",
     "NEXUS_BROWSER_PROFILE",
     "NEXUS_GAME_DOMAIN",
     "NEXUS_GAME_ID",
     "NEXUS_MOD_ID",
     "NEXUS_RELEASE_VERSION",
+    "NEXUS_UPLOAD_DISPLAY_NAME",
+    "NEXUS_UPLOAD_FILE_ID",
+    "NEXUS_EXPECT_DEFAULT_MOD_MANAGER_DOWNLOAD",
     "NEXUS_REMOTE_DEBUGGING_PORT",
-    "NEXUS_PAGE_LOGIN_ONLY",
-    "NEXUS_PAGE_SAVE",
-    "NEXUS_SYNC_CHANGELOG"
+    "NEXUS_EDIT_FILES_URL"
 )
 
 $previousEnv = @{}
@@ -167,24 +134,21 @@ foreach ($name in $envNames) {
 }
 
 try {
-    $env:NEXUS_PAGE_COPY_PATH = (Resolve-Path -LiteralPath $PagePath).Path
-    $env:NEXUS_CHANGELOG_PATH = if (!$SkipChangelog -and !$LoginOnly) { (Resolve-Path -LiteralPath $ChangelogPath).Path } else { "" }
-    $env:NEXUS_MOD_URL = $ModUrl
-    $env:NEXUS_EDIT_URL = $EditUrl
     $env:NEXUS_BROWSER_PATH = (Resolve-Path -LiteralPath $ChromePath).Path
     $env:NEXUS_BROWSER_PROFILE = [System.IO.Path]::GetFullPath($BrowserProfile)
     $env:NEXUS_GAME_DOMAIN = $GameDomain
     $env:NEXUS_GAME_ID = $GameId.ToString()
     $env:NEXUS_MOD_ID = $NexusModId
     $env:NEXUS_RELEASE_VERSION = $Version
+    $env:NEXUS_UPLOAD_DISPLAY_NAME = $DisplayName
+    $env:NEXUS_UPLOAD_FILE_ID = if (![string]::IsNullOrWhiteSpace($FileId)) { $FileId } else { "" }
+    $env:NEXUS_EXPECT_DEFAULT_MOD_MANAGER_DOWNLOAD = if ($NoDefaultModManagerDownload) { "false" } else { "true" }
     $env:NEXUS_REMOTE_DEBUGGING_PORT = $RemoteDebuggingPort.ToString()
-    $env:NEXUS_PAGE_LOGIN_ONLY = if ($LoginOnly) { "true" } else { "false" }
-    $env:NEXUS_PAGE_SAVE = if ($Save) { "true" } else { "false" }
-    $env:NEXUS_SYNC_CHANGELOG = if (!$SkipChangelog -and !$LoginOnly) { "true" } else { "false" }
+    $env:NEXUS_EDIT_FILES_URL = $EditFilesUrl
 
     & $node.Source $helperPath
     if ($LASTEXITCODE -ne 0) {
-        throw "Nexus page helper failed."
+        throw "Nexus file editor verification failed."
     }
 }
 finally {

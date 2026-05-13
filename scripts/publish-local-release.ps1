@@ -14,7 +14,8 @@ param(
     [switch]$Draft,
     [switch]$MoveTag,
     [switch]$SkipGitHub,
-    [switch]$SkipNexus
+    [switch]$SkipNexus,
+    [switch]$SkipNexusFileUiVerification
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,7 +37,17 @@ if ($Draft -and !$SkipNexus) {
 }
 
 $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
-$NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+$NexusModId = if ($SkipNexus) {
+    if (![string]::IsNullOrWhiteSpace($NexusModId)) {
+        Resolve-NexusModId -ModId $NexusModId
+    }
+    else {
+        $null
+    }
+}
+else {
+    Resolve-NexusModId -ModId $NexusModId
+}
 $canonicalZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
 $DisplayName = Resolve-HeyListenReleaseDisplayName `
     -Version $Version `
@@ -45,7 +56,7 @@ $Description = Resolve-HeyListenReleaseNotes `
     -Version $Version `
     -Value $Description `
     -Path $fileDescriptionPath `
-    -Default "Vortex-ready Hey, listen! release."
+    -Default "Vortex-ready Party Signals release."
 
 Push-Location $repoRoot
 try {
@@ -53,7 +64,9 @@ try {
         $githubArgs = @{
             BuildRoot = $BuildRoot
             Version = $Version
-            NexusModId = $NexusModId
+        }
+        if (![string]::IsNullOrWhiteSpace($NexusModId)) {
+            $githubArgs.NexusModId = $NexusModId
         }
 
         if (![string]::IsNullOrWhiteSpace($GameRoot)) {
@@ -71,11 +84,18 @@ try {
         & (Join-Path $PSScriptRoot "publish-github-release.ps1") @githubArgs
     }
     else {
-        $sourceHintZipPath = Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
+        $sourceHintZipPath = if (![string]::IsNullOrWhiteSpace($NexusModId)) {
+            Resolve-HeyListenNexusStyleZipPath -BuildRoot $BuildRoot -Version $Version -NexusModId $NexusModId -Optional
+        }
+        else {
+            $null
+        }
         $packageArgs = @{
             BuildRoot = $BuildRoot
             Version = $Version
-            NexusModId = $NexusModId
+        }
+        if (![string]::IsNullOrWhiteSpace($NexusModId)) {
+            $packageArgs.NexusModId = $NexusModId
         }
         if (![string]::IsNullOrWhiteSpace($GameRoot)) {
             $packageArgs.GameRoot = $GameRoot
@@ -117,6 +137,10 @@ try {
 
         if ($ConfigureNexusApiKey) {
             $nexusArgs.ConfigureApiKey = $true
+        }
+
+        if ($SkipNexusFileUiVerification) {
+            $nexusArgs.SkipNexusFileUiVerification = $true
         }
 
         & (Join-Path $PSScriptRoot "publish-nexus-local.ps1") @nexusArgs

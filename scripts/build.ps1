@@ -170,6 +170,11 @@ if ($Install) {
 
     New-Item -ItemType Directory -Force $targetModDir | Out-Null
     Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.json") -Destination (Join-Path $targetModDir "heylisten.json") -Force
+    $renamedDllPath = Join-Path $targetModDir "partysignals.dll"
+    if (Test-Path -LiteralPath $renamedDllPath) {
+        Remove-Item -LiteralPath $renamedDllPath -Force
+    }
+
     Copy-Item -LiteralPath (Join-Path $distModDir "heylisten.dll") -Destination (Join-Path $targetModDir "heylisten.dll") -Force
     $distTranslationsDir = Join-Path $distModDir "translations"
     if (Test-Path -LiteralPath $distTranslationsDir) {

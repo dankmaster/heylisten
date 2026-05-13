@@ -56,7 +56,7 @@ if (!$SkipNexusPage) {
 
 $displayName = Resolve-HeyListenReleaseDisplayName -Version $Version
 
-Write-Host "Prepared Hey, listen! $Version"
+Write-Host "Prepared Party Signals $Version"
 Write-Host "  Manifest version: $Version"
 if (![string]::IsNullOrWhiteSpace($TestedGameVersion)) {
     Write-Host "  Tested game version: $TestedGameVersion"

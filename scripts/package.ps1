@@ -35,20 +35,43 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Could not determine package version."
 }
 
-if (!$SkipVortexSourceCopy) {
-    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+$createVortexSourceCopy = !$SkipVortexSourceCopy
+if ($createVortexSourceCopy) {
+    if ([string]::IsNullOrWhiteSpace($NexusModId)) {
+        $createVortexSourceCopy = $false
+    }
+    else {
+        $NexusModId = Resolve-NexusModId -ModId $NexusModId
+    }
+
+    if ([string]::IsNullOrWhiteSpace($NexusModId)) {
+        $createVortexSourceCopy = $false
+    }
 }
 
 $gameRootZipPath = Join-Path $BuildRoot "Hey-Listen-$Version.zip"
 $legacyModFolderPackageRoot = Join-Path $BuildRoot "package-mod-folder"
 $legacyModFolderZipPath = Join-Path $BuildRoot "Hey-Listen-$Version-mod-folder.zip"
+$renamedGameRootZipPath = Join-Path $BuildRoot "Party-Signals-$Version.zip"
+$renamedLegacyModFolderZipPath = Join-Path $BuildRoot "Party-Signals-$Version-mod-folder.zip"
 $oldVortexSourceZipPaths = @()
-if (!$SkipVortexSourceCopy -and (Test-Path -LiteralPath $BuildRoot)) {
-    $oldVortexSourceZipPaths = @(Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Hey Listen *-$NexusModId-*.zip" |
-        ForEach-Object { $_.FullName })
+if (Test-Path -LiteralPath $BuildRoot) {
+    $oldVortexSourceZipPaths = @(
+        Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Hey Listen $Version-*.zip" |
+            ForEach-Object { $_.FullName }
+        Get-ChildItem -LiteralPath $BuildRoot -File -Filter "Party Signals $Version-*.zip" |
+            ForEach-Object { $_.FullName }
+    )
 }
 
-$cleanupPaths = @($gameRootPackageRoot, $legacyModFolderPackageRoot, $gameRootZipPath, $legacyModFolderZipPath) + $oldVortexSourceZipPaths
+$cleanupPaths = @(
+    $gameRootPackageRoot,
+    $legacyModFolderPackageRoot,
+    $gameRootZipPath,
+    $legacyModFolderZipPath,
+    $renamedGameRootZipPath,
+    $renamedLegacyModFolderZipPath
+) + $oldVortexSourceZipPaths
 foreach ($path in $cleanupPaths) {
     Assert-SafeBuildRootPath -BuildRoot $BuildRoot -Path $path
 
@@ -68,7 +91,7 @@ Write-Host "Packaged game-root/Vortex zip: $gameRootZipPath"
 $packageOutputs = New-Object System.Collections.Generic.List[string]
 $packageOutputs.Add($gameRootZipPath) | Out-Null
 
-if (!$SkipVortexSourceCopy) {
+if ($createVortexSourceCopy) {
     $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $vortexSourceZipName = Get-HeyListenNexusStyleFileName -Version $Version -ModId $NexusModId -Timestamp $timestamp
     $vortexSourceZipPath = Join-Path $BuildRoot $vortexSourceZipName
@@ -83,6 +106,9 @@ if (!$SkipVortexSourceCopy) {
 
     Write-Host "Packaged Vortex source-hint zip: $vortexSourceZipPath"
     $packageOutputs.Add($vortexSourceZipPath) | Out-Null
+}
+else {
+    Write-Host "Skipped Nexus-style source-hint zip because no Nexus mod ID is configured."
 }
 
 Write-Output $packageOutputs

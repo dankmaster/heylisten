@@ -285,6 +285,11 @@ namespace HeyListen
 
     internal sealed class HeyListenConfig
     {
+        private const string CurrentConfigDirectoryName = "heylisten";
+        private const string LegacyConfigDirectoryName = "heylisten";
+        private const string ConfigFileName = "config.json";
+        private const string LogPrefix = "[heylisten]";
+
         public bool Enabled { get; set; } = true;
         public string Language { get; set; } = "auto";
         public string CalloutIntro { get; set; } = string.Empty;
@@ -310,6 +315,11 @@ namespace HeyListen
             {
                 if (!File.Exists(path))
                 {
+                    TryMigrateLegacyConfig(path);
+                }
+
+                if (!File.Exists(path))
+                {
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                     File.WriteAllText(path, config.ToJson());
                     return config;
@@ -331,9 +341,12 @@ namespace HeyListen
                 config.ShowPoison = ReadBool(raw, "show_poison", config.ShowPoison);
                 config.ShowDoubleDamage = ReadBool(raw, "show_double_damage", config.ShowDoubleDamage);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
-                if (!HasKey(raw, "language") ||
+                if (!HasKey(raw, "enabled") ||
+                    !HasKey(raw, "language") ||
                     !HasKey(raw, "callout_intro") ||
                     !HasKey(raw, "show_self_callouts") ||
+                    !HasKey(raw, "only_show_playable_now") ||
+                    !HasKey(raw, "show_generic_support") ||
                     !HasKey(raw, "show_card_names") ||
                     !HasKey(raw, "show_vulnerable") ||
                     !HasKey(raw, "show_weak") ||
@@ -341,14 +354,15 @@ namespace HeyListen
                     !HasKey(raw, "show_vigor") ||
                     !HasKey(raw, "show_focus") ||
                     !HasKey(raw, "show_poison") ||
-                    !HasKey(raw, "show_double_damage"))
+                    !HasKey(raw, "show_double_damage") ||
+                    !HasKey(raw, "display_seconds"))
                 {
                     config.Save();
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"[heylisten] Failed to load config: {ex.Message}");
+                Log.Error($"{LogPrefix} Failed to load config: {ex.Message}");
             }
 
             return config;
@@ -364,7 +378,7 @@ namespace HeyListen
             }
             catch (Exception ex)
             {
-                Log.Error($"[heylisten] Failed to save config: {ex.Message}");
+                Log.Error($"{LogPrefix} Failed to save config: {ex.Message}");
             }
         }
 
@@ -433,7 +447,33 @@ namespace HeyListen
         private static string GetConfigPath()
         {
             var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
-            return Path.Combine(appDataDir, "SlayTheSpire2", "heylisten", "config.json");
+            return Path.Combine(appDataDir, "SlayTheSpire2", CurrentConfigDirectoryName, ConfigFileName);
+        }
+
+        private static string GetLegacyConfigPath()
+        {
+            var appDataDir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+            return Path.Combine(appDataDir, "SlayTheSpire2", LegacyConfigDirectoryName, ConfigFileName);
+        }
+
+        private static void TryMigrateLegacyConfig(string currentPath)
+        {
+            var legacyPath = GetLegacyConfigPath();
+            if (!File.Exists(legacyPath))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(currentPath)!);
+                File.Copy(legacyPath, currentPath, false);
+                Log.Info($"{LogPrefix} Migrated config from {legacyPath} to {currentPath}.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to migrate legacy config: {ex.Message}");
+            }
         }
     }
 
@@ -441,7 +481,7 @@ namespace HeyListen
     public static class ModEntry
     {
         private const string ModId = "heylisten";
-        private const string ModDisplayName = "Hey, listen!";
+        private const string ModDisplayName = "Party Signals - Automatic Card Callouts";
         private const string AutoLanguageCode = "auto";
         private const string DefaultLanguageCode = "eng";
         private const string TranslationsDirectoryName = "translations";

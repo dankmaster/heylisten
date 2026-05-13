@@ -298,6 +298,7 @@ async function main() {
     await verifyModManagerDownload(apiKey, gameDomain, modId, fileId);
   }
 
+  console.log(`file_id=${fileId}`);
   console.log(`file_uid=${update.data.id}`);
 }
 

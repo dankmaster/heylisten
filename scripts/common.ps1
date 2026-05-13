@@ -125,7 +125,8 @@ function Resolve-NexusFileGroupId {
 function Resolve-NexusModId {
     param(
         [string]$ModId,
-        [string]$Default
+        [string]$Default,
+        [switch]$Optional
     )
 
     if (![string]::IsNullOrWhiteSpace($ModId)) {
@@ -148,6 +149,10 @@ function Resolve-NexusModId {
 
     if (![string]::IsNullOrWhiteSpace($Default)) {
         return $Default.Trim()
+    }
+
+    if ($Optional) {
+        return $null
     }
 
     throw "Nexus mod ID is required. Set NEXUSMODS_MOD_ID, add it to .env/local.settings.json, or pass -NexusModId."
@@ -294,7 +299,7 @@ function Resolve-HeyListenReleaseDisplayName {
     }
 
     $Version = Resolve-HeyListenVersion $Version
-    return "Hey Listen $Version"
+    return "Party Signals $Version"
 }
 
 function Format-Sts2VersionLabel {
@@ -367,7 +372,7 @@ function Resolve-HeyListenNexusStyleZipPath {
 
     $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
     $Version = Resolve-HeyListenVersion $Version
-    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+    $NexusModId = Resolve-NexusModId -ModId $NexusModId
 
     if (!(Test-Path -LiteralPath $BuildRoot)) {
         if ($Optional) {

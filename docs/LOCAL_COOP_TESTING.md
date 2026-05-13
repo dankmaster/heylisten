@@ -2,9 +2,9 @@
 
 You can run multiple Slay the Spire 2 clients on one PC for quick co-op mod testing.
 
-This is good for checking Hey, listen! behavior such as self/teammate bubbles, click-to-acknowledge, timer cleanup, and Timeline cleanup. It is not full save/profile isolation: both clients use the same Windows user and the same SlayTheSpire2 AppData folder.
+This is good for checking Party Signals behavior such as self/teammate bubbles, click-to-acknowledge, timer cleanup, and Timeline cleanup. It is not full save/profile isolation: both clients use the same Windows user and the same SlayTheSpire2 AppData folder.
 
-The LAN multiplayer mod is only needed for same-machine debugging. For normal play, keep Hey, listen! installed and remove the LAN debugging mod after testing.
+The LAN multiplayer mod is only needed for same-machine debugging. For normal play, keep Party Signals installed and remove the LAN debugging mod after testing.
 
 ## LAN Mod
 
@@ -43,7 +43,7 @@ From the repo root:
 .\scripts\launch-local-coop-test.ps1
 ```
 
-The script builds and installs Hey, listen!, then launches two windowed clients side by side with reduced FPS and muted audio.
+The script builds and installs Party Signals, then launches two windowed clients side by side with reduced FPS and muted audio.
 
 For direct executable launches, Steamworks expects `steam_appid.txt` in the game folder. The script creates it from `-SteamAppId`, `STS2_STEAM_APP_ID`, or ignored `local.settings.json` if it is missing.
 
@@ -79,13 +79,13 @@ local-test-logs/
 
 ## Return To Normal Play
 
-After closing the test clients, remove the LAN debugging mod while keeping Hey, listen! installed:
+After closing the test clients, remove the LAN debugging mod while keeping Party Signals installed:
 
 ```powershell
 .\scripts\prepare-normal-play.ps1
 ```
 
-If you only want to remove the LAN multiplayer mod without reinstalling Hey, listen!:
+If you only want to remove the LAN multiplayer mod without reinstalling Party Signals:
 
 ```powershell
 .\scripts\remove-lan-multiplayer.ps1

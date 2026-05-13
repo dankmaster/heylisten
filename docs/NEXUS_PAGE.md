@@ -3,15 +3,15 @@
 ## Short Description
 
 ```text
-Native co-op speech-bubble reminders for useful cards, with game-language translations and configurable self callouts.
+Automatic co-op card callouts using native speech-bubble reminders, with translations and configurable self callouts.
 ```
 
 ## Full Description
 
 ```bbcode
-[b]Hey, listen![/b] adds native in-game speech bubbles for Slay the Spire 2 co-op.
+[b]Party Signals - Automatic Card Callouts[/b] adds native in-game speech bubbles for Slay the Spire 2 co-op.
 
-It watches each player's hand during combat and calls out useful setup cards before a turn gets committed. If a teammate has an important card, their character can say it. If you have one, your own character can say it too, unless you turn self bubbles off.
+It watches each player's hand during combat and automatically calls out useful setup cards before a turn gets committed. If a teammate has an important card, their character can say it. If you have one, your own character can say it too, unless you turn self bubbles off.
 
 The mod uses the game's own speech bubble style instead of a custom overlay, so reminders stay close to the characters and feel like part of combat.
 
@@ -36,13 +36,17 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 
 [b]Latest Release[/b]
 
-[b]0.99.3[/b]
+[b]1.0[/b]
 
 [list]
-[*]Fixed Mimic being incorrectly announced as a Support card. Mimic copies another player's Block but gives the Block to you, so it no longer triggers support callouts.
+[*]We are confident enough in the current feature set, card detection, packaging, translations, and release flow to call this the [code]1.0[/code] release.
+[*]Reviewed the Slay the Spire 2 [code]v0.105.1[/code] public beta card audit. It adds [code]Wither[/code] and changes card text/metadata for several cards, but the audited callout classifications are unchanged.
+[*]Renamed the visible mod label from [code]Hey, listen![/code] to [code]Party Signals - Automatic Card Callouts[/code], a more self-explanatory title that should make the mod easier to understand and find.
+[*]Kept the runtime mod ID, DLL filename, install folder, saved settings path, and canonical release zip on the existing [code]heylisten[/code] / [code]Hey-Listen[/code] names so upgrades keep replacing the same files and user settings stay in place.
+[*]Considering a future public rename, but because Nexus Mods and Vortex metadata are tied to mod pages and archive identity, the cleaner path may be to host the renamed version as a new Nexus mod later instead of renaming this file lineage in place.
 [/list]
 
-Tested with Slay the Spire 2 v0.103.2. Card audit coverage includes the v0.104.0 public beta baseline.
+Tested with Slay the Spire 2 v0.105.1.
 
 [b]Documentation and Changelog[/b]
 
@@ -62,7 +66,7 @@ The status names are copied from the base game where possible. Bubble phrasing l
 
 [b]Settings[/b]
 
-If ModConfig is installed, Hey, listen! can be configured in-game through the mod settings menu.
+If ModConfig is installed, Party Signals can be configured in-game through the mod settings menu.
 
 Without ModConfig, the same settings can be adjusted in the user config file created after first launch:
 
@@ -98,21 +102,21 @@ After installation, the mod should appear here:
 
 [b]Vortex Notes[/b]
 
-The zip is packed relative to the game root and contains [code]mods/heylisten[/code], which matches the Slay the Spire 2 Vortex Extension's root-folder installer. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to Slay The Spire II Nexus mod ID:
+The zip is packed relative to the game root and contains [code]mods/heylisten[/code], which matches the Slay the Spire 2 Vortex Extension's root-folder installer. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button from the final Party Signals page. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to the new Party Signals Nexus page ID.
 
-[code]697[/code]
+The 1.0 archive intentionally keeps the [code]mods/heylisten[/code] install folder, manifest/runtime ID, DLL filename, config folder, and canonical zip filename on the existing Hey Listen names so upgrades keep replacing the same files. The Nexus page/display rename can happen later as metadata only.
 
 If Vortex does not recognize Slay the Spire 2 yet, install the Slay the Spire 2 Vortex Extension from Nexus Mods.
 
 [b]Compatibility[/b]
 
-Hey, listen! is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
+Party Signals is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
 
 This release has been tested on both the stable and public beta Slay the Spire 2 branches.
 
-Current release notes include the Slay the Spire 2 version used for local testing. If Slay the Spire 2 has updated since that version, check the latest Hey, listen! release notes or GitHub build before assuming every new/reworked card has been audited.
+Current release notes include the Slay the Spire 2 version used for local testing. If Slay the Spire 2 has updated since that version, check the latest Party Signals release notes or GitHub build before assuming every new/reworked card has been audited.
 
 [b]Why This Exists[/b]
 
-Co-op can get visually busy fast, and useful setup cards are easy to miss when everyone is planning at once. Hey, listen! keeps those reminders readable, quick to dismiss, and close to the game's own style.
+Co-op can get visually busy fast, and useful setup cards are easy to miss when everyone is planning at once. Party Signals keeps those reminders readable, quick to dismiss, and close to the game's own style.
 ```

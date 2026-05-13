@@ -6,7 +6,7 @@ on:
       version:
         description: Release version without the leading v
         required: true
-        default: "0.95"
+        default: "1.0"
       file_group_id:
         description: Optional Nexus Mods file group ID. If blank, the NEXUSMODS_FILE_GROUP_ID secret is used.
         required: false
@@ -14,23 +14,23 @@ on:
       release_asset_name:
         description: GitHub release asset to publish
         required: true
-        default: "Hey-Listen-0.95.zip"
+        default: "Hey-Listen-1.0.zip"
       display_name:
-        description: Nexus file display name. Include the version, for example Hey Listen 0.95.
+        description: Nexus file display name. Include the version, for example Party Signals 1.0.
         required: false
-        default: "Hey Listen 0.95"
+        default: "Party Signals 1.0"
       description:
         description: Nexus file description
         required: false
-        default: "Vortex-ready Hey, listen! release."
+        default: "Vortex-ready Party Signals release."
       file_category:
         description: Nexus file category
         required: false
         default: "main"
       mod_id:
-        description: Nexus Mods page mod ID, used to verify the mod-manager download link
-        required: false
-        default: "697"
+        description: Nexus Mods page mod ID, required once the new Party Signals page exists
+        required: true
+        default: ""
       archive_existing_file:
         description: Archive the existing file in this group
         required: false
@@ -39,6 +39,10 @@ on:
         description: Make this file the default download for mod managers
         required: false
         default: "true"
+      allow_github_hosted_nexus:
+        description: Explicitly allow GitHub-hosted Nexus publishing for this run
+        required: true
+        default: "false"
 
 permissions:
   contents: read
@@ -51,11 +55,22 @@ jobs:
       NEXUS_FILE_GROUP_ID: ${{ inputs.file_group_id || secrets.NEXUSMODS_FILE_GROUP_ID }}
 
     steps:
+      - name: Confirm GitHub-hosted Nexus publishing override
+        if: ${{ inputs.allow_github_hosted_nexus != 'true' }}
+        run: |
+          echo "GitHub-hosted Nexus publishing is disabled for normal Party Signals releases."
+          echo "Use scripts/publish-local-release.ps1 or scripts/publish-nexus-local.ps1 so Nexus secrets stay local."
+          exit 1
+
       - name: Checkout upload helper
         uses: actions/checkout@v4
 
       - name: Validate Nexus file group
-        run: test -n "$NEXUS_FILE_GROUP_ID"
+        env:
+          NEXUS_MOD_ID: ${{ inputs.mod_id }}
+        run: |
+          test -n "$NEXUS_FILE_GROUP_ID"
+          test -n "$NEXUS_MOD_ID"
 
       - name: Download GitHub release asset
         env:

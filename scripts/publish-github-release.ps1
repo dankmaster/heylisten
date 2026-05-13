@@ -24,11 +24,18 @@ try {
     }
 
     $BuildRoot = Resolve-HeyListenBuildRoot $BuildRoot
-    $NexusModId = Resolve-NexusModId -ModId $NexusModId -Default "697"
+    $NexusModId = if (![string]::IsNullOrWhiteSpace($NexusModId)) {
+        Resolve-NexusModId -ModId $NexusModId
+    }
+    else {
+        $null
+    }
     $packageArgs = @{
         BuildRoot = $BuildRoot
         Version = $Version
-        NexusModId = $NexusModId
+    }
+    if (![string]::IsNullOrWhiteSpace($NexusModId)) {
+        $packageArgs.NexusModId = $NexusModId
     }
     if (![string]::IsNullOrWhiteSpace($GameRoot)) {
         $packageArgs.GameRoot = $GameRoot
@@ -45,17 +52,17 @@ try {
     }
 
     $tag = "v$Version"
-    $releaseTitle = "Hey, listen! $Version"
+    $releaseTitle = "Party Signals $Version"
     $releaseNotes = Resolve-HeyListenReleaseNotes `
         -Version $Version `
         -Path $releaseNotesPath `
-        -Default "Ready-to-install package for Hey, listen! $Version. Extract the zip into your Slay the Spire 2 folder or install it with Vortex."
+        -Default "Ready-to-install package for Party Signals $Version. Extract the zip into your Slay the Spire 2 folder or install it with Vortex."
 
     git fetch --tags | Out-Null
     $existingTag = git tag --list $tag
     $headCommit = (git rev-parse HEAD).Trim()
     if (!$existingTag) {
-        git tag -a $tag -m "Hey, listen! $Version"
+        git tag -a $tag -m "Party Signals $Version"
     }
     else {
         $tagCommit = (git rev-list -n 1 $tag).Trim()
@@ -64,7 +71,7 @@ try {
                 throw "Tag $tag already points at $tagCommit instead of HEAD $headCommit. Bump the version, or rerun with -MoveTag to repoint it."
             }
 
-            git tag -fa $tag -m "Hey, listen! $Version"
+            git tag -fa $tag -m "Party Signals $Version"
         }
     }
 

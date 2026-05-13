@@ -1,8 +1,8 @@
-# Hey, listen!
+# Party Signals - Automatic Card Callouts
 
-Native co-op speech-bubble callouts for Slay the Spire 2.
+Automatic co-op speech-bubble card callouts for Slay the Spire 2.
 
-Hey, listen! watches co-op combat hands and uses the game's own speech bubble VFX to point out useful setup cards for you and your teammates. It keeps the UI lightweight: bubbles can be clicked away and can auto-hide on a timer.
+Party Signals watches co-op combat hands and uses the game's own speech bubble VFX to point out useful setup cards for you and your teammates. It keeps the UI lightweight: bubbles can be clicked away and can auto-hide on a timer.
 
 ## Features
 
@@ -11,7 +11,7 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 - Self and teammate bubbles use first-person `I have ...` wording so each character speaks for their own hand.
 - Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
 - Translation packs for the same language IDs exposed by the base game, with Auto following the game's language setting by default.
-- Customizable callout intro text, defaulting to the selected language's `Hey, listen!` equivalent.
+- Customizable callout intro text, defaulting to the selected language's included intro line.
 - Optional self bubbles so players can keep teammate reminders without showing their own hand reminders.
 - Optional card-name wording so callouts can name the source card for the primary status.
 - Per-status filters for players who want to hide noisier categories such as Poison, Focus, or Double Damage.
@@ -22,8 +22,6 @@ Hey, listen! watches co-op combat hands and uses the game's own speech bubble VF
 ## Install
 
 Download `Hey-Listen-<version>.zip` and extract it into your Slay the Spire 2 install folder.
-
-GitHub builds may also include an identical `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy. Use that copy when manually adding the mod to Vortex, because the Nexus-style filename helps Vortex associate the archive with the Hey Listen Nexus page.
 
 The zip already includes the `mods` folder, so the final layout should be:
 
@@ -38,13 +36,15 @@ Slay the Spire 2/
 
 Launch the game normally after installing.
 
+The 1.0 package intentionally keeps the install folder, runtime mod ID, DLL name, saved settings path, and canonical zip filename on the existing Hey Listen names so upgrades replace the same files instead of creating a second callout mod.
+
 ### Vortex / Nexus Mods
 
-Upload the Nexus-style `Hey Listen <version>-697-<version-token>-<timestamp>.zip` copy as the main Nexus Mods file. It is byte-identical to `Hey-Listen-<version>.zip`, packed relative to the game root so Vortex can deploy it directly into the game's `mods` folder, and named so Vortex can infer the Nexus source.
+For now, Party Signals releases are GitHub-first. Nexus publishing is paused while the renamed mod page is decided, so do not upload this release to the old Hey Listen Nexus page by default.
 
-Users can install it with Nexus Mods' `Mod Manager Download` button when they have Vortex set up for Slay the Spire 2. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
+Users can still install the GitHub zip manually with Vortex. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
-Nexus page: [Hey Listen](https://www.nexusmods.com/slaythespire2/mods/697). If a user manually adds the zip to Vortex, prefer the Nexus-style filename copy. If it still installs as an unknown/local mod, they can use Vortex's metadata/Guess IDs flow and link it to Slay The Spire II Nexus mod ID `697`.
+When a new Nexus page exists, set `NEXUSMODS_MOD_ID` to that page ID before packaging or publishing to create a matching Nexus-style source-hint zip.
 
 ## Settings
 
@@ -116,7 +116,7 @@ By default, the package is written to:
 dist/Hey-Listen-<version>.zip
 ```
 
-The zip is packed relative to the game root and includes `mods/heylisten`, so it works for Vortex/Nexus and manual drag-and-drop into the Slay the Spire 2 folder.
+The zip is packed relative to the game root and includes `mods/heylisten`, so it works for Vortex and manual drag-and-drop into the Slay the Spire 2 folder.
 
 ## GitHub Release
 
@@ -132,15 +132,15 @@ If you intentionally need to refresh an existing tag for the same version, pass 
 
 ## Local Full Publish
 
-Use this from your own machine when you want to build against your local Slay the Spire 2 install, publish the GitHub release, and upload the same zip to Nexus Mods:
+Use this from your own machine when you want to build against your local Slay the Spire 2 install and publish the GitHub release. Add `-SkipNexus` while Nexus publishing is paused:
 
 ```powershell
-.\scripts\publish-local-release.ps1 -ArchiveExistingFile
+.\scripts\publish-local-release.ps1 -SkipNexus
 ```
 
-The script keeps game DLLs local. GitHub receives the built release zips first, and Nexus Mods receives a zip with the same package hash. Nexus publishing is blocked if GitHub publishing is skipped or left as a draft.
+The script keeps game DLLs local. GitHub receives the built release zip first. Nexus publishing is blocked if GitHub publishing is skipped or left as a draft.
 
-The Nexus file group ID is read from `-FileGroupId`, `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
+When Nexus publishing resumes, the Nexus mod ID and file group ID are read from `-NexusModId` / `-FileGroupId`, `NEXUSMODS_MOD_ID` / `NEXUSMODS_FILE_GROUP_ID`, ignored `.env`, or ignored `local.settings.json`.
 
 If you are intentionally refreshing an existing version tag, add `-MoveTag`.
 
@@ -164,21 +164,15 @@ Prepare the version and release notes first:
 .\scripts\prepare-release.ps1 -Version <version>
 ```
 
-After the GitHub release is ready and the Nexus mod page has a file group, you can upload the local package directly:
+After the GitHub release is ready and the new Nexus mod page has a file group, you can upload the local package directly:
 
 ```powershell
-.\scripts\publish-nexus-local.ps1
+.\scripts\publish-nexus-local.ps1 -NexusModId <new-page-id>
 ```
 
-The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash. After uploading, it also checks that Nexus exposes a mod-manager download link for the new file.
+The direct Nexus uploader refuses to upload unless the matching public GitHub release already has a zip asset with the same package hash. After uploading, it checks that Nexus exposes a mod-manager download link and verifies the Nexus file editor marks the new file as mod-manager downloadable/default.
 
-There is also a GitHub-hosted Nexus workflow available if you want GitHub to perform only the final Nexus upload:
-
-```powershell
-.\scripts\publish-nexus.ps1
-```
-
-See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the local Nexus uploader and the optional GitHub-hosted Nexus workflow.
+Keep Nexus publishing local for this project so Nexus API keys and browser sessions stay on this PC. See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full local release flow.
 
 Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and `prepare-release.ps1` also refreshes the Nexus page's latest-release and documentation/changelog block. After the Nexus upload, run the page helper to preview or submit the tracked page text and matching Nexus documentation changelog.
 
@@ -204,4 +198,4 @@ Use `scripts/install-lan-multiplayer.ps1` and `scripts/launch-local-coop-test.ps
 
 ## License
 
-Hey, listen! is released under the [MIT License](LICENSE).
+Party Signals is released under the [MIT License](LICENSE).
