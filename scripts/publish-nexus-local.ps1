@@ -63,7 +63,7 @@ if ($DryRun) {
     Write-Host "  Category: $FileCategory"
     Write-Host "  Archive existing file: $archiveExisting"
     Write-Host "  Default mod-manager download: $defaultModManagerDownload"
-    Write-Host "  Nexus API manager flag: true (public Vortex button enabled)"
+    Write-Host "  Nexus API manager flag: false (public Vortex button enabled)"
     Write-Host "  Verify API download link: true"
     Write-Host "  Verify Nexus file editor options: $(!$SkipNexusFileUiVerification)"
     return
@@ -183,7 +183,7 @@ try {
     $env:NEXUS_UPLOAD_FILE_CATEGORY = $FileCategory
     $env:NEXUS_ARCHIVE_EXISTING_FILE = $archiveExisting
     $env:NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD = $defaultModManagerDownload
-    $env:NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD = "true"
+    $env:NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD = "false"
     $env:NEXUS_SHOW_REQUIREMENTS_POP_UP = "false"
     $env:NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD = "true"
     $env:NEXUS_GAME_DOMAIN = "slaythespire2"

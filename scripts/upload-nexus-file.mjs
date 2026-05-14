@@ -228,7 +228,11 @@ async function main() {
   const fileCategory = readEnv("NEXUS_UPLOAD_FILE_CATEGORY", false) || "main";
   const archiveExistingFile = readBool("NEXUS_ARCHIVE_EXISTING_FILE", false);
   const primaryModManagerDownload = readBool("NEXUS_PRIMARY_MOD_MANAGER_DOWNLOAD", true);
-  const allowModManagerDownload = readBool("NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD", true);
+  // Nexus v3 documents this as true = mod-manager downloads enabled. On the
+  // update-group version endpoint, the live public Files tab currently exposes
+  // the Vortex button when this is false, so the browser verifier checks the
+  // real public button after upload.
+  const allowModManagerDownload = readBool("NEXUS_ALLOW_MOD_MANAGER_DOWNLOAD", false);
   const showRequirementsPopUp = readBool("NEXUS_SHOW_REQUIREMENTS_POP_UP", false);
   const verifyModManagerDownloadLink = readBool("NEXUS_VERIFY_MOD_MANAGER_DOWNLOAD", allowModManagerDownload);
   const gameDomain = readEnv("NEXUS_GAME_DOMAIN", false) || "slaythespire2";
