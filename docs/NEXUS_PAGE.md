@@ -36,11 +36,12 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 
 [b]Latest Release[/b]
 
-[b]1.0.1[/b]
+[b]1.0.2[/b]
 
 [list]
-[*]Renamed shipped translation packs from [code]*.json[/code] to [code]*.loc[/code] so Slay the Spire 2 no longer tries to read them as mod manifests during recursive mod discovery.
-[*]Added startup cleanup for stale [code]*.json[/code] translation packs left behind by manual overwrite installs.
+[*]Added defensive handling around combat bubble refresh, observed player syncing, playable-card checks, and card classification so unusual character or card state cannot crash combat startup.
+[*]Added an opt-in [code]Debug Logging[/code] setting in ModConfig and [code]config.json[/code]. When enabled, Party Signals writes [code][partysignals] diag[/code] and [code][partysignals] debug[/code] breadcrumbs to the normal Slay the Spire 2 log, including settings, player state, hand cards, detected callouts, loaded mod assemblies, Harmony patch owners on relevant game methods, and whether the combat bubble host is ready.
+[*]Speech bubbles now wait for the combat VFX host instead of falling back to the scene root, avoiding early combat-start attachment during character-specific setup.
 [/list]
 
 Tested with Slay the Spire 2 v0.105.1.
@@ -82,6 +83,7 @@ Available settings:
 [*][b]Card Names[/b] - Names the source card for the primary status callout. Off by default to preserve the original wording.
 [*][b]Include Support[/b] - Allows generic support callouts for helpful cards that do not match a specific status keyword.
 [*][b]Status Filters[/b] - Show or hide Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage callouts individually.
+[*][b]Debug Logging[/b] - Writes extra [code][partysignals] diag[/code] and [code][partysignals] debug[/code] lines to the normal game log for troubleshooting, including loaded mod assemblies and Harmony patch owners on relevant game methods. Leave this off unless asked for a report.
 [*][b]Bubble Timer[/b] - Controls how long bubbles stay visible. Set it to 0 to keep bubbles up until clicked.
 [/list]
 

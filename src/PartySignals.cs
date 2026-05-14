@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -304,6 +305,7 @@ namespace PartySignals
         public bool ShowFocus { get; set; } = true;
         public bool ShowPoison { get; set; } = true;
         public bool ShowDoubleDamage { get; set; } = true;
+        public bool DebugLogging { get; set; } = false;
         public float DisplaySeconds { get; set; } = 12f;
 
         public static PartySignalsConfig Load()
@@ -340,6 +342,7 @@ namespace PartySignals
                 config.ShowFocus = ReadBool(raw, "show_focus", config.ShowFocus);
                 config.ShowPoison = ReadBool(raw, "show_poison", config.ShowPoison);
                 config.ShowDoubleDamage = ReadBool(raw, "show_double_damage", config.ShowDoubleDamage);
+                config.DebugLogging = ReadBool(raw, "debug_logging", config.DebugLogging);
                 config.DisplaySeconds = ReadFloat(raw, "display_seconds", config.DisplaySeconds);
                 if (!HasKey(raw, "enabled") ||
                     !HasKey(raw, "language") ||
@@ -355,6 +358,7 @@ namespace PartySignals
                     !HasKey(raw, "show_focus") ||
                     !HasKey(raw, "show_poison") ||
                     !HasKey(raw, "show_double_damage") ||
+                    !HasKey(raw, "debug_logging") ||
                     !HasKey(raw, "display_seconds"))
                 {
                     config.Save();
@@ -400,6 +404,7 @@ namespace PartySignals
             sb.AppendLine($"  \"show_focus\": {ShowFocus.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_poison\": {ShowPoison.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"show_double_damage\": {ShowDoubleDamage.ToString().ToLowerInvariant()},");
+            sb.AppendLine($"  \"debug_logging\": {DebugLogging.ToString().ToLowerInvariant()},");
             sb.AppendLine($"  \"display_seconds\": {DisplaySeconds.ToString("0.##", CultureInfo.InvariantCulture)}");
             sb.AppendLine("}");
             return sb.ToString();
@@ -488,6 +493,7 @@ namespace PartySignals
         private const string LegacyManifestFileName = "heylisten.json";
         private const string DisabledLegacyManifestFileName = "heylisten.json.disabled-by-party-signals";
         private const string ActiveInstanceDataKey = "PartySignals.ActiveAssemblyPath";
+        private const string ModVersion = "1.0.2";
         private const string HarmonyId = "partysignals.patch";
         private const string LegacyHarmonyId = "heylisten.patch";
         private const string LogPrefix = "[partysignals]";
@@ -512,6 +518,7 @@ namespace PartySignals
         private const string ShowFocusKey = "show_focus";
         private const string ShowPoisonKey = "show_poison";
         private const string ShowDoubleDamageKey = "show_double_damage";
+        private const string DebugLoggingKey = "debug_logging";
         private const string DisplaySecondsKey = "display_seconds";
         private const int MaxCalloutIntroLength = 64;
         private const long DebouncedRefreshWindowMs = 45L;
@@ -519,6 +526,8 @@ namespace PartySignals
         private const float MinBubbleDisplaySeconds = 0f;
         private const float MaxBubbleDisplaySeconds = 60f;
         private const double ManualBubbleLifetimeSeconds = 600d;
+        private const int MaxDiagnosticCardsPerPlayer = 12;
+        private const int MaxPatchDiagnosticsPerTarget = 16;
 
         private static readonly Harmony Harmony = new Harmony(HarmonyId);
         private static readonly Hashtable BubblesByPlayerKey = new Hashtable();
@@ -726,6 +735,9 @@ namespace PartySignals
         private static bool _modConfigRegistered;
         private static bool _assemblyLoadHooked;
         private static bool _localeChangeHooked;
+        private static int _lastCombatDiagnosticStateHash;
+        private static bool _lastCombatDiagnosticHostReady;
+        private static bool _modInteractionDiagnosticsLogged;
 
         public static void Initialize()
         {
@@ -758,7 +770,8 @@ namespace PartySignals
                 Harmony.PatchAll(Assembly.GetExecutingAssembly());
                 TryWireManagerEvents();
                 TryRegisterModConfigUi();
-                Log.Info($"{LogPrefix} Initialized.");
+                Log.Info($"{LogPrefix} Initialized v{ModVersion}. " + BuildSettingsDiagnostic());
+                LogModInteractionDiagnostics("startup", false);
             }
             catch (Exception ex)
             {
@@ -939,6 +952,19 @@ namespace PartySignals
 
         private static void RefreshBubbles()
         {
+            try
+            {
+                RefreshBubblesCore();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to refresh bubbles: " + ex);
+                ClearAllBubbles();
+            }
+        }
+
+        private static void RefreshBubblesCore()
+        {
             if (!Config.Enabled)
             {
                 ClearAllBubbles();
@@ -966,6 +992,15 @@ namespace PartySignals
                 : null;
             var localPlayer = ResolveLocalPlayer(runState, combatState, localNetId);
             var localNetIdIsUnique = IsNetIdUnique(runState, localNetId);
+            LogCombatDiagnostic(
+                "refresh",
+                runState,
+                combatState,
+                localNetId,
+                localPlayer,
+                localNetIdIsUnique,
+                ResolveSpeechBubbleHost(root) != null,
+                false);
 
             var activePlayerKeys = new Hashtable();
             for (var i = 0; i < runState.Players.Count; i++)
@@ -1027,6 +1062,14 @@ namespace PartySignals
                 var assemblyName = args.LoadedAssembly != null
                     ? args.LoadedAssembly.GetName().Name
                     : string.Empty;
+                if (Config.DebugLogging && IsLikelyModAssembly(args.LoadedAssembly))
+                {
+                    Log.Info(
+                        $"{LogPrefix} debug assembly loaded name={SanitizeDiagnosticText(assemblyName)} " +
+                        $"version={SanitizeDiagnosticText(GetAssemblyVersion(args.LoadedAssembly))} " +
+                        $"location={SanitizeDiagnosticText(GetAssemblyLocation(args.LoadedAssembly))}");
+                }
+
                 if (string.Equals(assemblyName, "ModConfig", StringComparison.OrdinalIgnoreCase))
                 {
                     TryRegisterModConfigUi();
@@ -1054,7 +1097,7 @@ namespace PartySignals
 
             try
             {
-                var entries = Array.CreateInstance(entryType, 15);
+                var entries = Array.CreateInstance(entryType, 16);
                 var entryIndex = 0;
                 entries.SetValue(CreateModConfigEntry(
                     entryType,
@@ -1186,6 +1229,15 @@ namespace PartySignals
                     Enum.Parse(configTypeEnum, "Toggle"),
                     Config.ShowDoubleDamage,
                     new Action<object>(value => ApplyCalloutFilterSetting(ShowDoubleDamageKey, ConvertToBool(value, true), true))), entryIndex++);
+                entries.SetValue(CreateModConfigEntry(
+                    entryType,
+                    configTypeEnum,
+                    DebugLoggingKey,
+                    "Debug Logging",
+                    "Write extra Party Signals combat diagnostics to the normal game log for troubleshooting reports.",
+                    Enum.Parse(configTypeEnum, "Toggle"),
+                    Config.DebugLogging,
+                    new Action<object>(value => ApplyDebugLoggingSetting(ConvertToBool(value, false), true))), entryIndex++);
                 var displaySecondsEntry = CreateModConfigEntry(
                     entryType,
                     configTypeEnum,
@@ -1265,6 +1317,9 @@ namespace PartySignals
                 ApplyCalloutFilterSetting(
                     ShowDoubleDamageKey,
                     ReadModConfigBool(apiType, ShowDoubleDamageKey, Config.ShowDoubleDamage),
+                    false);
+                ApplyDebugLoggingSetting(
+                    ReadModConfigBool(apiType, DebugLoggingKey, Config.DebugLogging),
                     false);
                 ApplyDisplaySecondsSetting(
                     ReadModConfigFloat(apiType, DisplaySecondsKey, Config.DisplaySeconds),
@@ -1644,6 +1699,25 @@ namespace PartySignals
 
             ClearAllBubbles();
             ForceRefresh();
+        }
+
+        private static void ApplyDebugLoggingSetting(bool debugLogging, bool save)
+        {
+            Config.DebugLogging = debugLogging;
+            if (save)
+            {
+                Config.Save();
+            }
+
+            if (save || debugLogging)
+            {
+                Log.Info($"{LogPrefix} Debug logging {(debugLogging ? "enabled" : "disabled")}.");
+            }
+            if (debugLogging)
+            {
+                LogModInteractionDiagnostics("debug-enabled", true);
+                ForceRefresh();
+            }
         }
 
         private static void LoadTranslationPacks()
@@ -2494,6 +2568,7 @@ namespace PartySignals
         {
             ClearEndedTurnPlayers();
             ClearAcknowledgements();
+            LogCombatDiagnostic("setup", GetRunState(RunManager.Instance), state, 0UL, null, false, false, true);
             SyncObservedPlayers();
             ForceRefresh();
         }
@@ -2502,6 +2577,7 @@ namespace PartySignals
         {
             ClearEndedTurnPlayers();
             ClearAcknowledgements();
+            ResetCombatDiagnostic();
             ClearObservedPlayers();
             ClearAllBubbles();
         }
@@ -2510,6 +2586,7 @@ namespace PartySignals
         {
             ClearEndedTurnPlayers();
             ClearAcknowledgements();
+            ResetCombatDiagnostic();
             ClearObservedPlayers();
             ClearAllBubbles();
         }
@@ -2571,6 +2648,19 @@ namespace PartySignals
         }
 
         private static void SyncObservedPlayers()
+        {
+            try
+            {
+                SyncObservedPlayersCore();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to sync observed players: " + ex);
+                ClearObservedPlayers();
+            }
+        }
+
+        private static void SyncObservedPlayersCore()
         {
             RunManager runManager;
             RunState runState;
@@ -2731,6 +2821,496 @@ namespace PartySignals
             return player.NetId.ToString(CultureInfo.InvariantCulture) +
                    ":" +
                    RuntimeHelpers.GetHashCode(player).ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static void ResetCombatDiagnostic()
+        {
+            _lastCombatDiagnosticStateHash = 0;
+            _lastCombatDiagnosticHostReady = false;
+        }
+
+        private static void LogCombatDiagnostic(
+            string stage,
+            RunState runState,
+            CombatState combatState,
+            ulong localNetId,
+            Player localPlayer,
+            bool localNetIdIsUnique,
+            bool hostReady,
+            bool force)
+        {
+            if (!Config.DebugLogging)
+            {
+                return;
+            }
+
+            try
+            {
+                var stateHash = combatState != null ? RuntimeHelpers.GetHashCode(combatState) : 0;
+                if (!force &&
+                    stateHash != 0 &&
+                    stateHash == _lastCombatDiagnosticStateHash &&
+                    (_lastCombatDiagnosticHostReady || !hostReady))
+                {
+                    return;
+                }
+
+                if (stateHash != 0)
+                {
+                    _lastCombatDiagnosticStateHash = stateHash;
+                    _lastCombatDiagnosticHostReady = hostReady;
+                }
+
+                if (runState == null)
+                {
+                    runState = GetRunState(RunManager.Instance);
+                }
+
+                if (localPlayer == null && runState != null && combatState != null)
+                {
+                    localPlayer = ResolveLocalPlayer(runState, combatState, localNetId);
+                    localNetIdIsUnique = IsNetIdUnique(runState, localNetId);
+                }
+
+                var playerCount = runState != null && runState.Players != null
+                    ? runState.Players.Count
+                    : 0;
+                Log.Info(
+                    $"{LogPrefix} diag {stage}: combatState={stateHash.ToString(CultureInfo.InvariantCulture)} " +
+                    $"hostReady={hostReady} localNetIdKnown={localNetId != 0UL} " +
+                    $"players={playerCount.ToString(CultureInfo.InvariantCulture)} {BuildSettingsDiagnostic()}");
+
+                if (runState == null || runState.Players == null)
+                {
+                    return;
+                }
+
+                for (var i = 0; i < runState.Players.Count; i++)
+                {
+                    Log.Info(
+                        $"{LogPrefix} diag {stage}: " +
+                        BuildPlayerDiagnostic(runState.Players[i], i, localPlayer, localNetId, localNetIdIsUnique));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to write diagnostic log: " + ex.Message);
+            }
+        }
+
+        private static string BuildSettingsDiagnostic()
+        {
+            return "settings=" +
+                "enabled:" + Config.Enabled +
+                ",self:" + Config.ShowSelfCallouts +
+                ",playableOnly:" + Config.OnlyShowPlayableNow +
+                ",support:" + Config.ShowGenericSupport +
+                ",cardNames:" + Config.ShowCardNames +
+                ",debug:" + Config.DebugLogging +
+                ",language:" + SanitizeDiagnosticText(Config.Language) +
+                ",displaySeconds:" + ClampDisplaySeconds(Config.DisplaySeconds).ToString("0.##", CultureInfo.InvariantCulture);
+        }
+
+        private static void LogDebug(string message)
+        {
+            if (!Config.DebugLogging || string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            Log.Info($"{LogPrefix} debug {message}");
+        }
+
+        private static void LogModInteractionDiagnostics(string reason, bool force)
+        {
+            if (!Config.DebugLogging)
+            {
+                return;
+            }
+
+            if (_modInteractionDiagnosticsLogged && !force)
+            {
+                return;
+            }
+
+            _modInteractionDiagnosticsLogged = true;
+            Log.Info($"{LogPrefix} debug interaction diagnostics reason={SanitizeDiagnosticText(reason)}");
+            LogLoadedModAssemblies();
+            LogRelevantHarmonyPatchOwners();
+        }
+
+        private static void LogLoadedModAssemblies()
+        {
+            try
+            {
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                Array.Sort(assemblies, CompareAssembliesByName);
+
+                var count = 0;
+                for (var i = 0; i < assemblies.Length; i++)
+                {
+                    var assembly = assemblies[i];
+                    if (!IsLikelyModAssembly(assembly))
+                    {
+                        continue;
+                    }
+
+                    count++;
+                    Log.Info(
+                        $"{LogPrefix} debug loaded mod assembly name={SanitizeDiagnosticText(GetAssemblyName(assembly))} " +
+                        $"version={SanitizeDiagnosticText(GetAssemblyVersion(assembly))} " +
+                        $"location={SanitizeDiagnosticText(GetAssemblyLocation(assembly))}");
+                }
+
+                Log.Info($"{LogPrefix} debug loaded mod assembly count={count.ToString(CultureInfo.InvariantCulture)}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to list loaded mod assemblies: " + ex.Message);
+            }
+        }
+
+        private static void LogRelevantHarmonyPatchOwners()
+        {
+            LogHarmonyPatchOwners("RunManager.InitializeNewRun", GetMethodByName(typeof(RunManager), "InitializeNewRun"));
+            LogHarmonyPatchOwners("RunManager.InitializeRunLobby", GetMethodByName(typeof(RunManager), "InitializeRunLobby"));
+            LogHarmonyPatchOwners("RunManager.InitializeSavedRun", GetMethodByName(typeof(RunManager), "InitializeSavedRun"));
+            LogHarmonyPatchOwners("RunManager.set_State", GetMethodByName(typeof(RunManager), "set_State"));
+            LogHarmonyPatchOwners("CombatManager.SetUpCombat", GetMethodByName(typeof(CombatManager), "SetUpCombat"));
+            LogHarmonyPatchOwners("CombatManager.set_IsInProgress", GetMethodByName(typeof(CombatManager), "set_IsInProgress"));
+            LogHarmonyPatchOwners("PlayerCombatState.RecalculateCardValues", GetMethodByName(typeof(PlayerCombatState), "RecalculateCardValues"));
+            LogHarmonyPatchOwners("PlayerCombatState.HasEnoughResourcesFor", GetMethodByName(typeof(PlayerCombatState), "HasEnoughResourcesFor"));
+            LogHarmonyPatchOwners("NTimelineScreen._Ready", GetMethodByName(typeof(NTimelineScreen), "_Ready"));
+            LogHarmonyPatchOwners("NSpeechBubbleVfx.Create", GetMethodByName(typeof(NSpeechBubbleVfx), "Create"));
+        }
+
+        private static MethodBase GetMethodByName(Type type, string methodName)
+        {
+            try
+            {
+                return AccessTools.Method(type, methodName);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void LogHarmonyPatchOwners(string label, MethodBase method)
+        {
+            try
+            {
+                if (method == null)
+                {
+                    Log.Info($"{LogPrefix} debug harmony target={label} method=missing");
+                    return;
+                }
+
+                var patches = Harmony.GetPatchInfo(method);
+                if (patches == null)
+                {
+                    Log.Info($"{LogPrefix} debug harmony target={label} owners=none");
+                    return;
+                }
+
+                Log.Info(
+                    $"{LogPrefix} debug harmony target={label} " +
+                    $"prefixes={FormatPatchDiagnostics(patches.Prefixes)} " +
+                    $"postfixes={FormatPatchDiagnostics(patches.Postfixes)} " +
+                    $"transpilers={FormatPatchDiagnostics(patches.Transpilers)} " +
+                    $"finalizers={FormatPatchDiagnostics(patches.Finalizers)}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Failed to inspect Harmony patches for {label}: " + ex.Message);
+            }
+        }
+
+        private static string FormatPatchDiagnostics(IEnumerable<Patch> patches)
+        {
+            if (patches == null)
+            {
+                return "none";
+            }
+
+            var builder = new StringBuilder();
+            var count = 0;
+            foreach (var patch in patches)
+            {
+                if (patch == null)
+                {
+                    continue;
+                }
+
+                if (count > 0)
+                {
+                    builder.Append("|");
+                }
+
+                if (count >= MaxPatchDiagnosticsPerTarget)
+                {
+                    builder.Append("...");
+                    break;
+                }
+
+                builder.Append(SanitizeDiagnosticText(GetPatchOwner(patch)));
+                builder.Append(":");
+                builder.Append(SanitizeDiagnosticText(GetPatchMethodName(patch)));
+                count++;
+            }
+
+            return count == 0 ? "none" : builder.ToString();
+        }
+
+        private static string GetPatchOwner(Patch patch)
+        {
+            if (patch == null)
+            {
+                return "unknown";
+            }
+
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                var type = patch.GetType();
+                var field = type.GetField("owner", flags);
+                var value = field != null ? field.GetValue(patch) as string : null;
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+
+                var property = type.GetProperty("owner", flags) ?? type.GetProperty("Owner", flags);
+                value = property != null ? property.GetValue(patch) as string : null;
+                return !string.IsNullOrWhiteSpace(value) ? value : "unknown";
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+
+        private static string GetPatchMethodName(Patch patch)
+        {
+            try
+            {
+                var method = patch != null ? patch.PatchMethod : null;
+                if (method == null)
+                {
+                    return "unknown";
+                }
+
+                return (method.DeclaringType != null ? method.DeclaringType.FullName + "." : string.Empty) + method.Name;
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+
+        private static int CompareAssembliesByName(Assembly left, Assembly right)
+        {
+            return string.Compare(GetAssemblyName(left), GetAssemblyName(right), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsLikelyModAssembly(Assembly assembly)
+        {
+            if (assembly == null)
+            {
+                return false;
+            }
+
+            var location = GetAssemblyLocation(assembly);
+            if (location.IndexOf("\\mods\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                location.IndexOf("/mods/", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string GetAssemblyName(Assembly assembly)
+        {
+            try
+            {
+                return assembly != null ? assembly.GetName().Name ?? string.Empty : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string GetAssemblyVersion(Assembly assembly)
+        {
+            try
+            {
+                var version = assembly != null ? assembly.GetName().Version : null;
+                return version != null ? version.ToString() : "unknown";
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+
+        private static string GetAssemblyLocation(Assembly assembly)
+        {
+            try
+            {
+                return assembly != null && !assembly.IsDynamic ? assembly.Location ?? string.Empty : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string BuildPlayerDiagnostic(
+            Player player,
+            int index,
+            Player localPlayer,
+            ulong localNetId,
+            bool localNetIdIsUnique)
+        {
+            if (player == null)
+            {
+                return "playerIndex=" + index.ToString(CultureInfo.InvariantCulture) + " null";
+            }
+
+            var isLocal = IsLocalPlayer(player, localPlayer, localNetId, localNetIdIsUnique);
+            var character = FirstMemberText(player, "Character", "CharacterId", "PlayerClass", "Class", "Id");
+            if (string.IsNullOrWhiteSpace(character) && player.Creature != null)
+            {
+                character = FirstMemberText(player.Creature, "Character", "CharacterId", "Id");
+            }
+
+            var combatState = player.PlayerCombatState;
+            var combatStateText = combatState != null
+                ? RuntimeHelpers.GetHashCode(combatState).ToString(CultureInfo.InvariantCulture)
+                : "null";
+
+            return "playerIndex=" + index.ToString(CultureInfo.InvariantCulture) +
+                " playerHash=" + RuntimeHelpers.GetHashCode(player).ToString(CultureInfo.InvariantCulture) +
+                " local=" + isLocal +
+                " character=" + SanitizeDiagnosticText(character) +
+                " creature=" + GetSafeTypeName(player.Creature) +
+                " playerCombatState=" + combatStateText +
+                " hand=" + BuildHandDiagnostic(player);
+        }
+
+        private static string BuildHandDiagnostic(Player player)
+        {
+            try
+            {
+                var hand = player != null && player.PlayerCombatState != null
+                    ? player.PlayerCombatState.Hand
+                    : null;
+                var cards = hand != null ? hand.Cards : null;
+                if (cards == null)
+                {
+                    return "null";
+                }
+
+                var builder = new StringBuilder();
+                builder.Append(cards.Count.ToString(CultureInfo.InvariantCulture));
+                builder.Append(" [");
+                var limit = Math.Min(cards.Count, MaxDiagnosticCardsPerPlayer);
+                for (var i = 0; i < limit; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append(", ");
+                    }
+
+                    builder.Append(GetCardDiagnosticName(cards[i]));
+                }
+
+                if (cards.Count > limit)
+                {
+                    builder.Append(", ...");
+                }
+
+                builder.Append("]");
+                return builder.ToString();
+            }
+            catch (Exception ex)
+            {
+                return "error:" + SanitizeDiagnosticText(ex.Message);
+            }
+        }
+
+        private static string GetCardDiagnosticName(CardModel card)
+        {
+            if (card == null)
+            {
+                return "null";
+            }
+
+            var title = SafeCardTitle(card);
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = SafeFormatLocString(card.TitleLocString);
+            }
+
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = GetSafeTypeName(card);
+            }
+
+            return SanitizeDiagnosticText(title) + "/" + GetSafeTypeName(card);
+        }
+
+        private static string FormatCalloutDiagnostics(CalloutInfo[] callouts)
+        {
+            if (callouts == null || callouts.Length == 0)
+            {
+                return "none";
+            }
+
+            var builder = new StringBuilder();
+            for (var i = 0; i < callouts.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(",");
+                }
+
+                builder.Append(callouts[i].Callout);
+                if (callouts[i].UpgradeLevel > 0)
+                {
+                    builder.Append("+");
+                    builder.Append(callouts[i].UpgradeLevel.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string FirstMemberText(object instance, params string[] memberNames)
+        {
+            for (var i = 0; i < memberNames.Length; i++)
+            {
+                var value = GetMemberText(instance, memberNames[i]);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string SanitizeDiagnosticText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "none";
+            }
+
+            var sanitized = Regex.Replace(value.Trim(), "\\s+", " ");
+            return sanitized.Length <= 96 ? sanitized : sanitized.Substring(0, 96);
         }
 
         private static float ClampDisplaySeconds(float displaySeconds)
@@ -3212,8 +3792,16 @@ namespace PartySignals
                 return true;
             }
 
-            UnplayableReason reason;
-            return player.PlayerCombatState.HasEnoughResourcesFor(card, out reason);
+            try
+            {
+                UnplayableReason reason;
+                return player.PlayerCombatState.HasEnoughResourcesFor(card, out reason);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{LogPrefix} Skipping playable check for {GetSafeTypeName(card)}: " + ex.Message);
+                return false;
+            }
         }
 
         private static CalloutInfo[] CollectCallouts(Player player)
@@ -3249,7 +3837,25 @@ namespace PartySignals
                     continue;
                 }
 
-                var cardCallouts = ClassifyCard(card);
+                CalloutInfo[] cardCallouts;
+                try
+                {
+                    cardCallouts = ClassifyCard(card);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"{LogPrefix} Skipping callout scan for {GetSafeTypeName(card)}: " + ex.Message);
+                    continue;
+                }
+
+                if (cardCallouts.Length > 0)
+                {
+                    LogDebug("card callouts playerHash=" +
+                        RuntimeHelpers.GetHashCode(player).ToString(CultureInfo.InvariantCulture) +
+                        " card=" + GetCardDiagnosticName(card) +
+                        " callouts=" + FormatCalloutDiagnostics(cardCallouts));
+                }
+
                 for (var j = 0; j < cardCallouts.Length; j++)
                 {
                     var callout = cardCallouts[j];
@@ -4540,9 +5146,21 @@ namespace PartySignals
             }
 
             RemoveBubble(playerKey);
-            var gameBubble = TryCreateGameSpeechBubble(message, player.Creature, primaryCallout);
-            if (TryAttachGameSpeechBubble(gameBubble, fallbackRoot))
+            var host = ResolveSpeechBubbleHost(fallbackRoot);
+            if (host == null || !GodotObject.IsInstanceValid(host))
             {
+                LogDebug("speech bubble host not ready; deferring bubble for playerHash=" +
+                    RuntimeHelpers.GetHashCode(player).ToString(CultureInfo.InvariantCulture));
+                return;
+            }
+
+            var gameBubble = TryCreateGameSpeechBubble(message, player.Creature, primaryCallout);
+            if (TryAttachGameSpeechBubble(gameBubble, host))
+            {
+                LogDebug("speech bubble attached for playerHash=" +
+                    RuntimeHelpers.GetHashCode(player).ToString(CultureInfo.InvariantCulture) +
+                    " callout=" + primaryCallout +
+                    " message=" + SanitizeDiagnosticText(message));
                 EnableRichText(gameBubble);
                 var displaySeconds = ClampDisplaySeconds(Config.DisplaySeconds);
                 bubble = new BubbleUi();
@@ -4641,14 +5259,25 @@ namespace PartySignals
             {
             }
 
-            if (fallbackRoot != null && GodotObject.IsInstanceValid(fallbackRoot))
+            return null;
+        }
+
+        private static string GetSafeTypeName(object instance)
+        {
+            if (instance == null)
             {
-                return fallbackRoot;
+                return "null";
             }
 
-            return NGame.Instance != null && NGame.Instance.GetTree() != null
-                ? NGame.Instance.GetTree().Root
-                : null;
+            try
+            {
+                var type = instance.GetType();
+                return type.FullName ?? type.Name;
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
         private static NSpeechBubbleVfx TryCreateGameSpeechBubble(string message, Creature creature, StatusCallout primaryCallout)

@@ -58,6 +58,7 @@ The mod works without extra configuration. If ModConfig is installed, it adds:
 - `Card Names`
 - `Include Support`
 - Individual callout toggles for Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage
+- `Debug Logging`
 - `Bubble Timer`
 
 Settings are stored under:
@@ -77,6 +78,8 @@ The `callout_intro` value defaults to an empty string, which uses the selected l
 The `show_self_callouts` value defaults to `true`. Set it to `false` to hide bubbles above your own character while still seeing teammate bubbles.
 
 The `show_card_names` value defaults to `false`, preserving the original status-only wording. Set it to `true` to name the source card for the primary status callout, such as `I can play Bash for Vulnerable`.
+
+The `debug_logging` value defaults to `false`. Set it to `true` only while troubleshooting; it writes `[partysignals] diag` and `[partysignals] debug` breadcrumbs to the normal Slay the Spire 2 log, including loaded mod assemblies and Harmony patch owners on the game methods Party Signals uses.
 
 Translation packs are JSON-formatted `.loc` files stored under:
 
