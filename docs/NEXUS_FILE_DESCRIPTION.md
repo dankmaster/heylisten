@@ -1,9 +1,9 @@
-1.0.2
+1.0.3
 
-- Added defensive handling around combat bubble refresh, observed player syncing, playable-card checks, and card classification so unusual character or card state cannot crash combat startup.
-- Added an opt-in `Debug Logging` setting in ModConfig and `config.json`. When enabled, Party Signals writes `[partysignals] diag` and `[partysignals] debug` breadcrumbs to the normal Slay the Spire 2 log, including settings, player state, hand cards, detected callouts, loaded mod assemblies, Harmony patch owners on relevant game methods, and whether the combat bubble host is ready.
-- Speech bubbles now wait for the combat VFX host instead of falling back to the scene root, avoiding early combat-start attachment during character-specific setup.
+- Added Slay the Spire 2 public beta `v0.106.0` card-audit coverage and a Weak callout for the new `Scare` card, while keeping the Stable/current-public audit baseline intact.
+- Improved the developer card-audit check so semantically identical exports still pass when raw CSV/JSON serialization differs.
+- Verified the release against Stable `v0.103.2` and public beta `v0.106.0`.
 
-Tested with Slay the Spire 2 v0.105.1.
+Tested with Slay the Spire 2 v0.103.2 stable and v0.106.0 public beta.
 
 Install with Vortex or extract into the Slay the Spire 2 folder.

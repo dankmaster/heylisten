@@ -642,6 +642,7 @@ namespace PartySignals
             "neutralize",
             "null",
             "putrefy",
+            "scare",
             "shockwave",
             "suckerpunch",
             "suppress",

@@ -102,6 +102,11 @@ try {
         (Convert-CardRowForCompare $currentByClass[$_]) -ne (Convert-CardRowForCompare $baselineByClass[$_])
     })
 
+    if ($addedClasses.Count -eq 0 -and $removedClasses.Count -eq 0 -and $changedClasses.Count -eq 0) {
+        Write-Host "Card audit semantically matches current public baseline ($($currentRows.Count) cards)."
+        return
+    }
+
     $knownBaselineLabels = @($knownBaselines | ForEach-Object { $_.Label }) -join ", "
     Write-Warning "Card audit differs from known baselines: $knownBaselineLabels."
     Write-Warning "Baseline cards: $($baselineRows.Count); current cards: $($currentRows.Count)."
