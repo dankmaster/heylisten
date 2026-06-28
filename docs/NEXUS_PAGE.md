@@ -36,15 +36,15 @@ The mod uses the game's own speech bubble style instead of a custom overlay, so 
 
 [b]Latest Release[/b]
 
-[b]1.0.3[/b]
+[b]1.0.4[/b]
 
 [list]
-[*]Added Slay the Spire 2 public beta [code]v0.106.0[/code] card-audit coverage and a Weak callout for the new [code]Scare[/code] card, while keeping the Stable/current-public audit baseline intact.
-[*]Improved the developer card-audit check so semantically identical exports still pass when raw CSV/JSON serialization differs.
-[*]Verified the release against Stable [code]v0.103.2[/code] and public beta [code]v0.106.0[/code].
+[*]Updated the current public Slay the Spire 2 card audit for [code]v0.107.1[/code], including the new [code]Wither[/code] status card, the removal of [code]Follow Through[/code], and the current text/metadata changes for reworked cards.
+[*]Re-reviewed [code]Scare[/code] on the public build and confirmed the existing Weak callout remains correct.
+[*]Verified the changed [code]v0.107.1[/code] card set does not add or remove Party Signals status/support callout classifications beyond the already-supported [code]Scare[/code].
 [/list]
 
-Tested with Slay the Spire 2 v0.103.2 stable and v0.106.0 public beta.
+Tested with Slay the Spire 2 v0.107.1.
 
 [b]Documentation and Changelog[/b]
 

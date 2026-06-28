@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4
+
+- Updated the current public Slay the Spire 2 card audit for `v0.107.1`, including the new `Wither` status card, the removal of `Follow Through`, and the current text/metadata changes for reworked cards.
+- Re-reviewed `Scare` on the public build and confirmed the existing Weak callout remains correct.
+- Verified the changed `v0.107.1` card set does not add or remove Party Signals status/support callout classifications beyond the already-supported `Scare`.
+
 ## 1.0.3
 
 - Added Slay the Spire 2 public beta `v0.106.0` card-audit coverage and a Weak callout for the new `Scare` card, while keeping the Stable/current-public audit baseline intact.

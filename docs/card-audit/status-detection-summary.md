@@ -1,6 +1,6 @@
 # Card Status Detection Audit
 
-Exported 577 card models from sts2.dll.
+Exported 578 card models from sts2.dll.
 
 Files:
 
@@ -52,6 +52,15 @@ False-positive examples:
 
 - If the enemy is Vulnerable, hits twice should not produce Vulnerable.
 - for each Vulnerable on the enemy should not produce Vulnerable unless the same card also applies it.
+
+## v0.107.1 Callout Review
+
+Reviewed the current public `v0.107.1` card export against the previous public baseline and beta snapshots.
+
+- Scare: applies Weak to all enemies and is already covered by the Weak allowlist.
+- Wither: new Status card with no status/support callout.
+- Follow Through: removed card with no previous status/support callout.
+- Astral Pulse, Conflagration, Drum of Battle, Exterminate, Howl from Beyond, Mad Science, Neow's Fury, Pact's End, Parry, Predator, Reaper Form, Sacrifice, Seven Stars, Shatter, Sovereign Blade, Stratagem, Summon Forth, Sword Sage, and Tesla Coil changed text or metadata without changing Party Signals callout classification.
 
 ## Upgrade-Sensitive Callout Review
 
