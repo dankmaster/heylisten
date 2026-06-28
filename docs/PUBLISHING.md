@@ -178,13 +178,13 @@ The Nexus upload flow sends:
 - `version`: the manifest/release version, shown in the Nexus Version column.
 - `display_name`: `Party Signals <version>`, shown in current and archived file rows.
 - `description`: generated from the matching `CHANGELOG.md` section.
-- `allow_mod_manager_download`: `false` for update-group uploads. Nexus' OpenAPI schema documents this as `true` meaning mod-manager downloads enabled, but live testing on 2026-05-13 showed the update-group version endpoint producing the public Vortex/mod-manager button only with this value set to `false`.
+- `allow_mod_manager_download`: `true` so Nexus exposes the public Vortex/mod-manager download button.
 - `primary_mod_manager_download`: `true` by default, so the newly uploaded file becomes the Vortex/mod-manager default. Pass `-NoDefaultModManagerDownload` only for special cases.
 - `archive_existing_file`: archives the previous file in the group when requested.
 
 After uploading, the helper verifies that Nexus returns an API download link for the new file. The local browser verifier then checks the public Nexus Files tab for a `Mod manager download` link on the uploaded file. If either verification fails, the release command fails instead of silently leaving Nexus manual-download-only.
 
-The local publish flow also opens the logged-in Nexus file editor profile and verifies Nexus' own file metadata for the uploaded file. The observed working state is `manager = 0` and `primary = 1`, but the browser verifier treats the public `nmm=1` download link as authoritative because the API naming and Nexus editor flag currently disagree. Pass `-SkipNexusFileUiVerification` only if Nexus' editor is temporarily unavailable and you will check the public Files tab manually before announcing the release.
+The local publish flow also opens the logged-in Nexus file editor profile and verifies Nexus' own file metadata for the uploaded file. The observed working state is `manager = 0` and `primary = 1`, and the browser verifier treats the public `nmm=1` download link as authoritative. Pass `-SkipNexusFileUiVerification` only if Nexus' editor is temporarily unavailable and you will check the public Files tab manually before announcing the release.
 
 The current [Nexus v3 OpenAPI schema](https://api-docs.nexusmods.com/) supports upload sessions, update-group versions, and file update group metadata. It does not expose a write endpoint for the public mod page body, so page automation uses a logged-in local browser profile and Nexus' own page-edit endpoints instead of the file-upload API.
 
