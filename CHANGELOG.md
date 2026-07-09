@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+- Added Slay the Spire 2 public beta `v0.108.0` card-audit coverage for the new multiplayer card batch.
+- Added audited support/status coverage for the new beta multiplayer cards, including Strength for `Blaze`, Poison for `Concoct`, and Support callouts for the new teammate/team interaction cards.
+- Updated `Tracking` detection for the beta rework so it no longer produces a Double Damage callout after changing from double damage to 50% more damage against Weak enemies.
+
 ## 1.0.4
 
 - Updated the current public Slay the Spire 2 card audit for `v0.107.1`, including the new `Wither` status card, the removal of `Follow Through`, and the current text/metadata changes for reworked cards.

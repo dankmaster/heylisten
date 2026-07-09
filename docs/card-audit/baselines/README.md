@@ -7,3 +7,4 @@ Versioned folders here hold additional known-good game branch snapshots. `check-
 - `v0.104.0-public-beta/`: Slay the Spire 2 public beta `v0.104.0`, exported from the local game install.
 - `v0.105.1-public-beta/`: Slay the Spire 2 public beta `v0.105.1`, exported from the local game install.
 - `v0.106.0-public-beta/`: Slay the Spire 2 public beta `v0.106.0`, exported from the local game install.
+- `v0.108.0-public-beta/`: Slay the Spire 2 public beta `v0.108.0`, exported from the local game install.

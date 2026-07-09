@@ -584,24 +584,39 @@ namespace PartySignals
         {
             "beaconofhope",
             "believeinyou",
+            "bladesymphony",
+            "blaze",
+            "cacophony",
+            "concoct",
+            "constellation",
             "coordinate",
             "demonicshield",
             "energysurge",
+            "fade",
             "flanking",
             "gangup",
             "glimpsebeyond",
             "hammertime",
+            "hibernate",
             "huddleup",
             "ignition",
+            "imitationlearning",
             "intercept",
             "knockdown",
             "largesse",
             "legionofbone",
             "lift",
+            "midnight",
+            "oneforall",
+            "outrage",
+            "plot",
             "rally",
             "sneaky",
+            "soulbound",
             "tagteam",
             "tank",
+            "theball",
+            "underworld",
         };
         private static readonly string[] VulnerableCardNames =
         {
@@ -650,6 +665,7 @@ namespace PartySignals
         };
         private static readonly string[] StrengthCardNames =
         {
+            "blaze",
             "brand",
             "bulkup",
             "coordinate",
@@ -669,7 +685,6 @@ namespace PartySignals
         {
             "conqueror",
             "flanking",
-            "tracking",
         };
         private static readonly string[] DamageMultiplierCardNames =
         {
@@ -685,6 +700,7 @@ namespace PartySignals
         private static readonly string[] PoisonCardNames =
         {
             "bouncingflask",
+            "concoct",
             "deadlypoison",
             "haze",
             "poisonedstab",
