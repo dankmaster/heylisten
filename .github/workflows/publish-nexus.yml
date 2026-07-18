@@ -20,9 +20,9 @@ on:
         required: false
         default: "Party Signals 1.0"
       description:
-        description: Nexus file description
+        description: Short Nexus file summary (255 characters or fewer)
         required: false
-        default: "Vortex-ready Party Signals release."
+        default: "Party Signals 1.0 for Slay the Spire 2."
       file_category:
         description: Nexus file category
         required: false

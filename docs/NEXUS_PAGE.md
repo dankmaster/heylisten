@@ -3,121 +3,89 @@
 ## Short Description
 
 ```text
-Automatic co-op card callouts using native speech-bubble reminders, with translations and configurable self callouts.
+Useful co-op cards, called out in the game's own speech bubbles. Configurable, translated, and easy to dismiss.
 ```
 
 ## Full Description
 
 ```bbcode
-[b]Party Signals - Automatic Card Callouts[/b] adds native in-game speech bubbles for Slay the Spire 2 co-op.
+[b]Party Signals[/b] helps a co-op team spot useful cards before someone ends the turn.
 
-It watches each player's hand during combat and automatically calls out useful setup cards before a turn gets committed. If a teammate has an important card, their character can say it. If you have one, your own character can say it too, unless you turn self bubbles off.
+When a player is holding a setup card, their character says so in one of the game's normal speech bubbles. The reminder stays close to the player it belongs to, and it can be clicked away as soon as the team has seen it.
 
-The mod uses the game's own speech bubble style instead of a custom overlay, so reminders stay close to the characters and feel like part of combat.
+There is no extra combat panel to manage. Install the mod, start a co-op run, and the callouts appear when they are relevant.
 
-[b]Features[/b]
+[b]What It Calls Out[/b]
+
+Party Signals recognizes cards that set up Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and other plays that directly help a teammate or the whole party.
+
+Each character speaks for their own hand. A teammate might say "I have Vulnerable", while the optional card-name mode can say "I can play Bash for Vulnerable" instead. Status names are highlighted, and upgraded cards keep their + marker.
+
+[b]Controls and Settings[/b]
+
+Party Signals works without ModConfig. If ModConfig is installed, the same options are available in the in-game mod settings menu.
 
 [list]
-[*]Native Slay the Spire 2 speech bubbles.
-[*]Self and teammate callouts for useful cards.
-[*]First-person "I have ..." wording so each character speaks for their own hand.
-[*]Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
-[*]Detects helpful setup effects such as Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and support cards.
-[*]Optional card-name wording can name the source card for the primary status callout.
-[*]Individual callout category toggles let players hide noisier status reminders.
-[*]Includes bubble-text translation packs for the same language IDs used by the base game.
-[*]Auto language mode follows the game's selected language when a matching pack is available.
-[*]Custom opening callout line, or the translated default if left blank.
-[*]Optional self bubbles, so you can keep teammate reminders without reminders for your own hand.
-[*]Click a bubble to acknowledge and dismiss it.
-[*]Optional timer for automatic dismissal, including a never-auto-hide mode.
-[*]Vortex-ready install package.
+[*]Show callouts for teammates, yourself, or both.
+[*]Show only cards the holder can afford and play right now.
+[*]Name the source card, or keep the shorter status-only wording.
+[*]Turn individual status categories and general Support callouts on or off.
+[*]Click a bubble to dismiss it, or set a timer from 0 to 60 seconds. A timer of 0 leaves it up until clicked.
+[*]Use the translated opening line or write your own.
+[*]Enable extra logging when troubleshooting.
 [/list]
+
+The config file is created here after the first launch:
+
+[code]%APPDATA%/SlayTheSpire2/partysignals/config.json[/code]
 
 [b]Latest Release[/b]
 
 [b]1.0.6[/b]
 
 [list]
-[*]Added Slay the Spire 2 public beta [code]v0.109.0[/code] card-audit coverage for the new [code]Abundance[/code], [code]Dowsing[/code], and [code]Tutor[/code] cards.
-[*]Added an audited Support callout for [code]Tutor[/code]; [code]Abundance[/code] and [code]Dowsing[/code] do not produce party callouts.
-[*]Re-reviewed the [code]v0.109.0[/code] card reworks and confirmed they do not add or remove any other Party Signals status/support classifications.
+[*]Reviewed the three cards added in the [code]v0.109.0[/code] beta: [code]Abundance[/code], [code]Dowsing[/code], and [code]Tutor[/code].
+[*][code]Tutor[/code] now gets a Support callout. [code]Abundance[/code] and [code]Dowsing[/code] are intentionally ignored.
+[*]Checked the rest of the beta's card changes; no other callout rules needed updating.
 [/list]
 
 Tested with Slay the Spire 2 v0.109.0.
 
-[b]Documentation and Changelog[/b]
+[b]Links[/b]
 
 [list]
+[*][url=https://github.com/dankmaster/heylisten/releases]Downloads and release notes[/url]
 [*][url=https://github.com/dankmaster/heylisten/blob/main/CHANGELOG.md]Full changelog[/url]
-[*][url=https://github.com/dankmaster/heylisten#readme]Readme and install notes[/url]
-[*][url=https://github.com/dankmaster/heylisten/blob/main/docs/PUBLISHING.md]Release packaging notes[/url]
+[*][url=https://github.com/dankmaster/heylisten#readme]Source, install notes, and configuration[/url]
 [/list]
 
 [b]Languages[/b]
 
-Included translation pack codes:
+Included language codes:
 
 [code]eng, deu, esp, fra, ita, jpn, kor, pol, ptb, rus, spa, tha, tur, zhs[/code]
 
-The status names are copied from the base game where possible. Bubble phrasing lives in JSON-formatted [code].loc[/code] files, so players can adjust wording or add their own pack without the game mistaking those files for mod manifests.
-
-[b]Settings[/b]
-
-If ModConfig is installed, Party Signals can be configured in-game through the mod settings menu.
-
-Without ModConfig, the same settings can be adjusted in the user config file created after first launch:
-
-[code]%APPDATA%/SlayTheSpire2/partysignals/config.json[/code]
-
-Existing Hey Listen settings are copied from [code]%APPDATA%/SlayTheSpire2/heylisten/config.json[/code] the first time Party Signals creates its new config file.
-
-Available settings:
-
-[list]
-[*][b]Enable Bubbles[/b] - Turns callout bubbles on or off.
-[*][b]Language[/b] - Selects bubble text language, or Auto to follow the game's language setting when a pack is available.
-[*][b]Callout Intro[/b] - Replaces the opening "Hey, listen!" line. Leave it blank to use the selected language's default.
-[*][b]Self Bubbles[/b] - Shows or hides bubbles above your own character while keeping teammate bubbles available.
-[*][b]Playable Now Only[/b] - Only shows callouts for cards the holder can currently afford and play this turn.
-[*][b]Card Names[/b] - Names the source card for the primary status callout. Off by default to preserve the original wording.
-[*][b]Include Support[/b] - Allows generic support callouts for helpful cards that do not match a specific status keyword.
-[*][b]Status Filters[/b] - Show or hide Vulnerable, Weak, Strength, Vigor, Focus, Poison, and Double Damage callouts individually.
-[*][b]Debug Logging[/b] - Writes extra [code][partysignals] diag[/code] and [code][partysignals] debug[/code] lines to the normal game log for troubleshooting, including loaded mod assemblies and Harmony patch owners on relevant game methods. Leave this off unless asked for a report.
-[*][b]Bubble Timer[/b] - Controls how long bubbles stay visible. Set it to 0 to keep bubbles up until clicked.
-[/list]
-
-Translation packs are JSON-formatted [code].loc[/code] files in:
-
-[code]mods/partysignals/translations/[/code]
-
-Players can copy an included [code].loc[/code] file to adjust wording, then select it in ModConfig or set its code in the config file.
+Auto follows the language selected in Slay the Spire 2 when a matching pack is installed. The wording lives in plain [code].loc[/code] files under [code]mods/partysignals/translations[/code], so it can be adjusted without rebuilding the mod.
 
 [b]Installation[/b]
 
-Install with Vortex, or manually extract the archive into your Slay the Spire 2 game folder.
+Use [b]Mod Manager Download[/b], or extract the archive into the Slay the Spire 2 folder. The archive already contains the [code]mods[/code] directory.
 
-After installation, the mod should appear here:
+The installed files should end up here:
 
-[code]mods/partysignals/[/code]
+[code]Slay the Spire 2/mods/partysignals/[/code]
 
-[b]Vortex Notes[/b]
+If Vortex does not recognize the game, install the Slay the Spire 2 Vortex Extension from Nexus Mods.
 
-The zip is packed relative to the game root and contains [code]mods/partysignals[/code], which matches the Slay the Spire 2 Vortex Extension's root-folder installer. For best Nexus/Vortex metadata, use the Nexus [b]Mod Manager Download[/b] button from this page. If you manually add the zip to Vortex and it installs but appears as an unknown/local mod, use Vortex's metadata or [b]Guess IDs[/b] option and link it to the Party Signals Nexus page ID.
+[b]Updating from Hey Listen[/b]
 
-If you are updating from Hey Listen, remove the old [code]mods/heylisten[/code] folder or uninstall the old Vortex package and install Party Signals fresh. If both folders are present, Party Signals disables the old [code]heylisten.json[/code] manifest on startup; restart the game afterward so only Party Signals is shown.
+Party Signals is the renamed version of Hey Listen. Remove the old [code]mods/heylisten[/code] folder, or uninstall the old Vortex package, before installing Party Signals.
 
-If Vortex does not recognize Slay the Spire 2 yet, install the Slay the Spire 2 Vortex Extension from Nexus Mods.
+If both folders are present, Party Signals disables the old manifest on startup. Restart the game once afterward so only Party Signals appears in the mod list.
 
 [b]Compatibility[/b]
 
-Party Signals is made for existing co-op/multiplayer setups. It does not add multiplayer by itself.
+Party Signals is for existing Slay the Spire 2 co-op setups; it does not add multiplayer by itself.
 
-This release has been tested on both the stable and public beta Slay the Spire 2 branches.
-
-Current release notes include the Slay the Spire 2 version used for local testing. If Slay the Spire 2 has updated since that version, check the latest Party Signals release notes or GitHub build before assuming every new/reworked card has been audited.
-
-[b]Why This Exists[/b]
-
-Co-op can get visually busy fast, and useful setup cards are easy to miss when everyone is planning at once. Party Signals keeps those reminders readable, quick to dismiss, and close to the game's own style.
+Game updates can add or rework cards. The latest release notes always name the game version used for the card review, so check that line after switching between the stable and beta branches.
 ```

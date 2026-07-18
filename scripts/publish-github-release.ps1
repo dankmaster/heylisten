@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot "mod\partysignals\partysignals.json"
-$releaseNotesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
+$releaseNotesPath = Join-Path $repoRoot "docs\GITHUB_RELEASE_NOTES.md"
 $Version = Resolve-HeyListenVersion $Version
 
 Push-Location $repoRoot

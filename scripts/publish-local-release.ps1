@@ -56,7 +56,8 @@ $Description = Resolve-HeyListenReleaseNotes `
     -Version $Version `
     -Value $Description `
     -Path $fileDescriptionPath `
-    -Default "Vortex-ready Party Signals release."
+    -Default "Party Signals $Version for Slay the Spire 2."
+Assert-HeyListenNexusFileDescription -Description $Description
 
 Push-Location $repoRoot
 try {

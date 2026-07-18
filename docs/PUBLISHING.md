@@ -6,8 +6,11 @@ Each release should have one version and one changelog source:
 
 - `mod/partysignals/partysignals.json` stores the mod version and the `partysignals` runtime mod ID.
 - `CHANGELOG.md` stores the version history.
-- `docs/NEXUS_FILE_DESCRIPTION.md` is generated from the matching changelog section and is used as the GitHub release notes and, later, the Nexus file description.
+- `docs/GITHUB_RELEASE_NOTES.md` is generated from the full matching changelog section and is used for the GitHub release.
+- `docs/NEXUS_FILE_DESCRIPTION.md` is generated from the first two changelog bullets and is kept within Nexus' 255-character file-description limit.
 - `docs/NEXUS_PAGE.md` stores draft Nexus mod page short and full descriptions. The prepare step refreshes its latest-release block from `CHANGELOG.md` and the tested game version, but the page-facing feature, settings, language, compatibility, and documentation wording still needs review when those areas change.
+
+Write changelog bullets for players rather than for the build process. Lead with what changed in-game, keep one idea per bullet, and name cards or settings when that helps someone decide whether to update. The first two bullets also become the Nexus file summary, so they should carry the main point without internal release jargon.
 
 Prepare a release before building or publishing:
 
@@ -27,7 +30,13 @@ Release notes include a `Tested with Slay the Spire 2 v...` line. By default, th
 .\scripts\prepare-release.ps1 -Version 0.96 -TestedGameVersion v0.103.2
 ```
 
-The generated GitHub/Nexus notes are written to:
+The generated GitHub release notes are written to:
+
+```text
+docs/GITHUB_RELEASE_NOTES.md
+```
+
+The short Nexus file description is written to:
 
 ```text
 docs/NEXUS_FILE_DESCRIPTION.md
@@ -167,7 +176,7 @@ The package layout follows the extension's expected game-root behavior: archives
 
 Nexus/Vortex metadata is normally supplied by Nexus when users install with `Mod Manager Download`. Manual zip installs still use the same correct package layout. The package script creates an identical Nexus-style filename copy only when a Nexus mod ID is configured; if Vortex still shows the mod as local/unknown, use `Guess IDs` or set the source to Nexus Mods with the Party Signals page ID. Keep the GitHub and Nexus release zip bytes identical when possible so hash-based metadata matching has the best chance to work.
 
-The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). The local Nexus upload uses [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md) as the default file description. The public page should be checked during each release for short description, full description, latest release, documentation, and changelog accuracy.
+The Nexus page copy is tracked in [NEXUS_PAGE.md](NEXUS_PAGE.md). GitHub uses [GITHUB_RELEASE_NOTES.md](GITHUB_RELEASE_NOTES.md), while the local Nexus upload uses the shorter [NEXUS_FILE_DESCRIPTION.md](NEXUS_FILE_DESCRIPTION.md). The public page should be checked during each release for its short description, full description, latest release, links, and changelog accuracy.
 
 ## Nexus Upload Workflow
 
@@ -177,7 +186,7 @@ The Nexus upload flow sends:
 
 - `version`: the manifest/release version, shown in the Nexus Version column.
 - `display_name`: `Party Signals <version>`, shown in current and archived file rows.
-- `description`: generated from the matching `CHANGELOG.md` section.
+- `description`: a plain-text summary generated from the first two bullets in the matching `CHANGELOG.md` section and capped at 255 characters.
 - `allow_mod_manager_download`: `true` so Nexus exposes the public Vortex/mod-manager download button.
 - `primary_mod_manager_download`: `true` by default, so the newly uploaded file becomes the Vortex/mod-manager default. Pass `-NoDefaultModManagerDownload` only for special cases.
 - `archive_existing_file`: archives the previous file in the group when requested.

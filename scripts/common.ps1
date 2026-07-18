@@ -498,20 +498,127 @@ function Sync-HeyListenReleaseNotes {
     }
 
     if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-        $OutputPath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_FILE_DESCRIPTION.md"
+        $OutputPath = Join-Path (Get-HeyListenRepoRoot) "docs\GITHUB_RELEASE_NOTES.md"
     }
 
     $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
-    $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+    $testedBlock = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
         ""
     }
     else {
-        "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+        "`r`n`r`n**Tested with:** Slay the Spire 2 $testedGameVersionLabel"
     }
 
-    $notes = "$Version`r`n`r`n$body$testedLine`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+    $notes = "## What's changed`r`n`r`n$body$testedBlock`r`n`r`n## Install`r`n`r`nDownload ``Party-Signals-$Version.zip``. Use **Mod Manager Download** on Nexus Mods, or extract the archive into the Slay the Spire 2 folder."
     Set-Content -LiteralPath $OutputPath -Value $notes -NoNewline
     return $notes
+}
+
+function ConvertTo-HeyListenPlainReleaseText {
+    param(
+        [string]$Text
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return ""
+    }
+
+    $plain = [Regex]::Replace($Text, '^\s*-\s+', '')
+    $plain = [Regex]::Replace($plain, '`([^`]+)`', '$1')
+    $plain = [Regex]::Replace($plain, '\*\*([^*]+)\*\*', '$1')
+    $plain = [Regex]::Replace($plain, '\[([^\]]+)\]\([^)]+\)', '$1')
+    $plain = [Regex]::Replace($plain, '\s+', ' ').Trim()
+
+    if (![string]::IsNullOrWhiteSpace($plain) -and $plain -notmatch '[.!?]$') {
+        $plain += '.'
+    }
+
+    return $plain
+}
+
+function Limit-HeyListenReleaseText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][int]$MaxLength
+    )
+
+    if ($MaxLength -le 0) {
+        return ""
+    }
+
+    if ($Text.Length -le $MaxLength) {
+        return $Text
+    }
+
+    if ($MaxLength -le 3) {
+        return $Text.Substring(0, $MaxLength)
+    }
+
+    $cut = $Text.Substring(0, $MaxLength - 3).TrimEnd()
+    $lastSpace = $cut.LastIndexOf(' ')
+    if ($lastSpace -ge [Math]::Min(40, [Math]::Floor($MaxLength * 0.6))) {
+        $cut = $cut.Substring(0, $lastSpace).TrimEnd()
+    }
+
+    return "$cut..."
+}
+
+function Sync-HeyListenNexusFileDescription {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [string]$OutputPath,
+        [string]$TestedGameVersion
+    )
+
+    $Version = Resolve-HeyListenVersion $Version
+    $body = Get-HeyListenChangelogBody -Version $Version
+    if ([string]::IsNullOrWhiteSpace($body)) {
+        throw "CHANGELOG.md is missing a '## $Version' section. Add it before preparing the release."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+        $OutputPath = Join-Path (Get-HeyListenRepoRoot) "docs\NEXUS_FILE_DESCRIPTION.md"
+    }
+
+    $items = @($body -split "\r?\n" |
+        Where-Object { $_ -match '^\s*-\s+\S' } |
+        Select-Object -First 2 |
+        ForEach-Object { ConvertTo-HeyListenPlainReleaseText $_ } |
+        Where-Object { ![string]::IsNullOrWhiteSpace($_) })
+
+    $summary = if ($items.Count -gt 0) {
+        $items -join ' '
+    }
+    else {
+        "Party Signals $Version update."
+    }
+
+    $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
+    $testedSuffix = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+        ""
+    }
+    else {
+        " Tested with Slay the Spire 2 $testedGameVersionLabel."
+    }
+
+    $summary = Limit-HeyListenReleaseText -Text $summary -MaxLength (255 - $testedSuffix.Length)
+    $description = "$summary$testedSuffix"
+    if ($description.Length -gt 255) {
+        throw "Generated Nexus file description is longer than 255 characters."
+    }
+
+    Set-Content -LiteralPath $OutputPath -Value $description -NoNewline
+    return $description
+}
+
+function Assert-HeyListenNexusFileDescription {
+    param(
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    if ($Description.Length -gt 255) {
+        throw "Nexus file descriptions are limited to 255 characters. Regenerate the release copy or pass a shorter description."
+    }
 }
 
 function Resolve-HeyListenReleaseNotes {
@@ -535,14 +642,14 @@ function Resolve-HeyListenReleaseNotes {
     if (![string]::IsNullOrWhiteSpace($changelogBody)) {
         $Version = Resolve-HeyListenVersion $Version
         $testedGameVersionLabel = Format-Sts2VersionLabel $TestedGameVersion
-        $testedLine = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
+        $testedBlock = if ([string]::IsNullOrWhiteSpace($testedGameVersionLabel)) {
             ""
         }
         else {
-            "`r`n`r`nTested with Slay the Spire 2 $testedGameVersionLabel."
+            "`r`n`r`n**Tested with:** Slay the Spire 2 $testedGameVersionLabel"
         }
 
-        return "$Version`r`n`r`n$changelogBody$testedLine`r`n`r`nInstall with Vortex or extract into the Slay the Spire 2 folder."
+        return "## What's changed`r`n`r`n$changelogBody$testedBlock`r`n`r`n## Install`r`n`r`nDownload ``Party-Signals-$Version.zip``. Use **Mod Manager Download** on Nexus Mods, or extract the archive into the Slay the Spire 2 folder."
     }
 
     return $Default
@@ -654,12 +761,12 @@ function Sync-HeyListenNexusPageReleaseSummary {
 
 $releaseNotes$testedLine
 
-[b]Documentation and Changelog[/b]
+[b]Links[/b]
 
 [list]
+[*][url=$repositoryUrl/releases]Downloads and release notes[/url]
 [*][url=$repositoryUrl/blob/main/CHANGELOG.md]Full changelog[/url]
-[*][url=$repositoryUrl#readme]Readme and install notes[/url]
-[*][url=$repositoryUrl/blob/main/docs/PUBLISHING.md]Release packaging notes[/url]
+[*][url=$repositoryUrl#readme]Source, install notes, and configuration[/url]
 [/list]
 "@.Trim()
 

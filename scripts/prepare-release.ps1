@@ -14,7 +14,8 @@ $ErrorActionPreference = "Stop"
 
 $Version = Resolve-HeyListenVersion $Version
 $repoRoot = Get-HeyListenRepoRoot
-$notesPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
+$githubNotesPath = Join-Path $repoRoot "docs\GITHUB_RELEASE_NOTES.md"
+$nexusFileDescriptionPath = Join-Path $repoRoot "docs\NEXUS_FILE_DESCRIPTION.md"
 $nexusPagePath = Join-Path $repoRoot "docs\NEXUS_PAGE.md"
 
 if ([string]::IsNullOrWhiteSpace($TestedGameVersion)) {
@@ -46,7 +47,14 @@ if (!$SkipManifest) {
     Set-HeyListenManifestVersion -Version $Version
 }
 
-$notes = Sync-HeyListenReleaseNotes -Version $Version -OutputPath $notesPath -TestedGameVersion $TestedGameVersion
+$githubNotes = Sync-HeyListenReleaseNotes `
+    -Version $Version `
+    -OutputPath $githubNotesPath `
+    -TestedGameVersion $TestedGameVersion
+$nexusFileDescription = Sync-HeyListenNexusFileDescription `
+    -Version $Version `
+    -OutputPath $nexusFileDescriptionPath `
+    -TestedGameVersion $TestedGameVersion
 if (!$SkipNexusPage) {
     Sync-HeyListenNexusPageReleaseSummary `
         -Version $Version `
@@ -62,12 +70,16 @@ if (![string]::IsNullOrWhiteSpace($TestedGameVersion)) {
     Write-Host "  Tested game version: $TestedGameVersion"
 }
 
-Write-Host "  Nexus/GitHub display name: $displayName"
-Write-Host "  Release notes: $notesPath"
+Write-Host "  Release display name: $displayName"
+Write-Host "  GitHub release notes: $githubNotesPath"
+Write-Host "  Nexus file description: $nexusFileDescriptionPath ($($nexusFileDescription.Length)/255 chars)"
 if (!$SkipNexusPage) {
     Write-Host "  Nexus page copy: $nexusPagePath"
     Write-Host "  Nexus page helper: .\scripts\update-nexus-page.ps1 -Version $Version"
 }
 
 Write-Host ""
-Write-Host $notes
+Write-Host $githubNotes
+Write-Host ""
+Write-Host "Nexus file description:"
+Write-Host $nexusFileDescription

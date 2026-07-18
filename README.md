@@ -1,29 +1,27 @@
-# Party Signals - Automatic Card Callouts
+# Party Signals
 
-Automatic co-op speech-bubble card callouts for Slay the Spire 2.
+Party Signals helps a co-op team notice useful cards before someone ends the turn. When a player is holding a setup card, their character calls it out in one of the game's own speech bubbles.
 
-Party Signals watches co-op combat hands and uses the game's own speech bubble VFX to point out useful setup cards for you and your teammates. It keeps the UI lightweight: bubbles can be clicked away and can auto-hide on a timer.
+The mod stays out of the way: bubbles sit above the characters, disappear when clicked, and can hide themselves after a short delay.
 
-## Features
+## What It Calls Out
 
-- Native game speech bubbles, attached through the normal combat VFX layer.
-- Callouts for helpful effects such as Vulnerable, Strength, Vigor, Weak, Poison, Focus, Double Damage, and support cards.
-- Self and teammate bubbles use first-person `I have ...` wording so each character speaks for their own hand.
-- Status names are color-highlighted and show upgrade markers when the useful card is upgraded.
-- Translation packs for the same language IDs exposed by the base game, with Auto following the game's language setting by default.
-- Customizable callout intro text, defaulting to the selected language's included intro line.
-- Optional self bubbles so players can keep teammate reminders without showing their own hand reminders.
-- Optional card-name wording so callouts can name the source card for the primary status.
-- Per-status filters for players who want to hide noisier categories such as Poison, Focus, or Double Damage.
-- Click any callout bubble to acknowledge it.
-- Optional timer from `0` to `60` seconds. `0` keeps bubbles visible until clicked.
-- Optional filtering to only show cards the holder can currently afford and play.
+Party Signals recognizes cards that set up Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and other plays that directly help a teammate or the whole party. Status names are highlighted, and upgraded cards keep their `+` marker.
+
+Each character speaks for their own hand. A teammate might say `I have Vulnerable`, while the optional card-name mode can say `I can play Bash for Vulnerable` instead.
+
+## Highlights
+
+- Uses the normal Slay the Spire 2 speech-bubble style rather than a separate overlay.
+- Works for teammate hands and, if wanted, your own hand.
+- Lets you hide individual callout categories that your group does not need.
+- Can ignore cards that the holder cannot currently afford or play.
+- Includes translations for the game's supported language IDs and follows the in-game language in Auto mode.
+- Lets you replace the opening line, dismiss bubbles by clicking them, or set a timer from `0` to `60` seconds. A timer of `0` leaves them up until clicked.
 
 ## Install
 
-Download `Party-Signals-<version>.zip` and extract it into your Slay the Spire 2 install folder.
-
-The zip already includes the `mods` folder, so the final layout should be:
+Download `Party-Signals-<version>.zip` and extract it into the Slay the Spire 2 folder. The archive already contains the `mods` directory, so the final layout should be:
 
 ```text
 Slay the Spire 2/
@@ -34,15 +32,15 @@ Slay the Spire 2/
       translations/
 ```
 
-Launch the game normally after installing.
+Launch the game normally. Party Signals should appear in the game's mod list.
 
 If you are updating from Hey Listen, remove the old `mods/heylisten` folder first, or uninstall the old package in Vortex and install Party Signals fresh. If both folders are present, Party Signals disables the old Hey Listen manifest on startup and you should restart the game so only Party Signals is shown.
 
-### Vortex / Nexus Mods
+### Vortex
 
-Use the Nexus Mods `Mod Manager Download` button when installing from Nexus. Manual installs should extract the archive into the Slay the Spire 2 game folder.
+On Nexus Mods, use `Mod Manager Download`. For a manual install, extract the same archive into the game folder.
 
-Users can still install the GitHub zip manually with Vortex. If Vortex does not recognize the game yet, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
+The GitHub archive also works as a manual Vortex install. If Vortex does not recognize the game, install the [Slay the Spire 2 Vortex Extension](https://www.nexusmods.com/site/mods/1727).
 
 If Vortex still shows an older Hey Listen install after updating, remove that old install and reinstall Party Signals from the current Nexus file.
 
@@ -179,7 +177,7 @@ The direct Nexus uploader refuses to upload unless the matching public GitHub re
 
 Keep Nexus publishing local for this project so Nexus API keys and browser sessions stay on this PC. See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full local release flow.
 
-Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). File upload notes are generated from `CHANGELOG.md` into [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and `prepare-release.ps1` also refreshes the Nexus page's latest-release and documentation/changelog block. After the Nexus upload, run the page helper to preview or submit the tracked page text and matching Nexus documentation changelog.
+Nexus page copy is tracked in [docs/NEXUS_PAGE.md](docs/NEXUS_PAGE.md). `prepare-release.ps1` builds full GitHub notes in [docs/GITHUB_RELEASE_NOTES.md](docs/GITHUB_RELEASE_NOTES.md), creates a 255-character Nexus file summary in [docs/NEXUS_FILE_DESCRIPTION.md](docs/NEXUS_FILE_DESCRIPTION.md), and refreshes the Nexus page's latest-release block. After the Nexus upload, run the page helper to preview or submit the tracked page text and matching Nexus documentation changelog.
 
 To update the Nexus page copy and documentation changelog without uploading a file, use the browser-profile helper:
 
