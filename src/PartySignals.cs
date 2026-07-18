@@ -493,7 +493,7 @@ namespace PartySignals
         private const string LegacyManifestFileName = "heylisten.json";
         private const string DisabledLegacyManifestFileName = "heylisten.json.disabled-by-party-signals";
         private const string ActiveInstanceDataKey = "PartySignals.ActiveAssemblyPath";
-        private const string ModVersion = "1.0.2";
+        private const string ModVersion = "1.0.6";
         private const string HarmonyId = "partysignals.patch";
         private const string LegacyHarmonyId = "heylisten.patch";
         private const string LogPrefix = "[partysignals]";
@@ -616,6 +616,7 @@ namespace PartySignals
             "tagteam",
             "tank",
             "theball",
+            "tutor",
             "underworld",
         };
         private static readonly string[] VulnerableCardNames =
