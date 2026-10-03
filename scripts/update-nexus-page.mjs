@@ -341,7 +341,8 @@ async function getPageState(client) {
   return evaluate(client, `(() => ({
     url: location.href,
     title: document.title,
-    loginPage: location.href.includes("/auth/sign_in"),
+    loginPage: location.href.includes("/auth/sign_in") ||
+      /Please log in again|Your session has expired/.test(document.body?.innerText || ""),
     hasPasswordField: !!document.querySelector('input[type="password"]')
   }))()`);
 }
@@ -353,6 +354,10 @@ async function openEditor(client) {
   const startedAt = Date.now();
   let formState = await getEditorState(client);
   while (!formState.canFill && Date.now() - startedAt < 30000) {
+    const sessionState = await getPageState(client);
+    if (sessionState.loginPage || sessionState.hasPasswordField) {
+      throw new Error("Nexus browser session has expired. Log in in the release browser, then rerun update-nexus-page.ps1 -Save. The uploaded file does not need uploading again.");
+    }
     await delay(500);
     formState = await getEditorState(client);
   }

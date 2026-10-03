@@ -46,7 +46,8 @@ try {
   const files = await fetchModFiles(client);
   const file = findReleaseFile(files);
   const managerFlag = Number(file.manager);
-  const publicModManagerDownload = await verifyPublicModManagerDownload(client, file.fileId);
+  const publicDownloadState = await verifyPublicModManagerDownload(client, file.fileId);
+  const publicModManagerDownload = publicDownloadState === "enabled";
   const defaultModManagerDownload = Number(file.primary) === 1;
 
   console.log("Nexus file editor options:");
@@ -54,10 +55,10 @@ try {
   console.log(`- File ID: ${file.fileId}`);
   console.log(`- Category: ${categoryName(file.categoryId)}`);
   console.log(`- Nexus editor manager flag: ${managerFlag}`);
-  console.log(`- Public mod-manager download button: ${publicModManagerDownload ? "enabled" : "disabled"}`);
+  console.log(`- Public mod-manager download button: ${publicDownloadState}`);
   console.log(`- Default mod-manager download: ${defaultModManagerDownload ? "enabled" : "disabled"}`);
 
-  if (!publicModManagerDownload) {
+  if (!publicModManagerDownload && publicDownloadState !== "pending-virus-scan") {
     throw new Error(`Nexus file ${file.fileId} does not expose a public mod-manager download button.`);
   }
 
@@ -65,7 +66,12 @@ try {
     throw new Error(`Nexus file ${file.fileId} is not the default mod-manager download in the file editor.`);
   }
 
-  console.log("Verified Nexus file editor mod-manager options.");
+  if (publicDownloadState === "pending-virus-scan") {
+    console.log(`Nexus file ${file.fileId} is awaiting virus scanning. Editor options are verified; public download availability still needs checking after the scan.`);
+  }
+  else {
+    console.log("Verified Nexus file editor mod-manager options.");
+  }
 }
 finally {
   client.close();
@@ -319,12 +325,16 @@ async function verifyPublicModManagerDownload(client, fileId) {
         url: location.href,
         title: document.title,
         hasModManagerDownload: links.some(link => link.nmm === "1"),
+        pendingVirusScan: document.querySelector('dd[data-id="' + expectedFileId + '"]')?.textContent.includes("Virus scanning is in progress.") || false,
         links,
       };
     })()`);
 
     if (state.hasModManagerDownload) {
-      return true;
+      return "enabled";
+    }
+    if (state.pendingVirusScan) {
+      return "pending-virus-scan";
     }
 
     if (attempt < 11) {
@@ -332,7 +342,7 @@ async function verifyPublicModManagerDownload(client, fileId) {
     }
   }
 
-  return false;
+  return "disabled";
 }
 
 function findReleaseFile(files) {

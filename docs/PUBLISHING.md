@@ -223,6 +223,8 @@ The `-Save` path requires typing an exact confirmation phrase before it calls th
 
 The uploader checks the saved file name, version, and description as well as its download link. It prints the new file ID before these checks. If a check fails after creation, inspect or repair that existing file before retrying to avoid duplicate uploads.
 
+Nexus can hide download buttons while its virus scan is running. The browser verifier reports `pending-virus-scan` for the specific uploaded file and still checks the default-download setting. This allows page and changelog updates to finish; public download availability must be checked again after scanning.
+
 To upload directly from your local machine:
 
 ```powershell
