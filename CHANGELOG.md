@@ -2,11 +2,11 @@
 
 ## 1.0.7
 
-- Updated Party Signals for Slay the Spire 2 public beta `v0.111.0` after reviewing all 596 cards and the changes since `v0.109.0`.
-- `Haze` now calls out Weak and `Outbreak` calls out Poison in every supported language.
-- Removed the obsolete `Scare` Weak rule after that card was replaced by `Sidestep`.
-- Added an Indonesian translation pack and automatic handling for the game's new `ind` locale.
-- Reviewed the remaining changed cards, including `Expect a Fight`, `Mirage`, and `Hyperbeam`; none of them should produce new Party Signals callouts.
+- Updated for beta `v0.111.0`. Checked the card changes since `v0.109.0`.
+- Added Weak for `Haze` and Poison for `Outbreak`, including when playing in other languages.
+- Removed the old `Scare` entry. `Sidestep` doesn't need a callout.
+- Added Indonesian. Auto picks it up from the game's language setting.
+- `Expect a Fight` and `Mirage` still don't give Strength or Poison, and `Hyperbeam` still loses Focus. No callouts for those.
 
 ## 1.0.6
 

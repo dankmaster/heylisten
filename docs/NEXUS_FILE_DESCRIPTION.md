@@ -1,1 +1,1 @@
-Updated Party Signals for Slay the Spire 2 public beta v0.111.0 after reviewing all 596 cards and the changes since v0.109.0. Haze now calls out Weak and Outbreak calls out Poison in every supported language. Tested with Slay the Spire 2 v0.111.0.
+Updated for beta v0.111.0. Checked the card changes since v0.109.0. Added Weak for Haze and Poison for Outbreak, including when playing in other languages. Tested with Slay the Spire 2 v0.111.0.

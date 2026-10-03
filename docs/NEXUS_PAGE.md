@@ -3,27 +3,27 @@
 ## Short Description
 
 ```text
-Useful co-op cards, called out in the game's own speech bubbles. Configurable, translated, and easy to dismiss.
+See which setup and support cards your teammates have, with callouts above their characters. Uses the game's speech bubbles.
 ```
 
 ## Full Description
 
 ```bbcode
-[b]Party Signals[/b] helps a co-op team spot useful cards before someone ends the turn.
+[b]Party Signals[/b] shows which useful cards your teammates are holding, so you can plan the turn together.
 
-When a player is holding a setup card, their character says so in one of the game's normal speech bubbles. The reminder stays close to the player it belongs to, and it can be clicked away as soon as the team has seen it.
+Got Vulnerable in hand? Your character says so. Got a card that helps a teammate? Same thing. The callout appears above the character using the game's own speech bubbles. Click it when you've seen it, or let the timer clear it.
 
-There is no extra combat panel to manage. Install the mod, start a co-op run, and the callouts appear when they are relevant.
+It runs automatically during combat. You can also show your own callouts, including in solo runs.
 
 [b]What It Calls Out[/b]
 
-Party Signals recognizes cards that set up Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and other plays that directly help a teammate or the whole party.
+Vulnerable, Weak, Strength, Vigor, Focus, Poison, Double Damage, and cards that help another player or the whole team.
 
-Each character speaks for their own hand. A teammate might say "I have Vulnerable", while the optional card-name mode can say "I can play Bash for Vulnerable" instead. Status names are highlighted, and upgraded cards keep their + marker.
+Each character calls out their own cards. Turn on Card Names if you'd rather see "I can play Bash for Vulnerable" than just "I have Vulnerable". Upgraded cards keep their + marker.
 
 [b]Controls and Settings[/b]
 
-Party Signals works without ModConfig. If ModConfig is installed, the same options are available in the in-game mod settings menu.
+With ModConfig installed, you can change these in the game's mod settings. Otherwise, edit the config file below.
 
 [list]
 [*]Show callouts for teammates, yourself, or both.
@@ -44,11 +44,11 @@ The config file is created here after the first launch:
 [b]1.0.7[/b]
 
 [list]
-[*]Updated Party Signals for Slay the Spire 2 public beta [code]v0.111.0[/code] after reviewing all 596 cards and the changes since [code]v0.109.0[/code].
-[*][code]Haze[/code] now calls out Weak and [code]Outbreak[/code] calls out Poison in every supported language.
-[*]Removed the obsolete [code]Scare[/code] Weak rule after that card was replaced by [code]Sidestep[/code].
-[*]Added an Indonesian translation pack and automatic handling for the game's new [code]ind[/code] locale.
-[*]Reviewed the remaining changed cards, including [code]Expect a Fight[/code], [code]Mirage[/code], and [code]Hyperbeam[/code]; none of them should produce new Party Signals callouts.
+[*]Updated for beta [code]v0.111.0[/code]. Checked the card changes since [code]v0.109.0[/code].
+[*]Added Weak for [code]Haze[/code] and Poison for [code]Outbreak[/code], including when playing in other languages.
+[*]Removed the old [code]Scare[/code] entry. [code]Sidestep[/code] doesn't need a callout.
+[*]Added Indonesian. Auto picks it up from the game's language setting.
+[*][code]Expect a Fight[/code] and [code]Mirage[/code] still don't give Strength or Poison, and [code]Hyperbeam[/code] still loses Focus. No callouts for those.
 [/list]
 
 Tested with Slay the Spire 2 v0.111.0.
@@ -67,7 +67,7 @@ Included language codes:
 
 [code]eng, deu, esp, fra, ind, ita, jpn, kor, pol, ptb, rus, spa, tha, tur, zhs[/code]
 
-Auto follows the language selected in Slay the Spire 2 when a matching pack is installed. The wording lives in plain [code].loc[/code] files under [code]mods/partysignals/translations[/code], so it can be adjusted without rebuilding the mod.
+Auto follows your game language. You can edit the wording in [code]mods/partysignals/translations[/code]; the [code].loc[/code] files are plain text.
 
 [b]Installation[/b]
 
@@ -87,7 +87,7 @@ If both folders are present, Party Signals disables the old manifest on startup.
 
 [b]Compatibility[/b]
 
-Party Signals is for existing Slay the Spire 2 co-op setups; it does not add multiplayer by itself.
+Everyone's cards are read from the current run. Party Signals only adds the callouts.
 
-Game updates can add or rework cards. The latest release notes always name the game version used for the card review, so check that line after switching between the stable and beta branches.
+After a game update, check the release notes for the version I've tested. Reworked cards sometimes need new callout rules, especially on beta.
 ```
