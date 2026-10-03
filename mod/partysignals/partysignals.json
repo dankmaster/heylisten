@@ -3,7 +3,7 @@
   "name": "Party Signals - Automatic Card Callouts",
   "author": "FlexiBoii",
   "description": "Points out useful co-op cards with the game's own speech bubbles.",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "has_pck": false,
   "has_dll": true,
   "dependencies": [],

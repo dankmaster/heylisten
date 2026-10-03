@@ -650,6 +650,7 @@ namespace PartySignals
             "defy",
             "fallingstar",
             "gammablast",
+            "haze",
             "knowthyplace",
             "legsweep",
             "madscience",
@@ -658,7 +659,6 @@ namespace PartySignals
             "neutralize",
             "null",
             "putrefy",
-            "scare",
             "shockwave",
             "suckerpunch",
             "suppress",
@@ -704,6 +704,7 @@ namespace PartySignals
             "concoct",
             "deadlypoison",
             "haze",
+            "outbreak",
             "poisonedstab",
             "snakebite",
         };
@@ -1962,54 +1963,59 @@ namespace PartySignals
                 return 3;
             }
 
-            if (string.Equals(normalized, "ita", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "ind", StringComparison.OrdinalIgnoreCase))
             {
                 return 4;
             }
 
-            if (string.Equals(normalized, "jpn", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "ita", StringComparison.OrdinalIgnoreCase))
             {
                 return 5;
             }
 
-            if (string.Equals(normalized, "kor", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "jpn", StringComparison.OrdinalIgnoreCase))
             {
                 return 6;
             }
 
-            if (string.Equals(normalized, "pol", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "kor", StringComparison.OrdinalIgnoreCase))
             {
                 return 7;
             }
 
-            if (string.Equals(normalized, "ptb", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "pol", StringComparison.OrdinalIgnoreCase))
             {
                 return 8;
             }
 
-            if (string.Equals(normalized, "rus", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "ptb", StringComparison.OrdinalIgnoreCase))
             {
                 return 9;
             }
 
-            if (string.Equals(normalized, "spa", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "rus", StringComparison.OrdinalIgnoreCase))
             {
                 return 10;
             }
 
-            if (string.Equals(normalized, "tha", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "spa", StringComparison.OrdinalIgnoreCase))
             {
                 return 11;
             }
 
-            if (string.Equals(normalized, "tur", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "tha", StringComparison.OrdinalIgnoreCase))
             {
                 return 12;
             }
 
-            if (string.Equals(normalized, "zhs", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, "tur", StringComparison.OrdinalIgnoreCase))
             {
                 return 13;
+            }
+
+            if (string.Equals(normalized, "zhs", StringComparison.OrdinalIgnoreCase))
+            {
+                return 14;
             }
 
             return 100;
@@ -2286,6 +2292,7 @@ namespace PartySignals
                 case "deu":
                 case "esp":
                 case "fra":
+                case "ind":
                 case "ita":
                 case "jpn":
                 case "kor":
@@ -2339,6 +2346,9 @@ namespace PartySignals
                 case "fr-ca":
                 case "fr-ch":
                     return "fra";
+                case "id":
+                case "id-id":
+                    return "ind";
                 case "it":
                 case "it-it":
                 case "it-ch":
@@ -2398,6 +2408,11 @@ namespace PartySignals
             if (lower.StartsWith("fr-", StringComparison.OrdinalIgnoreCase))
             {
                 return "fra";
+            }
+
+            if (lower.StartsWith("id-", StringComparison.OrdinalIgnoreCase))
+            {
+                return "ind";
             }
 
             if (lower.StartsWith("it-", StringComparison.OrdinalIgnoreCase))

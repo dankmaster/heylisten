@@ -209,6 +209,9 @@ try {
     }
 
     if ($actionExitCode -ne 0) {
+        if (![string]::IsNullOrWhiteSpace($uploadedFileId)) {
+            throw "Nexus file $uploadedFileId was created, but a post-upload check failed. Inspect or repair that file before retrying; do not upload another copy."
+        }
         throw "Nexus Mods upload failed."
     }
 

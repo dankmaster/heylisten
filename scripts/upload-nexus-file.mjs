@@ -293,13 +293,28 @@ async function main() {
   const fileId = update?.data?.game_scoped_id;
 
   console.log(`File updated successfully: ${update.data.id}`);
+  console.log(`file_id=${fileId}`);
+  console.log(`file_uid=${update.data.id}`);
   console.log(`Mod-manager downloads enabled: ${allowModManagerDownload}`);
+  const metadataResponse = await fetch(`${legacyApiBase}/games/${encodeURIComponent(gameDomain)}/mods/${encodeURIComponent(modId)}/files/${encodeURIComponent(fileId)}.json`, {
+    headers: { apikey: apiKey, "User-Agent": "PartySignals release uploader" },
+  });
+  if (!metadataResponse.ok) {
+    throw new Error(`File ${fileId} was uploaded, but metadata verification failed (${metadataResponse.status}). Check this file before retrying the upload.`);
+  }
+  const metadata = await metadataResponse.json();
+  const mismatches = [];
+  if (metadata.name !== displayName) mismatches.push("name");
+  if (metadata.version !== version) mismatches.push("version");
+  if (description && metadata.description?.trim() !== description.trim()) mismatches.push("description");
+  if (mismatches.length) {
+    throw new Error(`File ${fileId} was uploaded, but Nexus did not save the expected ${mismatches.join(", ")}. Repair the existing file instead of uploading again.`);
+  }
+  console.log(`Verified Nexus file ${fileId} name, version, and description.`);
   if (verifyModManagerDownloadLink) {
     await verifyModManagerDownload(apiKey, gameDomain, modId, fileId);
   }
 
-  console.log(`file_id=${fileId}`);
-  console.log(`file_uid=${update.data.id}`);
 }
 
 main().catch((error) => {

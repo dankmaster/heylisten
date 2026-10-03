@@ -41,15 +41,17 @@ The config file is created here after the first launch:
 
 [b]Latest Release[/b]
 
-[b]1.0.6[/b]
+[b]1.0.7[/b]
 
 [list]
-[*]Reviewed the three cards added in the [code]v0.109.0[/code] beta: [code]Abundance[/code], [code]Dowsing[/code], and [code]Tutor[/code].
-[*][code]Tutor[/code] now gets a Support callout. [code]Abundance[/code] and [code]Dowsing[/code] are intentionally ignored.
-[*]Checked the rest of the beta's card changes; no other callout rules needed updating.
+[*]Updated Party Signals for Slay the Spire 2 public beta [code]v0.111.0[/code] after reviewing all 596 cards and the changes since [code]v0.109.0[/code].
+[*][code]Haze[/code] now calls out Weak and [code]Outbreak[/code] calls out Poison in every supported language.
+[*]Removed the obsolete [code]Scare[/code] Weak rule after that card was replaced by [code]Sidestep[/code].
+[*]Added an Indonesian translation pack and automatic handling for the game's new [code]ind[/code] locale.
+[*]Reviewed the remaining changed cards, including [code]Expect a Fight[/code], [code]Mirage[/code], and [code]Hyperbeam[/code]; none of them should produce new Party Signals callouts.
 [/list]
 
-Tested with Slay the Spire 2 v0.109.0.
+Tested with Slay the Spire 2 v0.111.0.
 
 [b]Links[/b]
 
@@ -63,7 +65,7 @@ Tested with Slay the Spire 2 v0.109.0.
 
 Included language codes:
 
-[code]eng, deu, esp, fra, ita, jpn, kor, pol, ptb, rus, spa, tha, tur, zhs[/code]
+[code]eng, deu, esp, fra, ind, ita, jpn, kor, pol, ptb, rus, spa, tha, tur, zhs[/code]
 
 Auto follows the language selected in Slay the Spire 2 when a matching pack is installed. The wording lives in plain [code].loc[/code] files under [code]mods/partysignals/translations[/code], so it can be adjusted without rebuilding the mod.
 

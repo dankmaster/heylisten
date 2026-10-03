@@ -219,7 +219,9 @@ By default, the helper previews the public update, fills the page editor, and st
 .\scripts\update-nexus-page.ps1 -Save
 ```
 
-The `-Save` path requires typing an exact confirmation phrase before it calls the Nexus page/changelog save endpoints. Pass `-SkipChangelog` for a page-only update, or `-Version` to sync a specific `CHANGELOG.md` section. If Chrome is not auto-detected, pass `-ChromePath` or set `NEXUS_BROWSER_PATH`.
+The `-Save` path requires typing an exact confirmation phrase before it calls the Nexus page/changelog save endpoints. Use `-Save -Force` for an already-approved automated publication. Full local publishing now saves the page and changelog after the upload and file checks; use `-SkipNexusPage` to defer that step. Pass `-SkipChangelog` for a page-only update, or `-Version` to sync a specific `CHANGELOG.md` section. If Chrome is not auto-detected, pass `-ChromePath` or set `NEXUS_BROWSER_PATH`.
+
+The uploader checks the saved file name, version, and description as well as its download link. It prints the new file ID before these checks. If a check fails after creation, inspect or repair that existing file before retrying to avoid duplicate uploads.
 
 To upload directly from your local machine:
 

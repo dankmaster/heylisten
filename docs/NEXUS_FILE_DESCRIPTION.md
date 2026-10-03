@@ -1,1 +1,1 @@
-Reviewed the three cards added in the v0.109.0 beta: Abundance, Dowsing, and Tutor. Tutor now gets a Support callout. Abundance and Dowsing are intentionally ignored. Tested with Slay the Spire 2 v0.109.0.
+Updated Party Signals for Slay the Spire 2 public beta v0.111.0 after reviewing all 596 cards and the changes since v0.109.0. Haze now calls out Weak and Outbreak calls out Poison in every supported language. Tested with Slay the Spire 2 v0.111.0.

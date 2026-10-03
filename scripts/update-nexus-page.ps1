@@ -12,7 +12,8 @@ param(
     [int]$RemoteDebuggingPort = 9222,
     [switch]$LoginOnly,
     [switch]$SkipChangelog,
-    [switch]$Save
+    [switch]$Save,
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,7 +127,10 @@ if ([string]::IsNullOrWhiteSpace($ChromePath) -or !(Test-Path -LiteralPath $Chro
     throw "Could not find Chrome or Chromium. Pass -ChromePath or set NEXUS_BROWSER_PATH."
 }
 
-if ($Save) {
+if ($Force -and !$Save) {
+    throw "-Force requires -Save."
+}
+if ($Save -and !$Force) {
     Write-Warning "This will save public Nexus Mods page text and the Nexus documentation changelog for Party Signals. It does not upload or replace mod files."
     $confirmation = Read-Host "Type UPDATE NEXUS PAGE to continue"
     if ($confirmation -ne "UPDATE NEXUS PAGE") {

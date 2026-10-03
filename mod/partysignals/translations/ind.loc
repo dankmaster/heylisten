@@ -1,0 +1,33 @@
+{
+  "code": "ind",
+  "name": "Bahasa Indonesia",
+  "strings": {
+    "bubble_intro": "Hei, dengar!",
+    "message.single": "Aku punya {0}",
+    "message.card_single": "Aku bisa memainkan {0} untuk {1}",
+    "message.card_two": "Aku bisa memainkan {0} untuk {1} dan punya {2}",
+    "message.card_many": "Aku bisa memainkan {0} untuk {1} +{2} lainnya",
+    "message.support": "Aku punya {0}",
+    "message.support_upgraded": "Aku punya {0}",
+    "message.two": "Aku punya {0} dan {1}",
+    "message.many": "Aku punya {0} +{1} lainnya",
+    "message.card_two_with_support_action": "Aku bisa memainkan {0} untuk {1} dan menggunakan {2} {3}",
+    "message.card_many_with_support_action": "Aku bisa memainkan {0} untuk {1} +{2} lainnya dan menggunakan {3} {4}",
+    "status.vulnerable": "Rentan",
+    "status.double_damage": "Kerusakan Ganda",
+    "status.triple_damage": "Kerusakan Tiga Kali Lipat",
+    "status.strength": "Kekuatan",
+    "status.vigor": "Bugar",
+    "status.focus": "Fokus",
+    "status.poison": "Racun",
+    "status.weak": "Lemah",
+    "status.support": "kartu dukungan",
+    "status.support_upgraded": "kartu dukungan yang ditingkatkan",
+    "message.support_action": "Aku bisa menggunakan {0} {1}",
+    "message.many_with_support_action": "Aku punya {0} +{1} lainnya dan bisa menggunakan {2} {3}",
+    "message.two_with_support_action": "Aku punya {0} dan bisa menggunakan {1} {2}",
+    "support_scope.team": "untuk kita",
+    "support_scope.general": "untuk membantu",
+    "support_scope.direct": "untukmu"
+  }
+}

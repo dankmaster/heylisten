@@ -15,7 +15,8 @@ param(
     [switch]$MoveTag,
     [switch]$SkipGitHub,
     [switch]$SkipNexus,
-    [switch]$SkipNexusFileUiVerification
+    [switch]$SkipNexusFileUiVerification,
+    [switch]$SkipNexusPage
 )
 
 $ErrorActionPreference = "Stop"
@@ -147,7 +148,10 @@ try {
 
         & (Join-Path $PSScriptRoot "publish-nexus-local.ps1") @nexusArgs
 
-        if (Test-Path -LiteralPath $nexusPagePath) {
+        if (!$SkipNexusPage -and (Test-Path -LiteralPath $nexusPagePath)) {
+            & (Join-Path $PSScriptRoot "update-nexus-page.ps1") -Version $Version -NexusModId $NexusModId -Save -Force
+        }
+        elseif (Test-Path -LiteralPath $nexusPagePath) {
             Write-Host ""
             Write-Host "Nexus page copy: $nexusPagePath"
             Write-Host "Run .\scripts\update-nexus-page.ps1 -Version $Version to preview or submit page/changelog updates without uploading another file."
